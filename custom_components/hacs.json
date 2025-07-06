@@ -1,0 +1,9 @@
+{
+    "name": "Marstek Venus Modbus",
+    "content_in_root": true,
+    "domains": ["sensor", "switch", "number"], 
+    "country": "NL",
+    "render_readme": true,
+    "render_hacs": true,
+    "icon": "custom_components/marstek_venus_modbus/icon.png"
+  }

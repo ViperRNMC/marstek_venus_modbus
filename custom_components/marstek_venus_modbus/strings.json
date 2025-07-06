@@ -1,0 +1,18 @@
+{
+  "title": "Marstek Venus Modbus",
+  "config_flow": {
+    "user": {
+      "description": "Connect to your Marstek Venus E via Modbus TCP.",
+      "fields": {
+        "host": {
+          "name": "Host",
+          "description": "IP address of the battery"
+        },
+        "port": {
+          "name": "Port",
+          "description": "Modbus TCP port (default 502)"
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Connect to Marstek Venus",
+        "description": "Enter the Modbus TCP connection details",
+        "data": {
+          "host": "IP Address",
+          "port": "Port"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Cannot connect to the device"
+    },
+    "abort": {
+      "already_configured": "This device is already configured"
+    }
+  }
+}
