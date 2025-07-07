@@ -1,5 +1,19 @@
 # Changelog
 
+## [2025.6.2] - 2025-07-07
+### Added
+- `enabled_by_default: false` set for all sensors except key ones (e.g. voltage, current, SOC)
+- Example Lovelace dashboard added to the integration folder
+- Support for Modbus `int32` and `char` register types
+
+### Changed
+- Select, Number, and Switch entities now implement `async_update()` and reflect real device state
+- Improved state mapping for sensors using `states` dictionary
+
+### Fixed
+- Correct mapping of 'Trade Mode' (value 2) in select register
+- All switch and number entities now generate truly unique IDs per integration instance
+
 ## [2025.6.1] - 2025-07-07
 ### Added
 - Combined alarm sensor decoding multiple alarm bits into one entity
