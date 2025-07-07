@@ -69,7 +69,7 @@ class MarstekModbusClient:
             return regs[0]
 
         elif data_type == "int32":
-            val = (regs[1] << 16) | regs[0]  # little endian
+            val = (regs[0] << 16) | regs[1]  # big endian
             return val - 0x100000000 if val >= 0x80000000 else val
 
         elif data_type == "uint32":

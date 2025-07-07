@@ -1,0 +1,20 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Verbind met Marstek Venus Modbus",
+        "description": "Voer de Modbus TCP-verbindingsgegevens in",
+        "data": {
+          "host": "IP-adres",
+          "port": "Poort"
+        }
+      }
+    },
+    "error": {
+      "cannot_connect": "Kan geen verbinding maken met het apparaat"
+    },
+    "abort": {
+      "already_configured": "Dit apparaat is al geconfigureerd"
+    }
+  }
+}

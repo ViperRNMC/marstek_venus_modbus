@@ -23,16 +23,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     # Create a list of MarstekSensor objects, one per sensor definition
     sensors = []
     for sensor_def in SENSOR_DEFINITIONS:
-        if sensor_def.get("key") == "alarm_status":
-            sensors.append(MarstekAlarmSensor(coordinator, sensor_def))
-        else:
-            sensors.append(MarstekSensor(coordinator, sensor_def))
-    # ]
-
-    #  # add alarm sensor for combined alarm status
-    # alarm_defs = [d for d in SENSOR_DEFINITIONS if d.get("key") == "alarm_status"]
-    # for alarm_def in alarm_defs:
-    #     sensors.append(MarstekAlarmSensor(coordinator, alarm_def))   
+        sensors.append(MarstekSensor(coordinator, sensor_def))
 
     # Add the sensors to Home Assistant so they become visible and usable
     async_add_entities(sensors)
@@ -45,7 +36,6 @@ class MarstekSensor(SensorEntity):
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """
         Initialize the sensor with a coordinator (responsible for data) and the sensor configuration.
-        
         Sets name, unique ID, unit, device class, and state class based on the definition.
         """
         self.coordinator = coordinator
@@ -63,23 +53,72 @@ class MarstekSensor(SensorEntity):
         """
         Update sensor state using appropriate data type handling.
         """
-        data_type = self.definition.get("type", "uint16")  # Default type
+        data_type = self.definition.get("data_type", "uint16")
 
-        # Use read_register instead of read_value
+        # Read raw value from Modbus register using defined data type and count
         raw_value = self.coordinator.client.read_register(
             address=self.definition["address"],
             data_type=data_type,
             count=self.definition.get("count", 1)
         )
+        # _LOGGER.debug(
+        #     "Sensor %s - Read from address %s (count=%s, type=%s): raw_value=%s",
+        #     self._attr_name,
+        #     self.definition.get("address"),
+        #     self.definition.get("count", 1),
+        #     data_type,
+        #     raw_value,
+        # )
 
         if raw_value is not None:
-            if isinstance(raw_value, (int, float)):
+            # Handle alarm_status sensor by decoding bit flags
+            if self.definition.get("key") == "alarm_status":
+                # Decode bits 0-3 for individual alarm flags
+                """
+                Special sensor entity for combined alarm status.
+
+                Reads a 16-bit register containing alarm bit flags, where each bit
+                indicates a different alarm condition.
+
+                Bits decoded:
+                - Bit 0: WiFi Abnormal
+                - Bit 1: BLE Abnormal
+                - Bit 2: Network Abnormal
+                - Bit 3: CT Connection Abnormal
+
+                The sensor state is a comma-separated list of active alarms,
+                or "Normal" if none are active.
+                """
+                alarms = []
+                if raw_value & (1 << 0):
+                    alarms.append("WiFi Abnormal")
+                if raw_value & (1 << 1):
+                    alarms.append("BLE Abnormal")
+                if raw_value & (1 << 2):
+                    alarms.append("Network Abnormal")
+                if raw_value & (1 << 3):
+                    alarms.append("CT Connection Abnormal")
+
+                # Combine all active alarm labels or set state to "Normal"
+                self._state = ", ".join(alarms) if alarms else "Normal"
+
+            # Handle string data types
+            elif data_type == "char":
+                # Convert raw value to string
+                self._state = str(raw_value)
+
+            # Handle numeric values with scaling and precision
+            elif isinstance(raw_value, (int, float)):
+                # Apply scaling and offset, then round to desired precision
                 scaled = raw_value * self.definition.get("scale", 1) + self.definition.get("offset", 0)
                 precision = self.definition.get("precision", 0)
                 self._state = round(scaled, precision)
-            else:
-                self._state = raw_value  # e.g., for char/string values
 
+            # Default fallback: use raw value directly
+            else:
+                self._state = raw_value
+
+            # Map integer state to a friendly name if a states dictionary is defined
             if self.states and isinstance(self._state, int) and self._state in self.states:
                 self._state = self.states[self._state]
 
@@ -91,47 +130,3 @@ class MarstekSensor(SensorEntity):
         """
         return self._state
     
-class MarstekAlarmSensor(MarstekSensor):
-    """
-    Special sensor entity for combined alarm status.
-
-    Reads a 16-bit register containing alarm bit flags, where each bit
-    indicates a different alarm condition.
-
-    Bits decoded:
-    - Bit 0: WiFi Abnormal
-    - Bit 1: BLE Abnormal
-    - Bit 2: Network Abnormal
-    - Bit 3: CT Connection Abnormal
-
-    The sensor state is a comma-separated list of active alarms,
-    or "Normal" if none are active.
-    """
-
-    def update(self):
-        # Read 1 register (16 bits) from the configured address (should be 36001)
-        raw_value = self.coordinator.client.read_register(
-            address=self.definition["address"],
-            data_type="uint16",
-            count=1
-        )
-
-        if raw_value is not None:
-            alarms = []
-
-            # Check each relevant bit and append descriptive string if set
-            if raw_value & (1 << 0):
-                alarms.append("WiFi Abnormal")
-            if raw_value & (1 << 1):
-                alarms.append("BLE Abnormal")
-            if raw_value & (1 << 2):
-                alarms.append("Network Abnormal")
-            if raw_value & (1 << 3):
-                alarms.append("CT Connection Abnormal")
-
-            # Set the sensor state as a joined string of active alarms,
-            # or "Normal" if no alarms are active
-            if alarms:
-                self._state = ", ".join(alarms)
-            else:
-                self._state = "Normal"
