@@ -2,7 +2,6 @@
 DOMAIN = "marstek_modbus"
 
 # Default network configuration for Modbus connection
-DEFAULT_HOST = "192.168.1.100"
 DEFAULT_PORT = 502
 
 # Time interval (in seconds) between data scans

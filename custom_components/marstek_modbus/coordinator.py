@@ -20,6 +20,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.hass = hass
         self.host = entry.data["host"]
         self.port = entry.data["port"]
+        self.interval = entry.data.get("scan_interval", SCAN_INTERVAL)
 
         # Initialize and connect the Modbus client to the device
         self.client = MarstekModbusClient(self.host, self.port)
@@ -30,7 +31,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             hass,
             _LOGGER,
             name="Marstek Venus Modbus Coordinator",
-            update_interval=timedelta(seconds=SCAN_INTERVAL),
+            update_interval=timedelta(seconds=self.interval),
         )
 
     async def _async_update_data(self):

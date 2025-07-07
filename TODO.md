@@ -1,6 +1,6 @@
 # TODO List
 
-- [ ] Update documentation
+- [x] Update documentation
 - [ ] Update poll interval via GUI
 - [ ] Fix for int32/char handling 
 - [ ] Use device_name as device name in Home Assistant
