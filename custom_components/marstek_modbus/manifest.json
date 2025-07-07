@@ -1,5 +1,5 @@
 {
-  "domain": "marstek_venus_modbus",
+  "domain": "marstek_modbus",
   "name": "Marstek Venus Modbus",
   "version": "2025.6.1",
   "config_flow": true,
