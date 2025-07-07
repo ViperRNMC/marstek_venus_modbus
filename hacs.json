@@ -7,5 +7,7 @@
   "render_readme": true,
   "render_hacs": true,
   "icon": "icon.svg",
+  "issue_tracker": "https://github.com/viperrnmd/marstek_modbus_modbus/issues",
+  "loggers": ["custom_components.apsystems_ecu_reader"],
   "codeowners": ["@ViperRNMC"]
 }
