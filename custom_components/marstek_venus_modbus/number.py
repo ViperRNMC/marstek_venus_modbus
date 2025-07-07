@@ -39,7 +39,7 @@ class MarstekNumber(NumberEntity):
         self.coordinator = coordinator
         self._address = desc["address"]
         self._attr_name = f"Marstek Venus {desc['name']}"
-        self._attr_unique_id = f"marstek_{desc['key']}"
+        self._attr_unique_id = f"marstek_{coordinator.config_entry.entry_id}_{desc['key']}"
         self._attr_native_min_value = desc["min"]
         self._attr_native_max_value = desc["max"]
         self._attr_native_step = desc["step"]

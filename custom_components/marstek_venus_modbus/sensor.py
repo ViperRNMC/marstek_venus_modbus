@@ -10,7 +10,6 @@ _LOGGER = logging.getLogger(__name__)
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
     coordinator = MarstekCoordinator(hass, entry)
-    # await coordinator.async_config_entry_first_refresh()
 
     sensors = [
         MarstekSensor(coordinator, sensor_def)
@@ -18,13 +17,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_e
     ]
 
     async_add_entities(sensors)
-
+    
 class MarstekSensor(SensorEntity):
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         self.coordinator = coordinator
         self.definition = definition
         self._attr_name = f"Marstek Venus {definition['name']}"
-        self._attr_unique_id = f"marstek_{definition['key']}"
+        self._attr_unique_id = f"marstek_{coordinator.config_entry.entry_id}_{definition['key']}"
         self._attr_native_unit_of_measurement = definition["unit"]
         self._attr_device_class = definition["device_class"]
         self._attr_state_class = definition["state_class"]
