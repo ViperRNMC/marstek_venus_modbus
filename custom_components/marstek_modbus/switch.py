@@ -24,7 +24,7 @@ class MarstekSwitch(SwitchEntity):
         self.coordinator = coordinator
         self.definition = definition
         self._attr_name = f"Marstek Venus {definition['name']}"
-        self._attr_unique_id = f"marstek_{definition['key']}"
+        self._attr_unique_id = f"marstek_{coordinator.config_entry.entry_id}_{definition['key']}"
         self._state = False
 
     def turn_on(self, **kwargs):

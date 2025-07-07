@@ -1,4 +1,4 @@
-DOMAIN = "marstek_venus_modbus"
+DOMAIN = "marstek_modbus"
 
 DEFAULT_HOST = "192.168.1.100"
 DEFAULT_PORT = 502

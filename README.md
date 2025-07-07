@@ -8,7 +8,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 
 - A configured **EW11 (Modbus RTU to Modbus TCP bridge)** connected to the battery's RS485 port
 - The IP address and port of the EW11 (usually port 502)
-- Home Assistant Core 2024.0 or later
+- Home Assistant Core 2025.6 or later
 - HACS installed
 
 ### 🔧 Features
@@ -30,7 +30,7 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 
 - Een correct ingestelde **EW11 (Modbus RTU naar Modbus TCP converter)** aangesloten op de RS485-poort van de batterij
 - Het IP-adres en poortnummer van de EW11 (meestal poort 502)
-- Home Assistant Core 2024.0 of nieuwer
+- Home Assistant Core 2025.6 of nieuwer
 - HACS geïnstalleerd
 
 ### 🔧 Functies
