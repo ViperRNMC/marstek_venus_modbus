@@ -1,23 +1,60 @@
+# Integration domain name
 DOMAIN = "marstek_modbus"
 
+# Default network configuration for Modbus connection
 DEFAULT_HOST = "192.168.1.100"
 DEFAULT_PORT = 502
 
+# Time interval (in seconds) between data scans
 SCAN_INTERVAL = 10
 
+# Definitions for sensors to be read from the Modbus device
+# Each sensor includes metadata for proper interpretation and display
 SENSOR_DEFINITIONS = [
     {
+        # Device name, stored as a string in multiple registers
+        "name": "Device Name",
+        "address": 31000,
+        "count": 10,  # 20 bytes = 10 registers
+        "data_type": "char",
+        "unit": None,
+        "key": "device_name",
+        "precision": 0
+    },
+    {
+        # SN code, stored as a string in multiple registers
+        "name": "SN Code",
+        "address": 31200,
+        "count": 10,  # 20 bytes = 10 registers
+        "data_type": "char",
+        "unit": None,
+        "key": "sn_code",
+        "precision": 0
+    },
+    {
+        # Software version as scaled unsigned integer
+        "name": "Soft Version",
+        "address": 31100,
+        "scale": 0.01,
+        "unit": None,
+        "key": "soft_version",
+        "data_type": "uint16",
+        "precision": 2
+    },
+    {
+        # Battery State of Charge (SOC) as a percentage
         "name": "Battery SOC",
         "address": 32104,
         "scale": 1,
         "unit": "%",
-        "device_class": None,
+        "device_class": "battery",
         "state_class": "measurement",
         "key": "battery_soc",
         "data_type": "uint16",
         "precision": 1
     },    
     {
+        # Battery voltage in volts
         "name": "Battery Voltage",
         "address": 32100,
         "scale": 0.01,
@@ -29,6 +66,7 @@ SENSOR_DEFINITIONS = [
         "precision": 1
     },
     {
+        # Battery current in amperes
         "name": "Battery Current",
         "address": 32101,
         "scale": 0.01,
@@ -40,8 +78,10 @@ SENSOR_DEFINITIONS = [
         "precision": 1
     },
     {
+        # Battery power in watts
         "name": "Battery Power",
         "address": 32102,
+        "count": 2,
         "scale": 1,
         "unit": "W",
         "device_class": "power",
@@ -51,6 +91,7 @@ SENSOR_DEFINITIONS = [
         "precision": 1
     },
     {
+        # Battery temperature in degrees Celsius
         "name": "Battery Temperature",
         "address": 35000,
         "scale": 0.1,
@@ -62,6 +103,7 @@ SENSOR_DEFINITIONS = [
         "precision": 2
     },
     {
+        # Battery AC voltage in volts
         "name": "Battery AC Voltage",
         "address": 32200,
         "scale": 0.1,
@@ -73,6 +115,7 @@ SENSOR_DEFINITIONS = [
         "precision": 1
     },
     {
+        # Battery AC current in amperes
         "name": "Battery AC Current",
         "address": 32201,
         "scale": 0.01,
@@ -84,8 +127,10 @@ SENSOR_DEFINITIONS = [
         "precision": 1
     },
     {
+        # Battery AC power in watts
         "name": "Battery AC Power",
         "address": 32202,
+        "count": 2,
         "scale": 1,
         "unit": "W",
         "device_class": "power",
@@ -95,6 +140,7 @@ SENSOR_DEFINITIONS = [
         "precision": 0
     },
     {
+        # Battery AC frequency in hertz
         "name": "Battery AC Frequency",
         "address": 32204,
         "scale": 0.01,
@@ -102,17 +148,15 @@ SENSOR_DEFINITIONS = [
         "device_class": "frequency",
         "state_class": "measurement",
         "key": "ac_frequency",
-        "data_type": "int32",
+        "data_type": "int16",
         "precision": 2
     },
 
-
-
-
-
     {
+        # Total energy charged into the battery in kilowatt-hours
         "name": "Total Charging Energy",
         "address": 33000,
+        "count": 2,
         "scale": 0.01,
         "unit": "kWh",
         "device_class": "energy",
@@ -122,43 +166,74 @@ SENSOR_DEFINITIONS = [
         "precision": 2
     },
     {
+        # Total energy discharged from the battery in kilowatt-hours
         "name": "Total Discharging Energy",
         "address": 33002,
+        "count": 2,
         "scale": 0.01,
         "unit": "kWh",
         "device_class": "energy",
         "state_class": "total_increasing",
         "key": "total_discharging_energy",
-        "data_type": "uint32",
+        "data_type": "int32",
         "precision": 2
     },    
-
-
-
-
     {
+        # Current state of the inverter device
         "name": "Inverter State",
         "address": 35100,
         "scale": 1,
         "unit": None,
-        "device_class": None,
-        "state_class": "measurement",
         "key": "inverter_state",
         "data_type": "uint16",
+        "precision": 0,
+        "states": {
+            0: "Sleep",
+            1: "Standby",
+            2: "Charge",
+            3: "Discharge",
+            4: "Backup Mode",
+            5: "OTA Upgrade"
+        }
+    },
+    {
+        "name": "Alarm Status",
+        "address": 36001,
+        "count": 1,
+        "data_type": "uint16",
+        "key": "alarm_status",
+        "unit": None,
         "precision": 0
-        # "states": {
-        #     0: "Sleep",
-        #     1: "Standby",
-        #     2: "Charge",
-        #     3: "Discharge",
-        #     4: "Backup Mode",
-        #     5: "OTA Upgrade"
-        # }
     }
 ]
 
+# Definitions for selectable options (e.g. operating modes)
+# Each entry includes the register, label options, and conversion mappings
+SELECT_DEFINITIONS = [
+    {
+        # Selectable user work mode for the battery system
+        "name": "User Work Mode",
+        "register": 43000,
+        "key": "user_work_mode",
+        "options": ["Manual", "Anti-Feed", "Trade Mode"],
+        "map_to_int": {
+            "Manual": 0,
+            "Anti-Feed": 1,
+            "Trade Mode": 2
+        },
+        "int_to_map": {
+            0: "Manual",
+            1: "Anti-Feed",
+            2: "Trade Mode"
+        }
+    }
+]
+
+# Definitions for switch controls that can be toggled on/off
+# Each switch includes the Modbus register address and commands for on/off
 SWITCH_DEFINITIONS = [
     {
+        # RS485 communication control mode switch
         "name": "RS485 Control Mode",
         "address": 42000,
         "command_on": 21930,  # 0x55AA in decimal
@@ -167,6 +242,7 @@ SWITCH_DEFINITIONS = [
         "key": "rs485_control_mode"
     },    
     {
+        # Force battery charge mode switch
         "name": "Force Charge Mode",
         "address": 42010,
         "command_on": 1,
@@ -175,11 +251,59 @@ SWITCH_DEFINITIONS = [
         "key": "force_charge_mode"
     },
     {
+        # Force battery discharge mode switch
         "name": "Force Discharge Mode",
         "address": 42010,
         "command_on": 2,
         "command_off": 0,
         "write_type": "holding",
         "key": "force_discharge_mode"
+    }
+]
+
+# Definitions for numeric configuration parameters
+# Each number defines a range and step size for setting values
+NUMBER_DEFINITIONS = [
+    {
+        # Set power limit for forced charging in watts
+        "name": "Set Forcible Charge Power",
+        "address": 42020,
+        "key": "set_charge_power",
+        "min": 0,
+        "max": 2500,
+        "step": 50,
+        "unit": "W"
+    },
+    {
+        # Set power limit for forced discharging in watts
+        "name": "Set Forcible Discharge Power",
+        "address": 42021,
+        "key": "set_discharge_power",
+        "min": 0,
+        "max": 2500,
+        "step": 50,
+        "unit": "W"
+    },
+    {
+        # Maximum power that can be charged into the battery in watts
+        "name": "Max Charge Power",
+        "address": 44002,
+        "key": "max_charge_power",
+        "min": 0,
+        "max": 2500,
+        "step": 50,
+        "unit": "W",
+        "data_type": "uint16"
+    },
+    {
+        # Maximum power that can be discharged from the battery in watts
+        "name": "Max Discharge Power",
+        "address": 44003,
+        "key": "max_discharge_power",
+        "min": 0,
+        "max": 2500,
+        "step": 50,
+        "unit": "W",
+        "data_type": "uint16"
     }
 ]
