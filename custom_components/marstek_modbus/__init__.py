@@ -3,7 +3,7 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .coordinator import MarstekCoordinator
 
-PLATFORMS = ["sensor", "switch", "number"]
+PLATFORMS = ["sensor", "switch", "number", "select"]
 
 async def async_setup(hass: HomeAssistant, config):
     return True
