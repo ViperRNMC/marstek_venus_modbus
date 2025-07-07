@@ -14,9 +14,12 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 ### 🔧 Features
 
 - Native Modbus TCP polling via `pymodbus`
-- Sensors for voltage, current, SOC, power, energy
+<!-- - Automatically uses device name as entity name (if available) -->
+- Sensors for voltage, current, SOC, power, energy, and alarm status (combined bits)
 - Switches for force charge/discharge control
 - Adjustable charge/discharge power (0–2500W)
+<!-- - Poll interval configurable via the UI -->
+<!-- - Icon support in Home Assistant UI -->
 - UI-based configuration (Config Flow)
 - Fully local, no cloud required
 
@@ -36,9 +39,12 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 ### 🔧 Functies
 
 - Communicatie via Modbus TCP met `pymodbus`
-- Sensordata: spanning, stroom, SOC, vermogen, energie
+<!-- - Automatisch gebruik van apparaatsnaam als entiteitnaam (indien beschikbaar) -->
+- Sensordata: spanning, stroom, SOC, vermogen, energie en gecombineerde alarmstatus (bits)
 - Schakelaars voor geforceerd laden/ontladen
 - Instelbare laad- en ontlaadvermogens (0–2500W)
+<!-- - Poll-interval instelbaar via gebruikersinterface -->
+<!-- - Ondersteuning voor iconen in de Home Assistant-interface -->
 - Configuratie via gebruikersinterface (config flow)
 - Volledig lokaal – geen cloudverbinding nodig
 
