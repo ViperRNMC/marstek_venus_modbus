@@ -35,6 +35,10 @@ class MarstekUserModeSelect(SelectEntity):
         self._register = self.definition["register"]
         self._value = self._attr_options[0]
 
+        # Optional: disable entity by default if specified in the sensor definition
+        if self.definition.get("enabled_by_default") is False:
+            self._attr_entity_registry_enabled_default = False
+
     def select_option(self, option: str) -> None:
         """Handle selection of a new work mode option and write it to the Modbus register."""
         int_value = self._map_to_int.get(option)
