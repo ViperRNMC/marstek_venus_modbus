@@ -11,7 +11,11 @@
       }
     },
     "error": {
-      "cannot_connect": "Kan geen verbinding maken met het apparaat"
+      "permission_denied": "Toegang geweigerd, ge",
+      "connection_refused": "Verbinding geweigerd door het apparaat",
+      "timed_out": "Verbindingstijd verstreken",
+      "invalid_host": "Ongeldig IP-adres of hostnaam",
+      "cannot_connect": "Kan geen verbinding maken"     
     },
     "abort": {
       "already_configured": "Dit apparaat is al geconfigureerd"
