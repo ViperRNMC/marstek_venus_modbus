@@ -35,12 +35,12 @@ class MarstekModbusClient:
         """
         self.client.close()
 
-    def read_register(self, address, data_type="uint16", count=None, bit_index=None):
+    def read_register(self, register, data_type="uint16", count=None, bit_index=None):
         """
         Reads one or more registers and interprets them as the specified data type.
 
         Args:
-            address (int): Register address to read.
+            register (int): Register address to read.
             data_type (str): Data type to interpret (e.g. 'int16', 'int32', 'char', 'bit').
             count (int): Number of registers to read (required for 'char' and 'int32').
             bit_index (int): Bit index to read (required for 'bit').
@@ -52,9 +52,9 @@ class MarstekModbusClient:
             count = 2 if data_type in ["int32", "uint32"] else 1
 
         try:
-            result = self.client.read_holding_registers(address=address, count=count, slave=self.unit_id)
+            result = self.client.read_holding_registers(address=register, count=count, slave=self.unit_id)
             if result.isError():
-                _LOGGER.error("Modbus read error at 0x%04X", address)
+                _LOGGER.error("Modbus read error at 0x%04X", register)
                 return None
             regs = result.registers
         except Exception as e:
@@ -91,19 +91,19 @@ class MarstekModbusClient:
         else:
             raise ValueError(f"Unsupported data_type: {data_type}")
 
-    def write_register(self, address, value):
+    def write_register(self, register, value):
         """
         Writes a single value to a Modbus holding register.
 
         Args:
-            address (int): Register address to write to.
+            register (int): Register address to write to.
             value (int): Value to write.
 
         Returns:
             bool: True if write was successful, False otherwise.
         """
         try:
-            result = self.client.write_register(address=address, value=value, slave=self.unit_id)
+            result = self.client.write_register(register=register, value=value, slave=self.unit_id)
             return not result.isError()
         except Exception as e:
             _LOGGER.exception("Exception during modbus write: %s", e)
