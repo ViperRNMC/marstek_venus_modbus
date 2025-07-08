@@ -50,6 +50,10 @@ class MarstekSensor(SensorEntity):
         self.states = definition.get("states", None)
         self._state = None
 
+        # Optional: disable entity by default if specified in the sensor definition
+        if self.definition.get("enabled_by_default") is False:
+            self._attr_entity_registry_enabled_default = False
+
     def update(self):
         """
         Update sensor state using appropriate data type handling.
@@ -62,14 +66,6 @@ class MarstekSensor(SensorEntity):
             data_type=data_type,
             count=self.definition.get("count", 1)
         )
-        # _LOGGER.debug(
-        #     "Sensor %s - Read from register %s (count=%s, type=%s): raw_value=%s",
-        #     self._attr_name,
-        #     self.definition.get("register"),
-        #     self.definition.get("count", 1),
-        #     data_type,
-        #     raw_value,
-        # )
 
         if raw_value is not None:
             # Handle alarm_status sensor by decoding bit flags

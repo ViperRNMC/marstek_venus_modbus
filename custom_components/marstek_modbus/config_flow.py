@@ -57,7 +57,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 except OSError as err:
                     err_msg = str(err).lower()
                     if "permission denied" in err_msg:
-                        errors["base"] = "permission_denied""
+                        errors["base"] = "permission_denied"
                     elif "connection refused" in err_msg:
                         errors["base"] = "connection_refused"
                     elif "timed out" in err_msg:

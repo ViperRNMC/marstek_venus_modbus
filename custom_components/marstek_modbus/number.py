@@ -49,6 +49,10 @@ class MarstekNumber(NumberEntity):
         self._attr_native_unit_of_measurement = self.definition["unit"]
         self._value = None
 
+        # Optional: disable entity by default if specified in the sensor definition
+        if self.definition.get("enabled_by_default") is False:
+            self._attr_entity_registry_enabled_default = False        
+
     def set_native_value(self, value: float) -> None:
         """
         Write a new value to the device register.

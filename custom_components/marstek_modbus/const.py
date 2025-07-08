@@ -22,6 +22,7 @@ SENSOR_DEFINITIONS = [
         "data_type": "char",
         "unit": None,
         "key": "device_name",
+        "enabled_by_default": True,
         "precision": 0
     },
     {
@@ -32,6 +33,7 @@ SENSOR_DEFINITIONS = [
         "data_type": "char",
         "unit": None,
         "key": "sn_code",
+        "enabled_by_default": False,
         "precision": 0
     },
     {
@@ -41,6 +43,7 @@ SENSOR_DEFINITIONS = [
         "scale": 0.01,
         "unit": None,
         "key": "soft_version",
+        "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 2
     },
@@ -53,6 +56,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "battery",
         "state_class": "measurement",
         "key": "battery_soc",
+        "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 1
     },    
@@ -65,6 +69,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "voltage",
         "state_class": "measurement",
         "key": "battery_voltage",
+        "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 1
     },
@@ -77,6 +82,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "current",
         "state_class": "measurement",
         "key": "battery_current",
+        "enabled_by_default": True,
         "data_type": "int16",
         "precision": 1
     },
@@ -90,6 +96,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "power",
         "state_class": "measurement",
         "key": "battery_power",
+        "enabled_by_default": True,
         "data_type": "int32",
         "precision": 1
     },
@@ -102,6 +109,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "temperature",
         "state_class": "measurement",
         "key": "battery_temperature",
+        "enabled_by_default": True,
         "data_type": "int16",
         "precision": 2
     },
@@ -114,6 +122,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "voltage",
         "state_class": "measurement",
         "key": "ac_voltage",
+        "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 1
     },
@@ -126,6 +135,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "current",
         "state_class": "measurement",
         "key": "ac_current",
+        "enabled_by_default": True,
         "data_type": "int16",
         "precision": 1
     },
@@ -139,6 +149,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "power",
         "state_class": "measurement",
         "key": "ac_power",
+        "enabled_by_default": True,
         "data_type": "int32",
         "precision": 0
     },
@@ -151,6 +162,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "frequency",
         "state_class": "measurement",
         "key": "ac_frequency",
+        "enabled_by_default": True,
         "data_type": "int16",
         "precision": 2
     },
@@ -165,6 +177,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "energy",
         "state_class": "total_increasing",
         "key": "total_charging_energy",
+        "enabled_by_default": True,
         "data_type": "uint32",
         "precision": 2
     },
@@ -178,6 +191,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "energy",
         "state_class": "total_increasing",
         "key": "total_discharging_energy",
+        "enabled_by_default": True,
         "data_type": "int32",
         "precision": 2
     },    
@@ -188,6 +202,7 @@ SENSOR_DEFINITIONS = [
         "scale": 1,
         "unit": None,
         "key": "inverter_state",
+        "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 0,
         "states": {
@@ -205,6 +220,7 @@ SENSOR_DEFINITIONS = [
         "count": 1,
         "data_type": "uint16",
         "key": "alarm_status",
+        "enabled_by_default": True,
         "unit": None,
         "precision": 0
     }
@@ -218,6 +234,7 @@ SELECT_DEFINITIONS = [
         "name": "User Work Mode",
         "register": 43000,
         "key": "user_work_mode",
+        "enabled_by_default": True,
         "options": ["Manual", "Anti-Feed", "Trade Mode"],
         "map_to_int": {
             "Manual": 0,
@@ -242,7 +259,8 @@ SWITCH_DEFINITIONS = [
         "command_on": 21930,  # 0x55AA in decimal
         "command_off": 21947,  # 0x55BB in decimal
         "write_type": "holding",
-        "key": "rs485_control_mode"
+        "key": "rs485_control_mode",
+        "enabled_by_default": True
     },    
     {
         # Force battery charge mode switch
@@ -251,7 +269,8 @@ SWITCH_DEFINITIONS = [
         "command_on": 1,
         "command_off": 0,
         "write_type": "holding",
-        "key": "force_charge_mode"
+        "key": "force_charge_mode",
+        "enabled_by_default": False
     },
     {
         # Force battery discharge mode switch
@@ -260,7 +279,8 @@ SWITCH_DEFINITIONS = [
         "command_on": 2,
         "command_off": 0,
         "write_type": "holding",
-        "key": "force_discharge_mode"
+        "key": "force_discharge_mode",
+        "enabled_by_default": False
     }
 ]
 
@@ -272,6 +292,7 @@ NUMBER_DEFINITIONS = [
         "name": "Set Forcible Charge Power",
         "register": 42020,
         "key": "set_charge_power",
+        "enabled_by_default": False,
         "min": 0,
         "max": 2500,
         "step": 50,
@@ -282,6 +303,7 @@ NUMBER_DEFINITIONS = [
         "name": "Set Forcible Discharge Power",
         "register": 42021,
         "key": "set_discharge_power",
+        "enabled_by_default": False,
         "min": 0,
         "max": 2500,
         "step": 50,
@@ -292,6 +314,7 @@ NUMBER_DEFINITIONS = [
         "name": "Max Charge Power",
         "register": 44002,
         "key": "max_charge_power",
+        "enabled_by_default": False,
         "min": 0,
         "max": 2500,
         "step": 50,
@@ -303,6 +326,7 @@ NUMBER_DEFINITIONS = [
         "name": "Max Discharge Power",
         "register": 44003,
         "key": "max_discharge_power",
+        "enabled_by_default": False,
         "min": 0,
         "max": 2500,
         "step": 50,

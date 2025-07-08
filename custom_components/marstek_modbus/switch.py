@@ -56,6 +56,10 @@ class MarstekSwitch(SwitchEntity):
         self._attr_should_poll = True  # Enable polling to refresh data
         self._state = False
 
+        # Optional: disable entity by default if specified in the sensor definition
+        if self.definition.get("enabled_by_default") is False:
+            self._attr_entity_registry_enabled_default = False
+
     def update(self):
         """
         Retrieves the latest sensor value by reading the Modbus register.
