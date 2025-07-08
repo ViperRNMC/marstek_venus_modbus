@@ -11,7 +11,7 @@
       }
     },
     "error": {
-      "permission_denied": "Toegang geweigerd, ge",
+      "permission_denied": "Toegang geweigerd",
       "connection_refused": "Verbinding geweigerd door het apparaat",
       "timed_out": "Verbindingstijd verstreken",
       "invalid_host": "Ongeldig IP-adres of hostnaam",
