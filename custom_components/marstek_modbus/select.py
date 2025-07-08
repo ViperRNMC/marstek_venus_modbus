@@ -1,6 +1,6 @@
 """
-This module defines a SelectEntity for setting and reading the user work mode
-of a Marstek Venus battery via Modbus register 43000.
+This module defines a SelectEntity for setting and reading the user work mode, 
+force mode of a Marstek Venus battery via Modbus.
 """
 
 # Import necessary components and modules
