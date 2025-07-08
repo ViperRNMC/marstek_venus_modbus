@@ -6,7 +6,7 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from .const import SENSOR_DEFINITIONS, DOMAIN
+from .const import SENSOR_DEFINITIONS, DOMAIN, MANUFACTURER, MODEL
 from .coordinator import MarstekCoordinator
 
 # Set up logging for debugging purposes
@@ -40,13 +40,14 @@ class MarstekSensor(SensorEntity):
         """
         self.coordinator = coordinator
         self.definition = definition
-        self._attr_name = f"{coordinator.config_entry.title} {definition['name']}"
-        self._attr_unique_id = f"marstek_{coordinator.config_entry.entry_id}_{definition['key']}"
+        self._attr_name = f"{self.definition['name']}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
+        self._attr_has_entity_name = True
+        self._attr_should_poll = True  # Enable polling to refresh data
         self._attr_native_unit_of_measurement = definition.get("unit")
         self._attr_device_class = definition.get("device_class")
         self._attr_state_class = definition.get("state_class")
         self.states = definition.get("states", None)
-        self._attr_should_poll = True  # Enable polling to refresh data
         self._state = None
 
     def update(self):
@@ -57,14 +58,14 @@ class MarstekSensor(SensorEntity):
 
         # Read raw value from Modbus register using defined data type and count
         raw_value = self.coordinator.client.read_register(
-            address=self.definition["address"],
+            register=self.definition["register"],
             data_type=data_type,
             count=self.definition.get("count", 1)
         )
         # _LOGGER.debug(
-        #     "Sensor %s - Read from address %s (count=%s, type=%s): raw_value=%s",
+        #     "Sensor %s - Read from register %s (count=%s, type=%s): raw_value=%s",
         #     self._attr_name,
-        #     self.definition.get("address"),
+        #     self.definition.get("register"),
         #     self.definition.get("count", 1),
         #     data_type,
         #     raw_value,
@@ -130,3 +131,17 @@ class MarstekSensor(SensorEntity):
         """
         return self._state
     
+    @property
+    def device_info(self):
+        """Return device information to associate entities with a device in the UI.
+
+        This enables the "Rename associated entities?" dialog when the user renames the integration instance.
+        It also groups all entities under one device in the Home Assistant device registry.
+        """
+        return {
+            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
+            "name": self.coordinator.config_entry.title,
+            "manufacturer": MANUFACTURER,
+            "model": MODEL,
+            "entry_type": "service"
+        }    

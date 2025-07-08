@@ -7,7 +7,7 @@ from homeassistant.components.switch import SwitchEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from .const import SWITCH_DEFINITIONS, DOMAIN
+from .const import SWITCH_DEFINITIONS, DOMAIN, MANUFACTURER, MODEL
 from .coordinator import MarstekCoordinator
 
 # Set up logging for debugging purposes
@@ -45,25 +45,15 @@ class MarstekSwitch(SwitchEntity):
 
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """
-        Initializes the sensor with the coordinator and sensor definition.
-        
-        Parameters:
-        - coordinator: the data coordinator that handles communication
-        - definition: a dict with configuration (name, register address, scale, etc.)
+        Initialize the switch entity with the coordinator and set attributes.
+        This includes the name, unique ID, and internal state.
         """
         self.coordinator = coordinator
         self.definition = definition
-
-        # Set the name of the switch, e.g. "Battery 1 RS485 Control Mode"
-        self._attr_name = f"{coordinator.config_entry.title} {definition['name']}"
-
-        # Create a unique ID consisting of the config entry ID + sensor key
-        self._attr_unique_id = f"marstek_{coordinator.config_entry.entry_id}_{definition['key']}"
-
-        # Ensure the sensor is polled periodically to get current data
-        self._attr_should_poll = True
-
-        # Internal boolean state of the switch
+        self._attr_name = f"{self.definition['name']}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
+        self._attr_has_entity_name = True
+        self._attr_should_poll = True  # Enable polling to refresh data
         self._state = False
 
     def update(self):
@@ -72,7 +62,7 @@ class MarstekSwitch(SwitchEntity):
         Updates the boolean state based on the register value compared to command_on and command_off.
         """
         raw_value = self.coordinator.client.read_register(
-            address=self.definition["address"],
+            register=self.definition["register"],
             data_type=self.definition.get("type", "uint16"),
             count=self.definition.get("count", 1)
         )
@@ -110,7 +100,7 @@ class MarstekSwitch(SwitchEntity):
             _LOGGER.warning(f"No command_on value defined for switch {self._attr_name}")
             return
 
-        success = self.coordinator.client.write_register(self.definition["address"], command_on)
+        success = self.coordinator.client.write_register(self.definition["register"], command_on)
         if success:
             self._state = True
             self.schedule_update_ha_state()
@@ -127,9 +117,24 @@ class MarstekSwitch(SwitchEntity):
             _LOGGER.warning(f"No command_off value defined for switch {self._attr_name}")
             return
 
-        success = self.coordinator.client.write_register(self.definition["address"], command_off)
+        success = self.coordinator.client.write_register(self.definition["register"], command_off)
         if success:
             self._state = False
             self.schedule_update_ha_state()
         else:
             _LOGGER.warning(f"Failed to turn off switch {self._attr_name}")
+
+    @property
+    def device_info(self):
+        """Return device information to associate entities with a device in the UI.
+
+        This enables the "Rename associated entities?" dialog when the user renames the integration instance.
+        It also groups all entities under one device in the Home Assistant device registry.
+        """
+        return {
+            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
+            "name": self.coordinator.config_entry.title,
+            "manufacturer": MANUFACTURER,
+            "model": MODEL,
+            "entry_type": "service"
+        }

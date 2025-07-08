@@ -7,8 +7,10 @@ from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .const import NUMBER_DEFINITIONS, DOMAIN
+from .const import NUMBER_DEFINITIONS, DOMAIN, MANUFACTURER, MODEL
 from .coordinator import MarstekCoordinator
+
+
 
 # Set up logging for debugging purposes
 import logging
@@ -29,19 +31,22 @@ class MarstekNumber(NumberEntity):
     Representation of a Marstek number entity that can be read from and written to
     a Modbus register via the coordinator's client.
     """
-    def __init__(self, coordinator: MarstekCoordinator, desc: dict):
+    def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """
         Initialize the number entity with coordinator and descriptor dictionary.
         Sets up attributes such as name, unique ID, min/max values, step, and unit.
         """
         self.coordinator = coordinator
-        self._address = desc["address"]
-        self._attr_name = f"{coordinator.config_entry.title} {desc['name']}"
-        self._attr_unique_id = f"marstek_{coordinator.config_entry.entry_id}_{desc['key']}"
-        self._attr_native_min_value = desc["min"]
-        self._attr_native_max_value = desc["max"]
-        self._attr_native_step = desc["step"]
-        self._attr_native_unit_of_measurement = desc["unit"]
+        self.definition = definition
+        self._register = definition["register"]
+        self._attr_name = f"{self.definition['name']}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
+        self._attr_has_entity_name = True
+        self._attr_should_poll = True  # Enable polling to refresh data
+        self._attr_native_min_value = self.definition["min"]
+        self._attr_native_max_value = self.definition["max"]
+        self._attr_native_step = self.definition["step"]
+        self._attr_native_unit_of_measurement = self.definition["unit"]
         self._value = None
 
     def set_native_value(self, value: float) -> None:
@@ -51,7 +56,7 @@ class MarstekNumber(NumberEntity):
         If successful, updates the internal value.
         """
         int_val = int(value)
-        success = self.coordinator.client.write_register(self._address, int_val)
+        success = self.coordinator.client.write_register(self._register, int_val)
         if success:
             self._value = int_val
 
@@ -68,11 +73,26 @@ class MarstekNumber(NumberEntity):
         Logs a warning if the read operation fails.
         """
         raw_value = self.coordinator.client.read_register(
-            address=self._address,
+            register=self._register,
             data_type="uint16",
             count=1
         )
         if raw_value is not None:
             self._value = raw_value
         else:
-            _LOGGER.warning("Failed to update register value at address %s", self._address)
+            _LOGGER.warning("Failed to update register value at register %s", self._register)
+
+    @property
+    def device_info(self):
+        """Return device information to associate entities with a device in the UI.
+
+        This enables the "Rename associated entities?" dialog when the user renames the integration instance.
+        It also groups all entities under one device in the Home Assistant device registry.
+        """
+        return {
+            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
+            "name": self.coordinator.config_entry.title,
+            "manufacturer": MANUFACTURER,
+            "model": MODEL,
+            "entry_type": "service"
+        }        

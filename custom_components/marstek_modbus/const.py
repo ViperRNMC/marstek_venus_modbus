@@ -1,6 +1,10 @@
 # Integration domain name
 DOMAIN = "marstek_modbus"
 
+# Manufacturer and model information for the Marstek Venus battery
+MANUFACTURER = "Marstek"
+MODEL = "Venus"
+
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
 
@@ -13,7 +17,7 @@ SENSOR_DEFINITIONS = [
     {
         # Device name, stored as a string in multiple registers
         "name": "Device Name",
-        "address": 31000,
+        "register": 31000,
         "count": 10,  # 20 bytes = 10 registers
         "data_type": "char",
         "unit": None,
@@ -23,7 +27,7 @@ SENSOR_DEFINITIONS = [
     {
         # SN code, stored as a string in multiple registers
         "name": "SN Code",
-        "address": 31200,
+        "register": 31200,
         "count": 10,  # 20 bytes = 10 registers
         "data_type": "char",
         "unit": None,
@@ -33,7 +37,7 @@ SENSOR_DEFINITIONS = [
     {
         # Software version as scaled unsigned integer
         "name": "Soft Version",
-        "address": 31100,
+        "register": 31100,
         "scale": 0.01,
         "unit": None,
         "key": "soft_version",
@@ -43,7 +47,7 @@ SENSOR_DEFINITIONS = [
     {
         # Battery State of Charge (SOC) as a percentage
         "name": "Battery SOC",
-        "address": 32104,
+        "register": 32104,
         "scale": 1,
         "unit": "%",
         "device_class": "battery",
@@ -55,7 +59,7 @@ SENSOR_DEFINITIONS = [
     {
         # Battery voltage in volts
         "name": "Battery Voltage",
-        "address": 32100,
+        "register": 32100,
         "scale": 0.01,
         "unit": "V",
         "device_class": "voltage",
@@ -67,7 +71,7 @@ SENSOR_DEFINITIONS = [
     {
         # Battery current in amperes
         "name": "Battery Current",
-        "address": 32101,
+        "register": 32101,
         "scale": 0.01,
         "unit": "A",
         "device_class": "current",
@@ -79,7 +83,7 @@ SENSOR_DEFINITIONS = [
     {
         # Battery power in watts
         "name": "Battery Power",
-        "address": 32102,
+        "register": 32102,
         "count": 2,
         "scale": 1,
         "unit": "W",
@@ -92,7 +96,7 @@ SENSOR_DEFINITIONS = [
     {
         # Battery temperature in degrees Celsius
         "name": "Battery Temperature",
-        "address": 35000,
+        "register": 35000,
         "scale": 0.1,
         "unit": "°C",
         "device_class": "temperature",
@@ -103,8 +107,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         # Battery AC voltage in volts
-        "name": "Battery AC Voltage",
-        "address": 32200,
+        "name": "AC Voltage",
+        "register": 32200,
         "scale": 0.1,
         "unit": "V",
         "device_class": "voltage",
@@ -115,8 +119,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         # Battery AC current in amperes
-        "name": "Battery AC Current",
-        "address": 32201,
+        "name": "AC Current",
+        "register": 32201,
         "scale": 0.01,
         "unit": "A",
         "device_class": "current",
@@ -127,8 +131,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         # Battery AC power in watts
-        "name": "Battery AC Power",
-        "address": 32202,
+        "name": "AC Power",
+        "register": 32202,
         "count": 2,
         "scale": 1,
         "unit": "W",
@@ -140,8 +144,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         # Battery AC frequency in hertz
-        "name": "Battery AC Frequency",
-        "address": 32204,
+        "name": "AC Frequency",
+        "register": 32204,
         "scale": 0.01,
         "unit": "Hz",
         "device_class": "frequency",
@@ -154,7 +158,7 @@ SENSOR_DEFINITIONS = [
     {
         # Total energy charged into the battery in kilowatt-hours
         "name": "Total Charging Energy",
-        "address": 33000,
+        "register": 33000,
         "count": 2,
         "scale": 0.01,
         "unit": "kWh",
@@ -167,7 +171,7 @@ SENSOR_DEFINITIONS = [
     {
         # Total energy discharged from the battery in kilowatt-hours
         "name": "Total Discharging Energy",
-        "address": 33002,
+        "register": 33002,
         "count": 2,
         "scale": 0.01,
         "unit": "kWh",
@@ -180,7 +184,7 @@ SENSOR_DEFINITIONS = [
     {
         # Current state of the inverter device
         "name": "Inverter State",
-        "address": 35100,
+        "register": 35100,
         "scale": 1,
         "unit": None,
         "key": "inverter_state",
@@ -197,7 +201,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Alarm Status",
-        "address": 36001,
+        "register": 36001,
         "count": 1,
         "data_type": "uint16",
         "key": "alarm_status",
@@ -229,12 +233,12 @@ SELECT_DEFINITIONS = [
 ]
 
 # Definitions for switch controls that can be toggled on/off
-# Each switch includes the Modbus register address and commands for on/off
+# Each switch includes the Modbus register register and commands for on/off
 SWITCH_DEFINITIONS = [
     {
         # RS485 communication control mode switch
         "name": "RS485 Control Mode",
-        "address": 42000,
+        "register": 42000,
         "command_on": 21930,  # 0x55AA in decimal
         "command_off": 21947,  # 0x55BB in decimal
         "write_type": "holding",
@@ -243,7 +247,7 @@ SWITCH_DEFINITIONS = [
     {
         # Force battery charge mode switch
         "name": "Force Charge Mode",
-        "address": 42010,
+        "register": 42010,
         "command_on": 1,
         "command_off": 0,
         "write_type": "holding",
@@ -252,7 +256,7 @@ SWITCH_DEFINITIONS = [
     {
         # Force battery discharge mode switch
         "name": "Force Discharge Mode",
-        "address": 42010,
+        "register": 42010,
         "command_on": 2,
         "command_off": 0,
         "write_type": "holding",
@@ -266,7 +270,7 @@ NUMBER_DEFINITIONS = [
     {
         # Set power limit for forced charging in watts
         "name": "Set Forcible Charge Power",
-        "address": 42020,
+        "register": 42020,
         "key": "set_charge_power",
         "min": 0,
         "max": 2500,
@@ -276,7 +280,7 @@ NUMBER_DEFINITIONS = [
     {
         # Set power limit for forced discharging in watts
         "name": "Set Forcible Discharge Power",
-        "address": 42021,
+        "register": 42021,
         "key": "set_discharge_power",
         "min": 0,
         "max": 2500,
@@ -286,7 +290,7 @@ NUMBER_DEFINITIONS = [
     {
         # Maximum power that can be charged into the battery in watts
         "name": "Max Charge Power",
-        "address": 44002,
+        "register": 44002,
         "key": "max_charge_power",
         "min": 0,
         "max": 2500,
@@ -297,7 +301,7 @@ NUMBER_DEFINITIONS = [
     {
         # Maximum power that can be discharged from the battery in watts
         "name": "Max Discharge Power",
-        "address": 44003,
+        "register": 44003,
         "key": "max_discharge_power",
         "min": 0,
         "max": 2500,
