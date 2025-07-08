@@ -103,7 +103,7 @@ class MarstekModbusClient:
             bool: True if write was successful, False otherwise.
         """
         try:
-            result = self.client.write_register(register=register, value=value, slave=self.unit_id)
+            result = self.client.write_register(address=register, value=value, slave=self.unit_id)
             return not result.isError()
         except Exception as e:
             _LOGGER.exception("Exception during modbus write: %s", e)
