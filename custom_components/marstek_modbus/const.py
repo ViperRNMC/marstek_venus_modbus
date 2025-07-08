@@ -3,7 +3,7 @@ DOMAIN = "marstek_modbus"
 
 # Manufacturer and model information for the Marstek Venus battery
 MANUFACTURER = "Marstek"
-MODEL = "Venus"
+MODEL = "Venus E"
 
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
@@ -166,7 +166,6 @@ SENSOR_DEFINITIONS = [
         "data_type": "int16",
         "precision": 2
     },
-
     {
         # Total energy charged into the battery in kilowatt-hours
         "name": "Total Charging Energy",
@@ -223,6 +222,16 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "unit": None,
         "precision": 0
+    },
+    {
+        # Modbus address (slave ID)
+        "name": "Modbus Address",
+        "register": 41100,
+        "data_type": "uint16",
+        "unit": None,
+        "key": "modbus_address",
+        "enabled_by_default": False,
+        "precision": 0
     }
 ]
 
@@ -248,10 +257,11 @@ SELECT_DEFINITIONS = [
         }
     },
     {
+        # Selectable force mode for charging/discharging the battery
         "name": "Force Mode",
         "register": 42010,
         "key": "force_mode",
-        "enabled_by_default": True,
+        "enabled_by_default": False,
         "options": ["None", "Charge", "Discharge"],
         "map_to_int": {
             "None": 0,
@@ -275,7 +285,6 @@ SWITCH_DEFINITIONS = [
         "register": 41200,
         "command_on": 0,    # Enable
         "command_off": 1,   # Disable
-        "write_type": "holding",
         "key": "backup_function",
         "enabled_by_default": True,
         "data_type": "uint16"
@@ -286,9 +295,8 @@ SWITCH_DEFINITIONS = [
         "register": 42000,
         "command_on": 21930,  # 0x55AA in decimal
         "command_off": 21947,  # 0x55BB in decimal
-        "write_type": "holding",
         "key": "rs485_control_mode",
-        "enabled_by_default": True
+        "enabled_by_default": False
     }    
 ]
 
@@ -342,3 +350,16 @@ NUMBER_DEFINITIONS = [
         "data_type": "uint16"
     }
 ]
+
+# Definitions for button actions (one-time triggers)
+# BUTTON_DEFINITIONS = [
+#     {
+#         # Reset device via Modbus command
+#         "name": "Reset Device",
+#         "register": 41000,
+#         "command": 21930,  # 0x55AA
+#         "key": "reset_device",
+#         "enabled_by_default": False,
+#         "data_type": "uint16"
+#     }
+# ]
