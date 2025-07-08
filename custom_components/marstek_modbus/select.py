@@ -18,13 +18,13 @@ _LOGGER = logging.getLogger(__name__)
 class MarstekUserModeSelect(SelectEntity):
     """SelectEntity to manage the user work mode of the Marstek Venus battery."""
 
-    def __init__(self, coordinator: MarstekCoordinator):
+    def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """
         Initialize the select entity with the coordinator and set attributes.
         This includes the name, unique ID, options, and mapping for the work modes.
         """
         self.coordinator = coordinator
-        self.definition = SELECT_DEFINITIONS[0]
+        self.definition = definition
         self._attr_name = f"{self.definition['name']}"
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
@@ -80,4 +80,5 @@ class MarstekUserModeSelect(SelectEntity):
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
     """Set up the MarstekUserModeSelect entity using the provided config entry."""
     coordinator = MarstekCoordinator(hass, entry)
-    async_add_entities([MarstekUserModeSelect(coordinator)])
+    entities = [MarstekUserModeSelect(coordinator, definition) for definition in SELECT_DEFINITIONS]
+    async_add_entities(entities)
