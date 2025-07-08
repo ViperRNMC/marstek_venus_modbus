@@ -246,12 +246,40 @@ SELECT_DEFINITIONS = [
             1: "Anti-Feed",
             2: "Trade Mode"
         }
+    },
+    {
+        "name": "Force Mode",
+        "register": 42010,
+        "key": "force_mode",
+        "enabled_by_default": True,
+        "options": ["None", "Charge", "Discharge"],
+        "map_to_int": {
+            "None": 0,
+            "Charge": 1,
+            "Discharge": 2
+        },
+        "int_to_map": {
+            0: "None",
+            1: "Charge",
+            2: "Discharge"
+        }
     }
 ]
 
 # Definitions for switch controls that can be toggled on/off
 # Each switch includes the Modbus register register and commands for on/off
 SWITCH_DEFINITIONS = [
+    {
+        # Battery backup switch
+        "name": "Backup Function",
+        "register": 41200,
+        "command_on": 0,    # Enable
+        "command_off": 1,   # Disable
+        "write_type": "holding",
+        "key": "backup_function",
+        "enabled_by_default": True,
+        "data_type": "uint16"
+    },
     {
         # RS485 communication control mode switch
         "name": "RS485 Control Mode",
@@ -261,27 +289,7 @@ SWITCH_DEFINITIONS = [
         "write_type": "holding",
         "key": "rs485_control_mode",
         "enabled_by_default": True
-    },    
-    {
-        # Force battery charge mode switch
-        "name": "Force Charge Mode",
-        "register": 42010,
-        "command_on": 1,
-        "command_off": 0,
-        "write_type": "holding",
-        "key": "force_charge_mode",
-        "enabled_by_default": False
-    },
-    {
-        # Force battery discharge mode switch
-        "name": "Force Discharge Mode",
-        "register": 42010,
-        "command_on": 2,
-        "command_off": 0,
-        "write_type": "holding",
-        "key": "force_discharge_mode",
-        "enabled_by_default": False
-    }
+    }    
 ]
 
 # Definitions for numeric configuration parameters
