@@ -18,6 +18,10 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 - Sensors for voltage, current, SOC, power, energy, and alarm status (combined bits)
 - Switches for force charge/discharge control
 - Adjustable charge/discharge power (0–2500W)
+- Entities grouped under a device in Home Assistant
+- Select entity support for multi-state control (e.g., force mode)
+<!-- - Button entity for one-time reset commands -->
+- Some advanced sensors disabled by default for cleaner UI
 <!-- - Poll interval configurable via the UI -->
 <!-- - Icon support in Home Assistant UI -->
 - UI-based configuration (Config Flow)
@@ -43,6 +47,10 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 - Sensordata: spanning, stroom, SOC, vermogen, energie en gecombineerde alarmstatus (bits)
 - Schakelaars voor geforceerd laden/ontladen
 - Instelbare laad- en ontlaadvermogens (0–2500W)
+- Entiteiten gegroepeerd onder één apparaat in Home Assistant
+- Ondersteuning voor Select-entity (meerdere standen zoals 'force mode')
+<!-- - Resetknop via een Button-entiteit -->
+- Geavanceerde sensoren standaard uitgeschakeld voor overzicht
 <!-- - Poll-interval instelbaar via gebruikersinterface -->
 <!-- - Ondersteuning voor iconen in de Home Assistant-interface -->
 - Configuratie via gebruikersinterface (config flow)

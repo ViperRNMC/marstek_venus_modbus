@@ -1,5 +1,19 @@
 # Changelog
 
+## [2025.6.3] - 2025-07-08
+
+### Added
+- Entities now correctly register under a device in Home Assistant
+<!-- - Button entity for reset functionality (Modbus write to 41000) -->
+- Select entity replaces Force Charge/Discharge Mode switches (42010)
+- Improved error handling with specific Modbus connection error messages
+- Universal handling of Modbus types (uint16, int32, char)
+- All entity types now support `enabled_by_default` flag
+
+### Fixed
+- TypeError when writing to registers (fixed incorrect `register=` argument)
+- Translation loading and fallback for config flow error messages
+
 ## [2025.6.2] - 2025-07-07
 ### Added
 - `enabled_by_default: false` set for all sensors except key ones (e.g. voltage, current, SOC)
