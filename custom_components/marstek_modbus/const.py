@@ -59,7 +59,20 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 1
-    },    
+    },
+    {
+        # Total stored battery energy in kilowatt-hours
+        "name": "Battery Total Energy",
+        "register": 32105,
+        "scale": 0.001,
+        "unit": "kWh",
+        "device_class": "energy",
+        "state_class": "measurement",
+        "key": "battery_total_energy",
+        "enabled_by_default": False,
+        "data_type": "uint16",
+        "precision": 3
+    },
     {
         # Battery voltage in volts
         "name": "Battery Voltage",
@@ -101,15 +114,41 @@ SENSOR_DEFINITIONS = [
         "precision": 1
     },
     {
-        # Battery temperature in degrees Celsius
-        "name": "Battery Temperature",
+        # Internal temperature in degrees Celsius
+        "name": "Internal Temperature",
         "register": 35000,
         "scale": 0.1,
         "unit": "°C",
         "device_class": "temperature",
         "state_class": "measurement",
-        "key": "battery_temperature",
+        "key": "internal_temperature",
         "enabled_by_default": True,
+        "data_type": "int16",
+        "precision": 2
+    },
+    {
+        # Internal MOS 1 temperature in degrees Celsius
+        "name": "Internal MOS1 Temperature",
+        "register": 35001,
+        "scale": 0.1,
+        "unit": "°C",
+        "device_class": "temperature",
+        "state_class": "measurement",
+        "key": "internal_mos1_temperature",
+        "enabled_by_default": False,
+        "data_type": "int16",
+        "precision": 2
+    },
+    {
+        # Internal MOS 2 temperature in degrees Celsius
+        "name": "Internal MOS2 Temperature",
+        "register": 35002,
+        "scale": 0.1,
+        "unit": "°C",
+        "device_class": "temperature",
+        "state_class": "measurement",
+        "key": "internal_mos2_temperature",
+        "enabled_by_default": False,
         "data_type": "int16",
         "precision": 2
     },
@@ -195,6 +234,88 @@ SENSOR_DEFINITIONS = [
         "precision": 2
     },    
     {
+        # Total energy charged into the battery in kilowatt-hours per day
+        "name": "Total Daily Charging Energy",
+        "register": 33004,
+        "count": 2,
+        "scale": 0.01,
+        "unit": "kWh",
+        "device_class": "energy",
+        "state_class": "total_increasing",
+        "key": "total_daily_charging_energy",
+        "enabled_by_default": False,
+        "data_type": "uint32",
+        "precision": 2
+    },
+    {
+        # Total energy discharged from the battery in kilowatt-hours
+        "name": "Total Daily Discharging Energy",
+        "register": 33006,
+        "count": 2,
+        "scale": 0.01,
+        "unit": "kWh",
+        "device_class": "energy",
+        "state_class": "total_increasing",
+        "key": "total_daily_discharging_energy",
+        "enabled_by_default": False,
+        "data_type": "int32",
+        "precision": 2
+    },   
+    {
+        # Total energy charged into the battery in kilowatt-hours per month
+        "name": "Total Monthly Charging Energy",
+        "register": 33008,
+        "count": 2,
+        "scale": 0.01,
+        "unit": "kWh",
+        "device_class": "energy",
+        "state_class": "total_increasing",
+        "key": "total_monthly_charging_energy",
+        "enabled_by_default": False,
+        "data_type": "uint32",
+        "precision": 2
+    },
+    {
+        # Total energy discharged from the battery in kilowatt-hours per month
+        "name": "Total Monthly Discharging Energy",
+        "register": 33010,
+        "count": 2,
+        "scale": 0.01,
+        "unit": "kWh",
+        "device_class": "energy",
+        "state_class": "total_increasing",
+        "key": "total_monthly_discharging_energy",
+        "enabled_by_default": False,
+        "data_type": "int32",
+        "precision": 2
+    },      
+    {
+        # Maximum cell temperature in degrees Celsius
+        "name": "Max Cell Temperature",
+        "register": 35010,
+        "scale": 0.1,
+        "unit": "°C",
+        "device_class": "temperature",
+        "state_class": "measurement",
+        "key": "max_cell_temperature",
+        "enabled_by_default": False,
+        "data_type": "int16",
+        "precision": 2
+    },
+    {
+        # Minimum cell temperature in degrees Celsius
+        "name": "Min Cell Temperature",
+        "register": 35011,
+        "scale": 0.1,
+        "unit": "°C",
+        "device_class": "temperature",
+        "state_class": "measurement",
+        "key": "min_cell_temperature",
+        "enabled_by_default": False,
+        "data_type": "int16",
+        "precision": 2
+    },
+    {
         # Current state of the inverter device
         "name": "Inverter State",
         "register": 35100,
@@ -231,6 +352,46 @@ SENSOR_DEFINITIONS = [
         "unit": None,
         "key": "modbus_address",
         "enabled_by_default": False,
+        "precision": 0
+    },
+    {
+        # AC Offgrid Voltage in volts
+        "name": "AC Offgrid Voltage",
+        "register": 32300,
+        "scale": 0.1,
+        "unit": "V",
+        "device_class": "voltage",
+        "state_class": "measurement",
+        "key": "ac_offgrid_voltage",
+        "enabled_by_default": False,
+        "data_type": "uint16",
+        "precision": 1
+    },
+    {
+        # AC Offgrid Current in amperes
+        "name": "AC Offgrid Current",
+        "register": 32301,
+        "scale": 0.01,
+        "unit": "A",
+        "device_class": "current",
+        "state_class": "measurement",
+        "key": "ac_offgrid_current",
+        "enabled_by_default": False,
+        "data_type": "uint16",
+        "precision": 1
+    },
+    {
+        # AC Offgrid Power in watts
+        "name": "AC Offgrid Power",
+        "register": 32302,
+        "count": 2,
+        "scale": 1,
+        "unit": "W",
+        "device_class": "power",
+        "state_class": "measurement",
+        "key": "ac_offgrid_power",
+        "enabled_by_default": False,
+        "data_type": "int32",
         "precision": 0
     }
 ]
