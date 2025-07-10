@@ -8,11 +8,24 @@ MODEL = "Venus E"
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
 
+
 # Time interval (in seconds) between data scans
-SCAN_INTERVAL = 10
+# SCAN_INTERVAL = 10
+
+# Default polling intervals (seconds) per sensor category.
+# These values can be overridden via modbus.yaml using the
+# corresponding keys in each sensor's "scan_interval".
+SCAN_INTERVAL = {
+    "power": 10,         # high‑frequency power readings
+    "electrical": 30,    # voltage, current, frequency
+    "energy": 60,        # cumulative kWh counters
+    "soc": 30,           # state‑of‑charge
+    "state": 5           # fast‑changing state / alarm bits
+}
 
 # Definitions for sensors to be read from the Modbus device
-# Each sensor includes metadata for proper interpretation and display
+# Each sensor includes metadata for proper interpretation and display.
+# The "scan_interval" refers to keys inside SCAN_INTERVALS by default.
 SENSOR_DEFINITIONS = [
     {
         # Device name, stored as a string in multiple registers
@@ -58,7 +71,9 @@ SENSOR_DEFINITIONS = [
         "key": "battery_soc",
         "enabled_by_default": True,
         "data_type": "uint16",
-        "precision": 1
+        "precision": 1,
+        "background_read": True,
+        "scan_interval": "scan_interval.soc"
     },
     {
         # Total stored battery energy in kilowatt-hours
@@ -71,7 +86,9 @@ SENSOR_DEFINITIONS = [
         "key": "battery_total_energy",
         "enabled_by_default": False,
         "data_type": "uint16",
-        "precision": 3
+        "precision": 3,
+        "background_read": True,
+        "scan_interval": "scan_interval.energy"
     },
     {
         # Battery voltage in volts
@@ -84,7 +101,8 @@ SENSOR_DEFINITIONS = [
         "key": "battery_voltage",
         "enabled_by_default": True,
         "data_type": "uint16",
-        "precision": 1
+        "precision": 1,
+        "scan_interval": "scan_interval.electrical"
     },
     {
         # Battery current in amperes
@@ -97,7 +115,8 @@ SENSOR_DEFINITIONS = [
         "key": "battery_current",
         "enabled_by_default": True,
         "data_type": "int16",
-        "precision": 1
+        "precision": 1,
+        "scan_interval": "scan_interval.electrical"
     },
     {
         # Battery power in watts
@@ -111,7 +130,8 @@ SENSOR_DEFINITIONS = [
         "key": "battery_power",
         "enabled_by_default": True,
         "data_type": "int32",
-        "precision": 1
+        "precision": 1,
+        "scan_interval": "scan_interval.power"
     },
     {
         # Internal temperature in degrees Celsius
@@ -124,7 +144,8 @@ SENSOR_DEFINITIONS = [
         "key": "internal_temperature",
         "enabled_by_default": True,
         "data_type": "int16",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.temperature"        
     },
     {
         # Internal MOS 1 temperature in degrees Celsius
@@ -137,7 +158,8 @@ SENSOR_DEFINITIONS = [
         "key": "internal_mos1_temperature",
         "enabled_by_default": False,
         "data_type": "int16",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.temperature"          
     },
     {
         # Internal MOS 2 temperature in degrees Celsius
@@ -150,7 +172,8 @@ SENSOR_DEFINITIONS = [
         "key": "internal_mos2_temperature",
         "enabled_by_default": False,
         "data_type": "int16",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.temperature"
     },
     {
         # Battery AC voltage in volts
@@ -163,7 +186,8 @@ SENSOR_DEFINITIONS = [
         "key": "ac_voltage",
         "enabled_by_default": True,
         "data_type": "uint16",
-        "precision": 1
+        "precision": 1,
+        "scan_interval": "scan_interval.electrical"
     },
     {
         # Battery AC current in amperes
@@ -176,7 +200,8 @@ SENSOR_DEFINITIONS = [
         "key": "ac_current",
         "enabled_by_default": True,
         "data_type": "int16",
-        "precision": 1
+        "precision": 1,
+        "scan_interval": "scan_interval.electrical"
     },
     {
         # Battery AC power in watts
@@ -190,7 +215,8 @@ SENSOR_DEFINITIONS = [
         "key": "ac_power",
         "enabled_by_default": True,
         "data_type": "int32",
-        "precision": 0
+        "precision": 0,
+        "scan_interval": "scan_interval.power"
     },
     {
         # Battery AC frequency in hertz
@@ -203,7 +229,8 @@ SENSOR_DEFINITIONS = [
         "key": "ac_frequency",
         "enabled_by_default": True,
         "data_type": "int16",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.electrical"
     },
     {
         # Total energy charged into the battery in kilowatt-hours
@@ -217,7 +244,9 @@ SENSOR_DEFINITIONS = [
         "key": "total_charging_energy",
         "enabled_by_default": True,
         "data_type": "uint32",
-        "precision": 2
+        "precision": 2,
+        "background_read": True,
+        "scan_interval": "scan_interval.energy"
     },
     {
         # Total energy discharged from the battery in kilowatt-hours
@@ -231,7 +260,9 @@ SENSOR_DEFINITIONS = [
         "key": "total_discharging_energy",
         "enabled_by_default": True,
         "data_type": "int32",
-        "precision": 2
+        "precision": 2,
+        "background_read": True,
+        "scan_interval": "scan_interval.energy"
     },    
     {
         # Total energy charged into the battery in kilowatt-hours per day
@@ -245,10 +276,11 @@ SENSOR_DEFINITIONS = [
         "key": "total_daily_charging_energy",
         "enabled_by_default": False,
         "data_type": "uint32",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.energy"
     },
     {
-        # Total energy discharged from the battery in kilowatt-hours
+        # Total energy discharged from the battery in kilowatt-hours per day
         "name": "Total Daily Discharging Energy",
         "register": 33006,
         "count": 2,
@@ -259,7 +291,8 @@ SENSOR_DEFINITIONS = [
         "key": "total_daily_discharging_energy",
         "enabled_by_default": False,
         "data_type": "int32",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.energy"
     },   
     {
         # Total energy charged into the battery in kilowatt-hours per month
@@ -273,7 +306,9 @@ SENSOR_DEFINITIONS = [
         "key": "total_monthly_charging_energy",
         "enabled_by_default": False,
         "data_type": "uint32",
-        "precision": 2
+        "precision": 2,
+        "background_read": True,
+        "scan_interval": "scan_interval.energy"
     },
     {
         # Total energy discharged from the battery in kilowatt-hours per month
@@ -287,7 +322,9 @@ SENSOR_DEFINITIONS = [
         "key": "total_monthly_discharging_energy",
         "enabled_by_default": False,
         "data_type": "int32",
-        "precision": 2
+        "precision": 2,
+        "background_read": True,
+        "scan_interval": "scan_interval.energy"
     },      
     {
         # Maximum cell temperature in degrees Celsius
@@ -300,7 +337,8 @@ SENSOR_DEFINITIONS = [
         "key": "max_cell_temperature",
         "enabled_by_default": False,
         "data_type": "int16",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.temperature"
     },
     {
         # Minimum cell temperature in degrees Celsius
@@ -313,7 +351,8 @@ SENSOR_DEFINITIONS = [
         "key": "min_cell_temperature",
         "enabled_by_default": False,
         "data_type": "int16",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.temperature"
     },
     {
         # Current state of the inverter device
@@ -332,9 +371,46 @@ SENSOR_DEFINITIONS = [
             3: "Discharge",
             4: "Backup Mode",
             5: "OTA Upgrade"
-        }
+        },
+        "scan_interval": "scan_interval.state"
     },
     {
+        # Selectable grid standard (country / regulation profile)
+        "name": "Grid Standard",
+        "register": 44100,
+        "key": "grid_standard",
+        "unit": None,
+        "scale": 1,
+        "data_type": "uint16",
+        "enabled_by_default": True,
+        "states": {
+            0: "Auto (220-240 V, 50/60 Hz)",
+            1: "EN50549",
+            2: "NL - Netherlands",
+            3: "DE - Germany",
+            4: "AT - Austria",
+            5: "UK - United Kingdom",
+            6: "ES - Spain",
+            7: "PL - Poland",
+            8: "IT - Italy",
+            9: "CN - China"
+        },
+        "scan_interval": "scan_interval.state"
+    },    
+    {
+        # Grid fault status bits indicating various grid issues
+        "name": "Grid Status",
+        "register": 36100,
+        "count": 1,
+        "data_type": "uint16",
+        "unit": None,
+        "key": "grid_status",
+        "enabled_by_default": True,
+        "precision": 0,
+        "scan_interval": "scan_interval.state"
+    },    
+    {
+        # Alarm status bits indicating various device alarms
         "name": "Alarm Status",
         "register": 36001,
         "count": 1,
@@ -342,7 +418,8 @@ SENSOR_DEFINITIONS = [
         "key": "alarm_status",
         "enabled_by_default": True,
         "unit": None,
-        "precision": 0
+        "precision": 0,
+        "scan_interval": "scan_interval.state"
     },
     {
         # Modbus address (slave ID)
@@ -365,7 +442,8 @@ SENSOR_DEFINITIONS = [
         "key": "ac_offgrid_voltage",
         "enabled_by_default": False,
         "data_type": "uint16",
-        "precision": 1
+        "precision": 1,
+        "scan_interval": "scan_interval.electrical"
     },
     {
         # AC Offgrid Current in amperes
@@ -378,7 +456,8 @@ SENSOR_DEFINITIONS = [
         "key": "ac_offgrid_current",
         "enabled_by_default": False,
         "data_type": "uint16",
-        "precision": 1
+        "precision": 1,
+        "scan_interval": "scan_interval.electrical"
     },
     {
         # AC Offgrid Power in watts
@@ -392,7 +471,8 @@ SENSOR_DEFINITIONS = [
         "key": "ac_offgrid_power",
         "enabled_by_default": False,
         "data_type": "int32",
-        "precision": 0
+        "precision": 0,
+        "scan_interval": "scan_interval.power"
     }
 ]
 
@@ -406,6 +486,7 @@ SELECT_DEFINITIONS = [
         "key": "user_work_mode",
         "enabled_by_default": True,
         "options": ["Manual", "Anti-Feed", "Trade Mode"],
+        "scan_interval": "scan_interval.state", 
         "map_to_int": {
             "Manual": 0,
             "Anti-Feed": 1,
@@ -424,6 +505,7 @@ SELECT_DEFINITIONS = [
         "key": "force_mode",
         "enabled_by_default": False,
         "options": ["None", "Charge", "Discharge"],
+        "scan_interval": "scan_interval.state",
         "map_to_int": {
             "None": 0,
             "Charge": 1,
@@ -448,7 +530,8 @@ SWITCH_DEFINITIONS = [
         "command_off": 1,   # Disable
         "key": "backup_function",
         "enabled_by_default": True,
-        "data_type": "uint16"
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state"
     },
     {
         # RS485 communication control mode switch
@@ -457,7 +540,9 @@ SWITCH_DEFINITIONS = [
         "command_on": 21930,  # 0x55AA in decimal
         "command_off": 21947,  # 0x55BB in decimal
         "key": "rs485_control_mode",
-        "enabled_by_default": False
+        "enabled_by_default": False,
+        "scan_interval": "scan_interval.state"
+
     }    
 ]
 
@@ -514,13 +599,43 @@ NUMBER_DEFINITIONS = [
 
 # Definitions for button actions (one-time triggers)
 BUTTON_DEFINITIONS = [
+    # {
+    #     # Reset device via Modbus command
+    #     "name": "Reset Device",
+    #     "register": 41000,
+    #     "command": 21930,  # 0x55AA
+    #     "key": "reset_device",
+    #     "enabled_by_default": False,
+    #     "data_type": "uint16"
+    # }
+]
+
+# Definitions for efficiency sensors
+EFFICIENCY_SENSOR_DEFINITIONS = [
     {
-        # Reset device via Modbus command
-        "name": "Reset Device",
-        "register": 41000,
-        "command": 21930,  # 0x55AA
-        "key": "reset_device",
-        "enabled_by_default": False,
-        "data_type": "uint16"
+        "name": "Round-Trip Efficiency Total",
+        "unique_id_key": "round_trip_efficiency_total",
+        "charge_key": "total_charging_energy",
+        "discharge_key": "total_discharging_energy",
+        "soc_key": "battery_soc",
+        "max_energy_key": "battery_total_energy"
+    },
+    {
+        "name": "Round-Trip Efficiency Monthly",
+        "unique_id_key": "round_trip_efficiency_monthly",
+        "charge_key": "total_monthly_charging_energy",
+        "discharge_key": "total_monthly_discharging_energy",
+        "soc_key": "battery_soc",
+        "max_energy_key": "battery_total_energy"
+    }
+]
+
+# Definitions for stored energy sensors
+STORED_ENERGY_SENSOR_DEFINITIONS = [
+    {
+        "name": "Stored Energy",
+        "unique_id_key": "stored_energy",
+        "soc_key": "battery_soc",
+        "max_energy_key": "battery_total_energy"
     }
 ]
