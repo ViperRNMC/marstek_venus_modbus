@@ -17,9 +17,14 @@ class MarstekModbusClient:
     to read/write registers and interpret common data types.
     """
 
-    def __init__(self, host, port):
-        # Initialize the Modbus client with host and port
-        self.client = ModbusTcpClient(host=host, port=port)
+    def __init__(self, host, port, message_wait_ms=35, timeout=5):
+        # Initialize the Modbus client with host, port, and configurable timeouts
+        self.client = ModbusTcpClient(
+            host=host,
+            port=port,
+            timeout=timeout,  # timeout in seconds
+        )
+        self.client.message_wait_milliseconds = message_wait_ms
         self.unit_id = 1  # Default Modbus slave address (can be made configurable)
 
     def connect(self):
