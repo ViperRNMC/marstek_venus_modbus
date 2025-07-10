@@ -398,26 +398,47 @@ SENSOR_DEFINITIONS = [
         "scan_interval": "scan_interval.state"
     },    
     {
-        # Grid fault status bits indicating various grid issues
-        "name": "Grid Status",
+        "name": "Fault Status",
         "register": 36100,
-        "count": 1,
+        "count": 2,
         "data_type": "uint16",
-        "unit": None,
-        "key": "grid_status",
-        "enabled_by_default": True,
-        "precision": 0,
+        "key": "fault_status",
+        "enabled_by_default": False,
+        "background_read": True,
         "scan_interval": "scan_interval.state",
         "bit_descriptions": {
+            # Register 36100 (bits 0-15)
             0: "Grid Overvoltage",
             1: "Grid Undervoltage",
             2: "Grid Overfrequency",
             3: "Grid Underfrequency",
             4: "Grid Peak Voltage",
             5: "Current Dcover",
-            6: "Voltage Dcover"
+            6: "Voltage Dcover",
+            # Register 36101 (bits 16-31)
+            16: "BAT Overvoltage",
+            17: "BAT Undervoltage",
+            18: "BAT Overcurrent",
+            19: "BAT low SOC",
+            20: "BAT communication failure",
+            21: "BMS protect",
+            # 48: "Hardware Bus overvoltage",
+            # 49: "Hardware Output overcurrent",
+            # 50: "Hardware trans overcurrent",
+            # 51: "Hardware battery overcurrent",
+            # 52: "Hardware Protecion",
+            # 53: "Output Overcurrent",
+            # 54: "High Voltage bus overvoltage",
+            # 55: "High Voltage bus undervoltage",
+            # 56: "Overpower Protection",
+            # 57: "FSM abnormal",
+            # 58: "Overtemperature Protection",
+            # 59: "Inverter soft start timeout",
+            # 64: "self-checking failure",
+            # 65: "eeprom failure",
+            # 66: "other system failure"
         }
-    },    
+    },
     {
         # Alarm status bits indicating various device alarms
         "name": "Alarm Status",
