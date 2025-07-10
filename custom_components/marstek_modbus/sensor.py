@@ -79,71 +79,19 @@ class MarstekSensor(SensorEntity):
         )
 
         if raw_value is not None:
-            # Handle alarm_status sensor by decoding bit flags
-            if self.definition.get("key") == "alarm_status":
-                # Decode bits 0-3 for individual alarm flags
+            # Generic dynamic bit flag decoding if bit_descriptions is present
+            if self.definition.get("bit_descriptions"):
                 """
-                Special sensor entity for combined alarm status.
-                Reads a 16-bit register containing alarm bit flags, where each bit
-                indicates a different alarm condition.
-
-                Bits decoded:
-                - Bit 0: WiFi Abnormal
-                - Bit 1: BLE Abnormal
-                - Bit 2: Network Abnormal
-                - Bit 3: CT Connection Abnormal
-
-                The sensor state is a comma-separated list of active alarms,
-                or "Normal" if none are active.
+                Decode bit flags dynamically from bit_descriptions defined in const.py.
                 """
-                alarms = []
-                if raw_value & (1 << 0):
-                    alarms.append("WiFi Abnormal")
-                if raw_value & (1 << 1):
-                    alarms.append("BLE Abnormal")
-                if raw_value & (1 << 2):
-                    alarms.append("Network Abnormal")
-                if raw_value & (1 << 3):
-                    alarms.append("CT Connection Abnormal")
+                active_flags = []
+                bit_map = self.definition["bit_descriptions"]
 
-                # Combine all active alarm labels or set state to "Normal"
-                self._state = ", ".join(alarms) if alarms else "Normal"
+                for bit, label in bit_map.items():
+                    if raw_value & (1 << bit):
+                        active_flags.append(label)
 
-            # Handle grid fault status sensor by decoding bit flags
-            elif self.definition.get("key") == "grid_status":
-                """
-                Special sensor entity for combined grid fault status.
-                Reads a 16‑bit register containing fault bit flags.
-
-                Bits decoded:
-                - Bit 0: Grid Overvoltage
-                - Bit 1: Grid Undervoltage
-                - Bit 2: Grid Overfrequency
-                - Bit 3: Grid Underfrequency
-                - Bit 4: Grid Peak Voltage
-                - Bit 5: Current Dcover
-                - Bit 6: Voltage Dcover
-
-                The sensor state is a comma‑separated list of active faults,
-                or "Normal" if none are active.
-                """
-                faults = []
-                if raw_value & (1 << 0):
-                    faults.append("Grid Overvoltage")
-                if raw_value & (1 << 1):
-                    faults.append("Grid Undervoltage")
-                if raw_value & (1 << 2):
-                    faults.append("Grid Overfrequency")
-                if raw_value & (1 << 3):
-                    faults.append("Grid Underfrequency")
-                if raw_value & (1 << 4):
-                    faults.append("Grid Peak Voltage")
-                if raw_value & (1 << 5):
-                    faults.append("Current Dcover")
-                if raw_value & (1 << 6):
-                    faults.append("Voltage Dcover")
-
-                self._state = ", ".join(faults) if faults else "Normal"
+                self._state = ", ".join(active_flags) if active_flags else "Normal"
 
             # Handle string data types
             elif data_type == "char":

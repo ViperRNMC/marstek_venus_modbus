@@ -407,19 +407,43 @@ SENSOR_DEFINITIONS = [
         "key": "grid_status",
         "enabled_by_default": True,
         "precision": 0,
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "scan_interval.state",
+        "bit_descriptions": {
+            0: "Grid Overvoltage",
+            1: "Grid Undervoltage",
+            2: "Grid Overfrequency",
+            3: "Grid Underfrequency",
+            4: "Grid Peak Voltage",
+            5: "Current Dcover",
+            6: "Voltage Dcover"
+        }
     },    
     {
         # Alarm status bits indicating various device alarms
         "name": "Alarm Status",
-        "register": 36001,
-        "count": 1,
+        "register": 36000,
+        "count": 2,
         "data_type": "uint16",
         "key": "alarm_status",
         "enabled_by_default": True,
         "unit": None,
         "precision": 0,
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "scan_interval.state",
+        "bit_descriptions": {
+            # Register 36000 (bits 0-15)
+            0: "PLL Abnormal Restart",
+            1: "Overtemperature Limit",
+            2: "Low Temperature Limit",
+            3: "Fan Abnormal Warning",
+            4: "Low Battery SOC Warning",
+            5: "Output Overcurrent Warning",
+            6: "Abnormal Line Sequence Detection",
+            # Register 36001 (bits 16-31)
+            16: "WiFi Abnormal",
+            17: "BLE Abnormal",
+            18: "Network Abnormal",
+            19: "CT Connection Abnormal",
+        }
     },
     {
         # Modbus address (slave ID)
