@@ -14,16 +14,15 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 ### 🔧 Features
 
 - Native Modbus TCP polling via `pymodbus`
-<!-- - Automatically uses device name as entity name (if available) -->
 - Sensors for voltage, current, SOC, power, energy, and alarm status (combined bits)
 - Switches for force charge/discharge control
 - Adjustable charge/discharge power (0–2500W)
 - Entities grouped under a device in Home Assistant
 - Select entity support for multi-state control (e.g., force mode)
-<!-- - Button entity for one-time reset commands -->
+- Select entity for control modes (e.g., force mode, grid standard)
 - Some advanced sensors disabled by default for cleaner UI
-<!-- - Poll interval configurable via the UI -->
-<!-- - Icon support in Home Assistant UI -->
+- Efficient background polling with per-sensor scan intervals
+- Some advanced sensors are disabled by default to keep the UI clean
 - UI-based configuration (Config Flow)
 - Fully local, no cloud required
 
@@ -43,16 +42,15 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 ### 🔧 Functies
 
 - Communicatie via Modbus TCP met `pymodbus`
-<!-- - Automatisch gebruik van apparaatsnaam als entiteitnaam (indien beschikbaar) -->
 - Sensordata: spanning, stroom, SOC, vermogen, energie en gecombineerde alarmstatus (bits)
 - Schakelaars voor geforceerd laden/ontladen
 - Instelbare laad- en ontlaadvermogens (0–2500W)
 - Entiteiten gegroepeerd onder één apparaat in Home Assistant
 - Ondersteuning voor Select-entity (meerdere standen zoals 'force mode')
-<!-- - Resetknop via een Button-entiteit -->
+- Select-entity voor bedieningsmodi (zoals force mode en netstandaard)
 - Geavanceerde sensoren standaard uitgeschakeld voor overzicht
-<!-- - Poll-interval instelbaar via gebruikersinterface -->
-<!-- - Ondersteuning voor iconen in de Home Assistant-interface -->
+- Efficiënt achtergrond-pollen met per-sensor scan-intervallen
+- Geavanceerde sensoren zijn standaard uitgeschakeld voor een overzichtelijke interface
 - Configuratie via gebruikersinterface (config flow)
 - Volledig lokaal – geen cloudverbinding nodig
 

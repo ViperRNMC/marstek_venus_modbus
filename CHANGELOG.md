@@ -1,10 +1,22 @@
 # Changelog
 
+## [2025.6.4] - 2025-07-10
+
+### Added
+- New fault sensor combining grid fault bits from register 36100
+- Grid Status sensor with decoded standard options from register 44100
+- Support for `scan_interval` per sensor in `SENSOR_DEFINITIONS`
+- Support for Modbus connection `timeout` and `message_wait_milliseconds` 
+- Background polling for data needed by derived sensors (e.g. SOC, Energy)
+- New efficiency sensors: Round-Trip Efficiency (monthly, total) and Stored Energy, calculated from other register values
+
+### Changed
+- Improved polling interval resolution using fastest required scan rate
+
 ## [2025.6.3] - 2025-07-08
 
 ### Added
 - Entities now correctly register under a device in Home Assistant
-<!-- - Button entity for reset functionality (Modbus write to 41000) -->
 - Select entity replaces Force Charge/Discharge Mode switches (42010)
 - Improved error handling with specific Modbus connection error messages
 - Universal handling of Modbus types (uint16, int32, char)
