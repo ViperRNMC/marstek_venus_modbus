@@ -4,6 +4,7 @@ This coordinator handles connection setup and periodic data refresh scheduling.
 """
 
 from datetime import timedelta
+from time import monotonic
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
@@ -18,10 +19,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
        # Initialize the coordinator with Home Assistant instance and configuration entry.
         def _get_scan_interval(val):
+            """Convert a scan-interval value to int seconds."""
             if isinstance(val, int):
                 return val
-            # val is dan bv. "power", "state", "energy", ...
-            return SCAN_INTERVAL.get(val, 10)
+            if isinstance(val, str):
+                # Strip optional prefix "scan_interval."
+                if val.startswith("scan_interval."):
+                    val = val.split(".", 1)[1]
+                return SCAN_INTERVAL.get(val, 10)  # fallback 10 s
+            # Any unknown type → default
+            return 10
 
         # Store Home Assistant instance and connection details from config entry
         self.hass = hass
@@ -42,6 +49,13 @@ class MarstekCoordinator(DataUpdateCoordinator):
             }
             for s in SENSOR_DEFINITIONS
         ]
+
+        # Initialize per‑sensor timestamp for throttling reads
+        for s in self._poll_list:
+            # convert scan_interval to seconds if it's a string
+            s["scan_interval"] = _get_scan_interval(s["scan_interval"])
+            # force first read immediately
+            s["last_read"] = monotonic() - s["scan_interval"]
 
         # Determine the fastest interval among **all** sensors, ensuring all are ints
         self.interval = min(_get_scan_interval(item["scan_interval"]) for item in self._poll_list)
@@ -82,25 +96,41 @@ class MarstekCoordinator(DataUpdateCoordinator):
         """
         data: dict[str, float | int | None] = {}
 
+        from time import monotonic
+
         for sensor in self._poll_list:
             # Skip sensors that do not correspond to real Modbus registers
             # Virtual sensors often have count 0 or register 0 as placeholders.
             if sensor["count"] <= 0 or sensor["register"] == 0:
                 continue
 
+            now = monotonic()
+            # Skip until this sensor's personal scan interval has elapsed
+            if now - sensor["last_read"] < sensor["scan_interval"]:
+                continue
+            sensor["last_read"] = now
+
             try:
-                # Read raw register value(s) from the Modbus device using the client
                 value = self.client.read_register(
                     sensor["register"],
                     sensor["data_type"],
                     count=sensor["count"],
                 )
 
-                # Apply scaling factor to raw value if specified
                 if sensor["scale"] != 1:
                     value = round(value * sensor["scale"], 3)
 
-                # Store the scaled value in the data dict using the sensor's key
+                old_value = data.get(sensor["key"])
+
+                if value != old_value:
+                    _LOGGER.debug(
+                        "Sensor '%s' updated: register=0x%04X old=%s new=%s",
+                        sensor["key"],
+                        sensor["register"],
+                        old_value,
+                        value,
+                    )
+
                 data[sensor["key"]] = value
 
             except Exception as err:  # pylint: disable=broad-except
