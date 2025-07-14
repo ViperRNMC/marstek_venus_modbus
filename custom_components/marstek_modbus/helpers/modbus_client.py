@@ -46,7 +46,7 @@ class MarstekModbusClient:
 
         Args:
             register (int): Register address to read.
-            data_type (str): Data type to interpret (e.g. 'int16', 'int32', 'char', 'bit').
+            data_type (str): Data type to interpret (e.g. 'int16', 'int32', 'char', 'bit', 'hex').
             count (int): Number of registers to read (required for 'char' and 'int32').
             bit_index (int): Bit index to read (required for 'bit').
 
@@ -86,6 +86,11 @@ class MarstekModbusClient:
                 byte_array.append((reg >> 8) & 0xFF)
                 byte_array.append(reg & 0xFF)
             return byte_array.decode("ascii", errors="ignore").rstrip('\x00')
+
+        elif data_type == "hex":
+            # Return the raw register values as a concatenated hexadecimal string
+            # Each 16‑bit register is formatted as 4 hex digits (zero‑padded, uppercase)
+            return "".join(f"{reg:04X}" for reg in regs)
 
         elif data_type == "bit":
             if bit_index is None or not (0 <= bit_index < 16):
