@@ -7,10 +7,7 @@ MODEL = "Venus E"
 
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
-
-
-# Time interval (in seconds) between data scans
-# SCAN_INTERVAL = 10
+DEFAULT_MESSAGE_WAIT_MS = 80  # Default wait time for Modbus messages in milliseconds
 
 # Default polling intervals (seconds) per sensor category.
 # These values can be overridden via modbus.yaml using the
@@ -20,7 +17,8 @@ SCAN_INTERVAL = {
     "electrical": 30,    # voltage, current, frequency
     "energy": 60,        # cumulative kWh counters
     "soc": 30,           # state‑of‑charge
-    "state": 5           # fast‑changing state / alarm bits
+    "state": 5,         # fast‑changing state / alarm bits
+    "info": 60          # device info like name, serial number, software version
 }
 
 # Definitions for sensors to be read from the Modbus device
@@ -47,18 +45,66 @@ SENSOR_DEFINITIONS = [
         "unit": None,
         "key": "sn_code",
         "enabled_by_default": False,
+        "scan_interval": "scan_interval.info",
         "precision": 0
     },
     {
-        # Software version as scaled unsigned integer
-        "name": "Soft Version",
+        # Software version, stored as a 16-bit unsigned integer
+        "name": "Software Version",
         "register": 31100,
         "scale": 0.01,
         "unit": None,
-        "key": "soft_version",
+        "key": "software_version",
         "enabled_by_default": True,
         "data_type": "uint16",
-        "precision": 2
+        "precision": 2,
+        "scan_interval": "scan_interval.info"
+    },
+    {
+
+        "name": "BMS Version",
+        "register": 30399,
+        "unit": None,
+        "key": "bms_version",
+        "enabled_by_default": True,
+        "data_type": "uint16",
+        "precision": 0,
+        "scan_interval": "scan_interval.info"
+    },
+    {
+        # Communication module firmware version, stored as a string in multiple registers
+        "name": "Communication Module Firmware",
+        "register": 30800,
+        "count": 6,
+        "unit": None,
+        "key": "comm_module_firmware",
+        "enabled_by_default": True,
+        "data_type": "char",
+        "precision": 0,
+        "scan_interval": "scan_interval.info"
+    },
+    {
+        # Firmware version of the device, stored as a 16-bit unsigned integer
+        "name": "Firmware Version",
+        "register": 30401,
+        "unit": None,
+        "key": "firmware_version",
+        "enabled_by_default": True,
+        "data_type": "uint16",
+        "precision": 0,
+        "scan_interval": "scan_interval.info"
+    },
+    {
+        
+        "name": "MAC Address",
+        "register": 30402,
+        "count": 6,
+        "unit": None,
+        "key": "mac_address",
+        "enabled_by_default": True,
+        "data_type": "char",
+        "precision": 0,
+        "scan_interval": "scan_interval.info"
     },
     {
         # Battery State of Charge (SOC) as a percentage
@@ -395,7 +441,7 @@ SENSOR_DEFINITIONS = [
             8: "IT - Italy",
             9: "CN - China"
         },
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "scan_interval.info"
     },    
     {
         "name": "Fault Status",
@@ -474,6 +520,7 @@ SENSOR_DEFINITIONS = [
         "unit": None,
         "key": "modbus_address",
         "enabled_by_default": False,
+        "scan_interval": "scan_interval.info",
         "precision": 0
     },
     {
@@ -603,7 +650,8 @@ NUMBER_DEFINITIONS = [
         "min": 0,
         "max": 2500,
         "step": 50,
-        "unit": "W"
+        "unit": "W",
+        "scan_interval": "scan_interval.state"
     },
     {
         # Set power limit for forced discharging in watts
@@ -614,7 +662,8 @@ NUMBER_DEFINITIONS = [
         "min": 0,
         "max": 2500,
         "step": 50,
-        "unit": "W"
+        "unit": "W",
+        "scan_interval": "scan_interval.state"
     },
     {
         # Maximum power that can be charged into the battery in watts
@@ -626,7 +675,8 @@ NUMBER_DEFINITIONS = [
         "max": 2500,
         "step": 50,
         "unit": "W",
-        "data_type": "uint16"
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state"
     },
     {
         # Maximum power that can be discharged from the battery in watts
@@ -638,7 +688,8 @@ NUMBER_DEFINITIONS = [
         "max": 2500,
         "step": 50,
         "unit": "W",
-        "data_type": "uint16"
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state"
     }
 ]
 

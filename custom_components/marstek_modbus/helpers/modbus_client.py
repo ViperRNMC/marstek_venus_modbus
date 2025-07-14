@@ -17,7 +17,7 @@ class MarstekModbusClient:
     to read/write registers and interpret common data types.
     """
 
-    def __init__(self, host, port, message_wait_ms=35, timeout=5):
+    def __init__(self, host, port, message_wait_ms=50, timeout=5):
         # Initialize the Modbus client with host, port, and configurable timeouts
         self.client = ModbusTcpClient(
             host=host,
@@ -74,10 +74,16 @@ class MarstekModbusClient:
             return regs[0]
 
         elif data_type == "int32":
-            val = (regs[0] << 16) | regs[1]  # big endian
+            if len(regs) < 2:
+                _LOGGER.warning("Expected 2 registers for int32 at 0x%04X, got %s", register, len(regs))
+                return None
+            val = (regs[0] << 16) | regs[1]
             return val - 0x100000000 if val >= 0x80000000 else val
 
         elif data_type == "uint32":
+            if len(regs) < 2:
+                _LOGGER.warning("Expected 2 registers for uint32 at 0x%04X, got %s", register, len(regs))
+                return None
             return (regs[0] << 16) | regs[1]
 
         elif data_type == "char":
