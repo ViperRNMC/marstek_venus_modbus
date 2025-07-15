@@ -29,9 +29,9 @@ class MarstekUserModeSelect(SelectEntity):
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
         self._attr_should_poll = True  # Enable polling to refresh data
-        self._attr_options = self.definition["options"]
-        self._map_to_int = self.definition["map_to_int"]
-        self._int_to_map = self.definition["int_to_map"]
+        self._option_to_int = self.definition["options"]
+        self._attr_options = list(self._option_to_int.keys())
+        self._int_to_map = self._reverse_map(self._option_to_int)
         self._register = self.definition["register"]
         self._value = self._attr_options[0]
 
@@ -39,9 +39,13 @@ class MarstekUserModeSelect(SelectEntity):
         if self.definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
+    def _reverse_map(self, d: dict) -> dict:
+        """Reverse the dictionary mapping keys to values."""
+        return {v: k for k, v in d.items()}
+
     def select_option(self, option: str) -> None:
         """Handle selection of a new work mode option and write it to the Modbus register."""
-        int_value = self._map_to_int.get(option)
+        int_value = self._option_to_int.get(option)
         if int_value is not None:
             success = self.coordinator.client.write_register(self._register, int_value)
             if success:

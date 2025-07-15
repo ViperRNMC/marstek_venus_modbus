@@ -65,6 +65,13 @@ class MarstekSensor(SensorEntity):
         if self.definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
+    def _combine_registers(self, registers):
+        """Combine a list/tuple of 16‑bit register values into one integer (little‑endian)."""
+        value = 0
+        for i, reg in enumerate(registers):
+            value |= (reg & 0xFFFF) << (16 * i)
+        return value
+
     def update(self):
         """
         Update sensor state using appropriate data type handling.
@@ -77,6 +84,10 @@ class MarstekSensor(SensorEntity):
             data_type=data_type,
             count=self.definition.get("count", 1)
         )
+
+        # Combine multiple registers into a single integer if a list/tuple is returned
+        if isinstance(raw_value, (list, tuple)):
+            raw_value = self._combine_registers(raw_value)
 
         if raw_value is not None:
             # Generic dynamic bit flag decoding if bit_descriptions is present
