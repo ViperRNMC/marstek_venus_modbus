@@ -544,6 +544,19 @@ SENSOR_DEFINITIONS = [
         "data_type": "int32",
         "precision": 0,
         "scan_interval": "scan_interval.power"
+    },
+    {   
+        # Discharge limit mode switch
+        "name": "Discharge Limit",
+        "register": 41010,
+        "key": "discharge_limit_mode",
+        "enabled_by_default": False,
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state",
+        "states": {
+            0: "High (2500 W)",
+            1: "Low (800 W)",        
+        }
     }
 ]
 
@@ -595,7 +608,7 @@ SELECT_DEFINITIONS = [
             "Italy": 8,
             "China": 9
         }
-    },
+    }
 ]
 
 # Definitions for switch controls that can be toggled on/off
@@ -620,9 +633,20 @@ SWITCH_DEFINITIONS = [
         "command_off": 21947,  # 0x55BB in decimal
         "key": "rs485_control_mode",
         "enabled_by_default": False,
+        "data_type": "uint16",
         "scan_interval": "scan_interval.state"
-
-    }    
+    },
+    # {   
+    #     # Discharge limit mode switch
+    #     "name": "Discharge Limit (800 W)",
+    #     "register": 41010,
+    #     "command_on": 1,   # 1 = Low (800 W)
+    #     "command_off": 0,  # 0 = High (2500 W)
+    #     "key": "discharge_limit_mode",
+    #     "enabled_by_default": False,
+    #     "data_type": "uint16",
+    #     "scan_interval": "scan_interval.state"
+    # }
 ]
 
 # Definitions for numeric configuration parameters
@@ -675,6 +699,34 @@ NUMBER_DEFINITIONS = [
         "max": 2500,
         "step": 50,
         "unit": "W",
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state"
+    },
+    {
+        # 
+        "name": "Charging Cutoff Capacity",
+        "register": 44000,
+        "key": "charging_cutoff_capacity",
+        "enabled_by_default": False,
+        "min": 80,
+        "max": 100,
+        "step": 1,
+        "unit": "%",
+        "scale": 0.1,
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state"
+    },
+    {
+        # Maximum power that can be discharged from the battery in watts
+        "name": "Discharging Cutoff Capacity",
+        "register": 44001,
+        "key": "discharging_cutoff_capacity",
+        "enabled_by_default": False,
+        "min": 12,
+        "max": 30,
+        "step": 1,
+        "unit": "%",
+        "scale": 0.1,
         "data_type": "uint16",
         "scan_interval": "scan_interval.state"
     }
