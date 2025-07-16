@@ -33,6 +33,7 @@ class MarstekUserModeSelect(SelectEntity):
         self._attr_options = list(self._option_to_int.keys())
         self._int_to_map = self._reverse_map(self._option_to_int)
         self._register = self.definition["register"]
+        self._scale = self.definition.get("scale", 1)
         self._value = self._attr_options[0]
 
         # Optional: disable entity by default if specified in the sensor definition
@@ -47,7 +48,8 @@ class MarstekUserModeSelect(SelectEntity):
         """Handle selection of a new work mode option and write it to the Modbus register."""
         int_value = self._option_to_int.get(option)
         if int_value is not None:
-            success = self.coordinator.client.write_register(self._register, int_value)
+            scaled_value = int(int_value * self._scale)
+            success = self.coordinator.client.write_register(self._register, scaled_value)
             if success:
                 self._value = option
 
@@ -55,8 +57,9 @@ class MarstekUserModeSelect(SelectEntity):
         """Fetch the current work mode from the Modbus register and update the entity state."""
         raw_value = self.coordinator.client.read_register(register=self._register, data_type="uint16", count=1)
         if raw_value is not None:
-            if raw_value in self._int_to_map:
-                self._value = self._int_to_map[raw_value]
+            scaled_value = int(raw_value / self._scale)
+            if scaled_value in self._int_to_map:
+                self._value = self._int_to_map[scaled_value]
             else:
                 _LOGGER.warning("Unknown mode value read from register %s: %s", self._register, raw_value)
 
