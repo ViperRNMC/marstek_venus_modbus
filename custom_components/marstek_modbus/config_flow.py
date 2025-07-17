@@ -4,53 +4,78 @@ Config flow for Marstek Venus Modbus integration.
 
 import socket
 import voluptuous as vol
+import logging
 from homeassistant import config_entries
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.translation import async_get_translations
 from pymodbus.client import ModbusTcpClient
+
 from .const import DOMAIN, DEFAULT_PORT
+
+_LOGGER = logging.getLogger(__name__)
+
 
 class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
     """
-    Handle a config flow for Marstek Venus Modbus integration.
+    Handle the configuration flow for the Marstek Venus Modbus integration.
     """
+
     VERSION = 1
 
     async def async_step_user(self, user_input=None):
         """
-        Handle the initial step where the user provides configuration.
+        Handle the initial step of the config flow where the user inputs host and port.
+
+        Validates user input and attempts connection to the Modbus device.
         """
         errors = {}
 
-        # Get the language from the context, default to English if not set
+        # Determine user language, fallback to English
         language = self.context.get("language", "en")
-        # Load translations for the config flow to provide localized error messages and titles
+
+        # Load translations for localized messages
         translations = await async_get_translations(
             self.hass,
             language,
             category="config",
-            integrations=DOMAIN
+            integrations=DOMAIN,
         )
 
-        # If user input is provided, validate and process it
         if user_input is not None:
             host = user_input.get(CONF_HOST)
+            port = user_input.get(CONF_PORT, DEFAULT_PORT)
+
+            # Validate port range
+            if not (1 <= port <= 65535):
+                errors["base"] = "invalid_port"
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(CONF_HOST): str,
+                            vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                        }
+                    ),
+                    errors=errors,
+                )
+
+            # Validate the host by resolving it to an IP address
             try:
-                # Validate the host by attempting to resolve its IP address
                 socket.gethostbyname(host)
             except (socket.gaierror, TypeError):
-                # If host is invalid, set an error message
-                errors["base"] = "invalid_host" 
+                errors["base"] = "invalid_host"
             else:
-                # Check if the host is already configured to prevent duplicates
+                # Prevent duplicate entries for the same host
                 for entry in self._async_current_entries():
                     if entry.data.get(CONF_HOST) == host:
                         return self.async_abort(reason="already_configured")
 
-                # Retrieve the port from user input or use the default port
-                port = user_input.get(CONF_PORT, DEFAULT_PORT)
-                # Attempt to connect to the Modbus device using the provided host and port
-                client = ModbusTcpClient(host=host, port=port)
+                # Log connection attempt at debug level
+                _LOGGER.debug("Attempting to connect to Modbus server at %s:%d", host, port)
+
+                # Create client with timeout (if supported by pymodbus version)
+                client = ModbusTcpClient(host=host, port=port, timeout=3)
+
                 try:
                     if not client.connect():
                         raise ConnectionError("Unable to connect")
@@ -64,31 +89,46 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         errors["base"] = "timed_out"
                     else:
                         errors["base"] = "cannot_connect"
+                    _LOGGER.debug("Connection error during Modbus client connect: %s", err_msg)
                     return self.async_show_form(
                         step_id="user",
-                        data_schema=vol.Schema({
-                            vol.Required(CONF_HOST): str,
-                            vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-                        }),
-                        errors=errors
+                        data_schema=vol.Schema(
+                            {
+                                vol.Required(CONF_HOST): str,
+                                vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                            }
+                        ),
+                        errors=errors,
+                    )
+                except Exception as exc:
+                    _LOGGER.error("Unexpected error connecting to Modbus server: %s", exc)
+                    errors["base"] = "cannot_connect"
+                    return self.async_show_form(
+                        step_id="user",
+                        data_schema=vol.Schema(
+                            {
+                                vol.Required(CONF_HOST): str,
+                                vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                            }
+                        ),
+                        errors=errors,
                     )
                 finally:
                     client.close()
 
-                # If no errors occurred, create the config entry
+                # If no errors, create the configuration entry
                 if not errors:
                     title = translations.get("config.step.user.title", "Marstek Venus Modbus")
-                    return self.async_create_entry(
-                        title=title,
-                        data=user_input
-                    )
+                    return self.async_create_entry(title=title, data=user_input)
 
-        # Show the form to the user to input host and port, including any errors
+        # Show the form for user input (host and port) with any errors
         return self.async_show_form(
             step_id="user",
-            data_schema=vol.Schema({
-                vol.Required(CONF_HOST): str,
-                vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-            }),
-            errors=errors
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_HOST): str,
+                    vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                }
+            ),
+            errors=errors,
         )

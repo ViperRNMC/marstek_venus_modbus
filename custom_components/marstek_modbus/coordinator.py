@@ -1,151 +1,329 @@
 """
 Coordinator for managing data updates from Marstek Venus Modbus devices.
-This coordinator handles connection setup and periodic data refresh scheduling.
+Handles connection setup and periodic data refresh scheduling.
 """
 
-from datetime import timedelta
-from time import monotonic
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
-from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
-from .helpers.modbus_client import MarstekModbusClient
-from .const import SCAN_INTERVAL, SENSOR_DEFINITIONS, DEFAULT_MESSAGE_WAIT_MS
-
-# Set up logging for debugging purposes
+import datetime
 import logging
+from datetime import timedelta
+
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers import entity_registry as er
+
+from .const import (
+    BUTTON_DEFINITIONS,
+    DEFAULT_MESSAGE_WAIT_MS,
+    NUMBER_DEFINITIONS,
+    SCAN_INTERVAL,
+    SELECT_DEFINITIONS,
+    SENSOR_DEFINITIONS,
+    SWITCH_DEFINITIONS,
+)
+from .helpers.modbus_client import MarstekModbusClient
+
 _LOGGER = logging.getLogger(__name__)
 
+
 class MarstekCoordinator(DataUpdateCoordinator):
+    """
+    Coordinator to manage data updates from Marstek Venus Modbus devices.
+
+    Handles connection setup, sensor polling intervals, and data refreshes.
+    """
+
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
-       # Initialize the coordinator with Home Assistant instance and configuration entry.
+        """
+        Initialize coordinator with Home Assistant instance and config entry.
+
+        Args:
+            hass (HomeAssistant): Home Assistant instance.
+            entry (ConfigEntry): Configuration entry with device info.
+        """
         def _get_scan_interval(val):
-            """Convert a scan-interval value to int seconds."""
+            """
+            Convert scan interval value to seconds as int.
+
+            Args:
+                val (int or str): The scan interval value or key.
+
+            Returns:
+                int: Scan interval in seconds.
+            """
             if isinstance(val, int):
                 return val
             if isinstance(val, str):
-                # Strip optional prefix "scan_interval."
                 if val.startswith("scan_interval."):
                     val = val.split(".", 1)[1]
-                return SCAN_INTERVAL.get(val, 10)  # fallback 10 s
-            # Any unknown type → default
+                return SCAN_INTERVAL.get(val, 10)
             return 10
 
-        # Store Home Assistant instance and connection details from config entry
+        # Store Home Assistant instance and connection details
         self.hass = hass
         self.host = entry.data["host"]
         self.port = entry.data["port"]
-        self.message_wait_ms = entry.data.get("message_wait_milliseconds", DEFAULT_MESSAGE_WAIT_MS)
+        self.message_wait_ms = entry.data.get(
+            "message_wait_milliseconds", DEFAULT_MESSAGE_WAIT_MS
+        )
         self.timeout = entry.data.get("timeout", 5)
 
-        self._poll_list = [
-            {
-                "key": s["key"],
-                "register": s["register"],
-                "count": s.get("count", 1),
-                "data_type": s["data_type"],
-                "scale": s.get("scale", 1),
-                "scan_interval": s.get("scan_interval", 10),
-                "background_read": s.get("background_read", False),
-            }
-            for s in SENSOR_DEFINITIONS
-        ]
+        # Prepare sensor polling list with metadata (intervals, register, etc.)
+        self._poll_list = []
+        all_definitions = (
+            SENSOR_DEFINITIONS
+            + SELECT_DEFINITIONS
+            + SWITCH_DEFINITIONS
+            + BUTTON_DEFINITIONS
+            + NUMBER_DEFINITIONS
+        )
 
-        # Initialize per‑sensor timestamp for throttling reads
-        for s in self._poll_list:
-            # convert scan_interval to seconds if it's a string
-            s["scan_interval"] = _get_scan_interval(s["scan_interval"])
-            # force first read immediately
-            s["last_read"] = monotonic() - s["scan_interval"]
+        # Iterate over all entity definitions to build polling list
+        for entity in all_definitions:
+            # Skip incomplete definitions missing required keys
+            if "register" not in entity or "data_type" not in entity or "key" not in entity:
+                continue
 
-        # Determine the fastest interval among **all** sensors, ensuring all are ints
-        self.interval = min(_get_scan_interval(item["scan_interval"]) for item in self._poll_list)
+            # Determine scan interval for the sensor
+            scan_interval = _get_scan_interval(entity.get("scan_interval", 10))
 
-        # Initialize and connect the Modbus client to the device
+            # Append sensor metadata to polling list
+            self._poll_list.append(
+                {
+                    "key": entity["key"],
+                    "register": entity["register"],
+                    "count": entity.get("count", 1),
+                    "data_type": entity["data_type"],
+                    "scale": entity.get("scale", 1),
+                    "scan_interval": scan_interval,
+                    "background_read": entity.get("background_read", False),
+                }
+            )
+
+        # Determine update interval as the shortest scan interval among sensors
+        self.interval = min(
+            (sensor["scan_interval"] for sensor in self._poll_list), default=10
+        )
+
+        # Initialize Modbus client (connection not made yet)
         self.client = MarstekModbusClient(
             self.host,
             self.port,
             message_wait_ms=self.message_wait_ms,
             timeout=self.timeout,
         )
-        self.client.connect()
 
-        # Initialize data dictionary to store background sensor values
+        # Initialize empty data store for sensor values
         self.data = {}
 
-        # Initialize the DataUpdateCoordinator with update interval and logging
+        # Call parent constructor with update_interval=None to prevent
+        # automatic updates until connection is established
         super().__init__(
             hass,
             _LOGGER,
-            name="Marstek Venus Modbus Coordinator",
-            update_interval=timedelta(seconds=self.interval),
+            name="Coordinator",
+            update_interval=None,
         )
 
-    async def _async_update_data(self):
-        """Refresh data by reading all background registers.
+    async def async_init(self):
+        """
+        Asynchronously initialize coordinator and connect to Modbus device.
 
-        This method polls all sensors defined in _poll_list except virtual or
-        dummy sensors (which have count <= 0 or register == 0).
-
-        It reads each register from the Modbus device, applies scaling if defined,
-        and collects the results into a dictionary keyed by sensor keys.
-
-        Errors during reading are logged and stored as None in the data dictionary.
+        Waits for successful connection before starting periodic updates.
 
         Returns:
-            dict[str, float|int|None]: Mapping of sensor keys to their current values.
+            bool: True if connection succeeded, False otherwise.
         """
-        data: dict[str, float | int | None] = {}
+        # Attempt to connect to Modbus device asynchronously
+        connected = await self.client.async_connect()
 
-        from time import monotonic
+        if connected:
+            # Set update interval now that connection is confirmed
+            self.update_interval = timedelta(seconds=self.interval)
 
-        for sensor in self._poll_list:
-            # Skip sensors that do not correspond to real Modbus registers
-            # Virtual sensors often have count 0 or register 0 as placeholders.
-            if sensor["count"] <= 0 or sensor["register"] == 0:
-                continue
+            # Trigger first data refresh and start periodic update loop
+            await self.async_refresh()
 
-            now = monotonic()
-            # Skip until this sensor's personal scan interval has elapsed
-            if now - sensor["last_read"] < sensor["scan_interval"]:
-                continue
-            sensor["last_read"] = now
+        else:
+            _LOGGER.error(
+                "Failed to connect to Modbus device at %s:%d", self.host, self.port
+            )
+        return connected
 
-            try:
-                value = self.client.read_register(
-                    sensor["register"],
-                    sensor["data_type"],
-                    count=sensor["count"],
-                )
+    async def _async_update_data(self):
+        """
+        Fetch new data from device for background sensors.
 
-                if sensor["scale"] != 1:
-                    value = round(value * sensor["scale"], 3)
+        Only polls sensors marked as background_read and that are disabled in HA.
 
-                old_value = data.get(sensor["key"])
+        Returns:
+            dict: Sensor key to value mapping.
+        """
+        data = {}
 
-                if value != old_value:
-                    _LOGGER.debug(
-                        "Sensor '%s' updated: register=0x%04X old=%s new=%s",
-                        sensor["key"],
-                        sensor["register"],
-                        old_value,
-                        value,
-                    )
+        if self.data is None:
+            self.data = {}
 
-                data[sensor["key"]] = value
+        # Get entity registry to check enabled/disabled status
+        entity_registry = er.async_get(self.hass)
 
-            except Exception as err:  # pylint: disable=broad-except
-                # Log any errors encountered during reading to help troubleshooting
-                _LOGGER.error(
-                    "Error reading register %s (%s): %s",
-                    sensor["register"],
-                    sensor["key"],
-                    err,
-                )
-                # Store None to indicate failure to read this sensor's data
-                data[sensor["key"]] = None
+        enabled_keys = {
+            entity.unique_id
+            for entity in entity_registry.entities.values()
+            if entity.domain == "sensor" and not entity.disabled
+        }
+        
+        already_polled_keys = set()
 
-        # Save the collected sensor data in the coordinator's data attribute
-        self.data = data
+        # for sensor in self._poll_list:
+        #     key = sensor["key"]
 
-        # Return the collected data for any awaiting processes
-        return data
+        #     if not sensor.get("background_read", False):
+        #         continue
+
+        #     if key in already_polled_keys:
+        #         continue
+
+        #     # Check if the entity is enabled in HA (default to True)
+        #     is_enabled = False
+        #     for domain in ["sensor", "select", "switch", "number", "button"]:
+        #         entity_id = f"{domain}.{key}"
+        #         entry = entity_registry.entities.get(entity_id)
+        #         if entry:
+        #             is_enabled = not entry.disabled
+        #             break
+
+        #     if is_enabled:
+        #         _LOGGER.debug(
+        #             "Skipping background sensor '%s' because it is enabled in HA",
+        #             key,
+        #         )
+        #         continue
+
+        #     register = sensor["register"]
+        #     count = sensor.get("count", 1)
+        #     data_type = sensor["data_type"]
+
+        #     try:
+        #         value = await self.client.async_read_register(
+        #             register=register,
+        #             data_type=data_type,
+        #             count=count,
+        #             sensor_key=key,
+        #         )
+        #         scale = sensor.get("scale", 1)
+        #         data[key] = value * scale
+        #         already_polled_keys.add(key)
+        #         _LOGGER.debug(
+        #             "Updated background sensor '%s': register=%d (0x%04X), value=%s, scale=%s",
+        #             key,
+        #             register,
+        #             register,
+        #             value * scale,
+        #             scale,
+        #         )
+        #     except Exception as err:
+        #         _LOGGER.warning(
+        #             "Failed to update background sensor '%s': %s",
+        #             key,
+        #             err,
+        #         )
+
+        self.data.update(data)
+        return self.data
+
+    async def async_update_value(
+        self,
+        key: str,
+        value,
+        *,
+        register=None,
+        scale=None,
+        unit=None,
+        entity_type="unknown",
+    ):
+        """
+        Update a single entity value in the coordinator and log it.
+
+        Args:
+            key (str): Entity key.
+            value: New value to set.
+            register (int, optional): Register address.
+            scale (optional): Scale factor.
+            unit (optional): Unit of measurement.
+            entity_type (str, optional): Type of entity.
+        """
+        # Update internal data dictionary
+        self.data[key] = value
+
+        # Log update with detailed info if register is provided
+        if register is not None:
+            _LOGGER.debug(
+                "Updated %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
+                entity_type,
+                key,
+                register,
+                register,
+                value,
+                scale if scale is not None else 1,
+                unit if unit is not None else "N/A",
+            )
+        else:
+            # Log update without register info
+            _LOGGER.debug(
+                "Updated %s '%s' with value %s",
+                entity_type,
+                key,
+                value,
+            )
+
+    async def async_write_value(
+        self,
+        *,
+        register: int,
+        value: int,
+        data_type: str,
+        key: str,
+        scale=None,
+        unit=None,
+        entity_type="unknown",
+    ):
+        """
+        Write a value to a Modbus register asynchronously.
+
+        Args:
+            register (int): Register address to write to.
+            value (int): Value to write.
+            data_type (str): Data type of the value.
+            key (str): Entity key.
+            scale (optional): Scale factor.
+            unit (optional): Unit of measurement.
+            entity_type (str, optional): Type of entity.
+
+        Returns:
+            bool: True if write succeeded, False otherwise.
+        """
+        try:
+            # Perform asynchronous write to Modbus register
+            await self.client.async_write_register(
+                register=register,
+                value=value,
+            )
+            # Log successful write
+            _LOGGER.debug(
+                "Wrote to %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
+                entity_type,
+                key,
+                register,
+                register,
+                value,
+                scale if scale is not None else 1,
+                unit if unit is not None else "N/A",
+            )
+            return True
+        except Exception as e:
+            # Log failure to write value
+            _LOGGER.error(
+                "Failed to write value %s to register 0x%X: %s", value, register, e
+            )
+            return False

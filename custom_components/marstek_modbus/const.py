@@ -8,6 +8,7 @@ MODEL = "Venus E"
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
 DEFAULT_MESSAGE_WAIT_MS = 80  # Default wait time for Modbus messages in milliseconds
+DEFAULT_UNIT_ID = 1  # Default Modbus slave ID (unit ID)
 
 # Default polling intervals (seconds) per sensor category.
 # These values can be overridden via modbus.yaml using the
@@ -130,7 +131,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "energy",
         "state_class": "measurement",
         "key": "battery_total_energy",
-        "enabled_by_default": False,
+        "enabled_by_default": True, ###False,
         "data_type": "uint16",
         "precision": 3,
         "background_read": True,
@@ -350,7 +351,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "energy",
         "state_class": "total_increasing",
         "key": "total_monthly_charging_energy",
-        "enabled_by_default": False,
+        "enabled_by_default": True, ###False,
         "data_type": "uint32",
         "precision": 2,
         "background_read": True,
@@ -366,7 +367,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "energy",
         "state_class": "total_increasing",
         "key": "total_monthly_discharging_energy",
-        "enabled_by_default": False,
+        "enabled_by_default": True, ###False,
         "data_type": "int32",
         "precision": 2,
         "background_read": True,
@@ -421,36 +422,12 @@ SENSOR_DEFINITIONS = [
         "scan_interval": "scan_interval.state"
     },
     {
-        # Selectable grid standard (country / regulation profile)
-        "name": "Grid Standard",
-        "register": 44100,
-        "key": "grid_standard",
-        "unit": None,
-        "scale": 1,
-        "data_type": "uint16",
-        "enabled_by_default": True,
-        "states": {
-            0: "Auto (220-240 V, 50/60 Hz)",
-            1: "EN50549",
-            2: "NL - Netherlands",
-            3: "DE - Germany",
-            4: "AT - Austria",
-            5: "UK - United Kingdom",
-            6: "ES - Spain",
-            7: "PL - Poland",
-            8: "IT - Italy",
-            9: "CN - China"
-        },
-        "scan_interval": "scan_interval.info"
-    },    
-    {
         "name": "Fault Status",
         "register": 36100,
-        "count": 2,
+        "count": 4,
         "data_type": "uint16",
         "key": "fault_status",
-        "enabled_by_default": False,
-        "background_read": True,
+        "enabled_by_default": True,
         "scan_interval": "scan_interval.state",
         "bit_descriptions": {
             # Register 36100 (bits 0-15)
@@ -468,21 +445,23 @@ SENSOR_DEFINITIONS = [
             19: "BAT low SOC",
             20: "BAT communication failure",
             21: "BMS protect",
-            # 48: "Hardware Bus overvoltage",
-            # 49: "Hardware Output overcurrent",
-            # 50: "Hardware trans overcurrent",
-            # 51: "Hardware battery overcurrent",
-            # 52: "Hardware Protecion",
-            # 53: "Output Overcurrent",
-            # 54: "High Voltage bus overvoltage",
-            # 55: "High Voltage bus undervoltage",
-            # 56: "Overpower Protection",
-            # 57: "FSM abnormal",
-            # 58: "Overtemperature Protection",
-            # 59: "Inverter soft start timeout",
-            # 64: "self-checking failure",
-            # 65: "eeprom failure",
-            # 66: "other system failure"
+            # Register 36102 (bits 32-47)
+            32: "Inverter soft start timeout",
+            33: "self-checking failure",
+            34: "eeprom failure",
+            35: "other system failure",
+            # Register 36103 (bits 48-63)
+            48: "Hardware Bus overvoltage",
+            49: "Hardware Output overcurrent",
+            50: "Hardware trans overcurrent",
+            51: "Hardware battery overcurrent",
+            52: "Hardware Protecion",
+            53: "Output Overcurrent",
+            54: "High Voltage bus overvoltage",
+            55: "High Voltage bus undervoltage",
+            56: "Overpower Protection",
+            57: "FSM abnormal",
+            58: "Overtemperature Protection"
         }
     },
     {
@@ -565,6 +544,19 @@ SENSOR_DEFINITIONS = [
         "data_type": "int32",
         "precision": 0,
         "scan_interval": "scan_interval.power"
+    },
+    {   
+        # Discharge limit mode switch
+        "name": "Discharge Limit",
+        "register": 41010,
+        "key": "discharge_limit_mode",
+        "enabled_by_default": False,
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state",
+        "states": {
+            0: "High (2500 W)",
+            1: "Low (800 W)",        
+        }
     }
 ]
 
@@ -577,17 +569,11 @@ SELECT_DEFINITIONS = [
         "register": 43000,
         "key": "user_work_mode",
         "enabled_by_default": True,
-        "options": ["Manual", "Anti-Feed", "Trade Mode"],
         "scan_interval": "scan_interval.state", 
-        "map_to_int": {
+        "options": {
             "Manual": 0,
             "Anti-Feed": 1,
             "Trade Mode": 2
-        },
-        "int_to_map": {
-            0: "Manual",
-            1: "Anti-Feed",
-            2: "Trade Mode"
         }
     },
     {
@@ -596,17 +582,31 @@ SELECT_DEFINITIONS = [
         "register": 42010,
         "key": "force_mode",
         "enabled_by_default": False,
-        "options": ["None", "Charge", "Discharge"],
         "scan_interval": "scan_interval.state",
-        "map_to_int": {
+        "options": {
             "None": 0,
             "Charge": 1,
             "Discharge": 2
-        },
-        "int_to_map": {
-            0: "None",
-            1: "Charge",
-            2: "Discharge"
+        }
+    },
+    {
+        # Grid‑standard profile (country / regulation)
+        "name": "Grid Standard",
+        "register": 44100,
+        "key": "grid_standard",
+        "enabled_by_default": True,
+        "scan_interval": "scan_interval.state", 
+        "options": {
+            "Auto": 0,
+            "EN50549": 1,
+            "Netherlands": 2,
+            "Germany": 3,
+            "Austria": 4,
+            "United Kingdom": 5,
+            "Spain": 6,
+            "Poland": 7,
+            "Italy": 8,
+            "China": 9
         }
     }
 ]
@@ -633,9 +633,20 @@ SWITCH_DEFINITIONS = [
         "command_off": 21947,  # 0x55BB in decimal
         "key": "rs485_control_mode",
         "enabled_by_default": False,
+        "data_type": "uint16",
         "scan_interval": "scan_interval.state"
-
-    }    
+    },
+    # {   
+    #     # Discharge limit mode switch
+    #     "name": "Discharge Limit (800 W)",
+    #     "register": 41010,
+    #     "command_on": 1,   # 1 = Low (800 W)
+    #     "command_off": 0,  # 0 = High (2500 W)
+    #     "key": "discharge_limit_mode",
+    #     "enabled_by_default": False,
+    #     "data_type": "uint16",
+    #     "scan_interval": "scan_interval.state"
+    # }
 ]
 
 # Definitions for numeric configuration parameters
@@ -690,7 +701,49 @@ NUMBER_DEFINITIONS = [
         "unit": "W",
         "data_type": "uint16",
         "scan_interval": "scan_interval.state"
-    }
+    },
+    {
+        # Charging cutoff capacity as a percentage 
+        "name": "Charging Cutoff Capacity",
+        "register": 44000,
+        "key": "charging_cutoff_capacity",
+        "enabled_by_default": False,
+        "min": 80,
+        "max": 100,
+        "step": 1,
+        "unit": "%",
+        "scale": 0.1,
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state"
+    },
+    {
+        # Discharging cutoff capacity as a percentage
+        "name": "Discharging Cutoff Capacity",
+        "register": 44001,
+        "key": "discharging_cutoff_capacity",
+        "enabled_by_default": False,
+        "min": 12,
+        "max": 30,
+        "step": 1,
+        "unit": "%",
+        "scale": 0.1,
+        "data_type": "uint16",
+        "scan_interval": "scan_interval.state"
+    },
+    {
+        # charge or discharge to SOC as a percentage of total battery capacity
+        "name": "Charge to SOC",
+        "register": 42011,
+        "key": "charge_to_soc",
+        "enabled_by_default": False,
+        "min": 10,
+        "max": 100, 
+        "step": 1,
+        "unit": "%",
+        "scale": 1,       
+        "data_type": "uint16",        
+        "scan_interval": "scan_interval.state"
+    }  
 ]
 
 # Definitions for button actions (one-time triggers)
@@ -735,3 +788,9 @@ STORED_ENERGY_SENSOR_DEFINITIONS = [
         "max_energy_key": "battery_total_energy"
     }
 ]
+
+# Enable extended debug logging of unknown / undefined registers.
+# Set to True in configuration.yaml via:
+# marstek_modbus:
+#   debug_unknown_registers: true
+DEBUG_UNKNOWN_REGISTERS = False
