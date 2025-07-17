@@ -11,6 +11,7 @@
 
 ### Fixed
 - Improved error handling for incorrect count of received bytes during Modbus communication
+- Added validation to ensure the returned Modbus register matches the requested address and expected byte length
 
 ## [2025.6.4] - 2025-07-10
 
