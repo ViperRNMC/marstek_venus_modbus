@@ -98,6 +98,7 @@ class MarstekModbusClient:
             int, str, bool, or None: Interpreted value or None on error.
         """
 
+        # Ensure the client is connected; reconnect if needed
         if not self.client.connected:
             _LOGGER.warning(
                 "Modbus client not connected, attempting reconnect before register %d (0x%04X)",
@@ -113,6 +114,7 @@ class MarstekModbusClient:
                 )
                 return None
 
+        # Validate register address and read count
         if count is None:
             count = 2 if data_type in ["int32", "uint32"] else 1
 
@@ -131,6 +133,7 @@ class MarstekModbusClient:
             )
             return None
 
+        # Define inner function to perform a single read attempt
         async def _read_once():
             try:
                 result = await self.client.read_holding_registers(
@@ -141,11 +144,24 @@ class MarstekModbusClient:
                         "Modbus read error at register %d (0x%04X)", register, register
                     )
                     return None
+
+                if hasattr(result, "address") and result.address != register:
+                    _LOGGER.error(
+                        "Response address mismatch: expected register %d (0x%04X), got %d (0x%04X)",
+                        register,
+                        register,
+                        result.address,
+                        result.address,
+                    )
+                    return None
+
                 return result.registers
+
             except Exception as e:
-                _LOGGER.exception("Exception during modbus read: %s", e)
+                _LOGGER.exception("Exception during Modbus read: %s", e)
                 return None
 
+        # Retry once if initial read fails or returns incomplete data
         regs = await _read_once()
         if regs is None or len(regs) < count:
             _LOGGER.warning(
