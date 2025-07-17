@@ -1,144 +1,225 @@
 """
-Module for creating sensor entities for Marstek Venus battery devices.
-The sensors retrieve data by reading Modbus registers.
+Module for creating switch entities for Marstek Venus battery devices.
+Switches read and write Modbus registers asynchronously via the coordinator.
 """
 
-from homeassistant.components.switch import SwitchEntity
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.core import HomeAssistant
-from homeassistant.config_entries import ConfigEntry
-from .const import SWITCH_DEFINITIONS, DOMAIN, MANUFACTURER, MODEL
-from .coordinator import MarstekCoordinator
-
-# Set up logging for debugging purposes
 import logging
+
+from homeassistant.components.switch import SwitchEntity
+from homeassistant.config_entries import ConfigEntry
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
+
+from .coordinator import MarstekCoordinator
+from .const import DOMAIN, MANUFACTURER, MODEL, SWITCH_DEFINITIONS
+
 _LOGGER = logging.getLogger(__name__)
 
+
+def get_entity_type(entity) -> str:
+    """
+    Determine the entity type based on its class inheritance.
+
+    Args:
+        entity: The entity instance.
+
+    Returns:
+        A lowercase string representing the entity type
+        (e.g., 'switch', 'sensor', 'select').
+    """
+    for base in entity.__class__.__mro__:
+        if issubclass(base, Entity) and base.__name__.endswith("Entity"):
+            return base.__name__.replace("Entity", "").lower()
+    return "entity"
+
+
 async def async_setup_entry(
-    hass: HomeAssistant, 
-    entry: ConfigEntry, 
-    async_add_entities: AddEntitiesCallback
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+    async_add_entities: AddEntitiesCallback,
 ):
     """
-    Setup function that is called when the integration is loaded.
-    Creates a coordinator that manages data retrieval and tracking.
-    Creates sensors based on the sensor configurations and registers them with Home Assistant.
+    Set up switch entities when the config entry is loaded.
+
+    This function retrieves the coordinator from hass.data,
+    creates switch entities based on SWITCH_DEFINITIONS,
+    and registers them with Home Assistant.
+
+    Args:
+        hass: Home Assistant instance.
+        entry: Configuration entry.
+        async_add_entities: Callback to add entities.
     """
-    # Create a coordinator that handles communication with the device
-    coordinator = MarstekCoordinator(hass, entry)
+    # Retrieve coordinator instance from hass.data
+    coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Create a sensor object for each sensor definition
-    sensors = [
-        MarstekSwitch(coordinator, sensor_def)
-        for sensor_def in SWITCH_DEFINITIONS
-    ]
+    # Await the first data refresh to populate coordinator data before entities use it
+    await coordinator.async_config_entry_first_refresh()
 
-    # Add the sensors to Home Assistant so they become visible and usable
-    async_add_entities(sensors)
+    entities = []
+
+    # Create switch entities for each definition
+    for definition in SWITCH_DEFINITIONS:
+        entities.append(MarstekSwitch(coordinator, definition))
+
+    # Register all created switch entities with Home Assistant
+    async_add_entities(entities)
 
 
 class MarstekSwitch(SwitchEntity):
     """
-    Representation of a single sensor for a Marstek Venus battery.
-    This sensor reads the value from the Modbus register via the coordinator.
+    Representation of a Modbus switch entity for Marstek Venus.
+
+    Switch state is read and controlled asynchronously via
+    the coordinator communicating with the Modbus device.
     """
 
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """
-        Initialize the switch entity with the coordinator and set attributes.
-        This includes the name, unique ID, and internal state.
+        Initialize the switch entity.
+
+        Args:
+            coordinator: The data update coordinator instance.
+            definition: Dictionary containing switch configuration.
         """
         self.coordinator = coordinator
         self.definition = definition
-        self._attr_name = f"{self.definition['name']}"
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
-        self._attr_has_entity_name = True
-        self._attr_should_poll = True  # Enable polling to refresh data
-        self._state = False
 
-        # Optional: disable entity by default if specified in the sensor definition
-        if self.definition.get("enabled_by_default") is False:
+        # Initialize attributes from the definition
+        self._attr_name = definition["name"]
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{definition['key']}"
+        self._attr_has_entity_name = True
+
+        # Internal state tracking
+        self._state = None
+        self._key = definition["key"]
+        self._register = definition["register"]
+
+        # Disable entity by default if specified
+        if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
-    def update(self):
-        """
-        Retrieves the latest sensor value by reading the Modbus register.
-        Updates the boolean state based on the register value compared to command_on and command_off.
-        """
-        raw_value = self.coordinator.client.read_register(
-            register=self.definition["register"],
-            data_type=self.definition.get("type", "uint16"),
-            count=self.definition.get("count", 1)
-        )
+    async def async_added_to_hass(self):
+        """Handle entity added to Home Assistant by fetching initial state."""
+        await self.async_update()
+        self.async_write_ha_state()
 
-        if raw_value is not None:
+    @property
+    def available(self) -> bool:
+        """Return True if coordinator update succeeded and state is known."""
+        return self.coordinator.last_update_success and (self._state is not None)
 
+    @property
+    def is_on(self) -> bool | None:
+        """Return True if switch is on, False if off, None if unknown."""
+        return self._state
+
+    async def async_update(self):
+        """
+        Fetch the latest switch state from the coordinator's Modbus client.
+
+        Reads the configured register asynchronously and updates internal state.
+        """
+        data_type = self.definition.get("data_type", "uint16")
+        register = self._register
+        count = self.definition.get("count", 1)
+
+        try:
+            # Read value from the Modbus register asynchronously
+            value = await self.coordinator.client.async_read_register(
+                register=register,
+                data_type=data_type,
+                count=count,
+                sensor_key=self._key,
+            )
+        except Exception as e:
+            _LOGGER.error("Error reading register 0x%X: %s", register, e)
+            self._state = None
+            return
+
+        if value is not None:
             command_on = self.definition.get("command_on")
             command_off = self.definition.get("command_off")
 
-            if command_on is not None and raw_value == command_on:
+            # Interpret the read value according to configured commands
+            if command_on is not None and value == command_on:
                 self._state = True
-            elif command_off is not None and raw_value == command_off:
+            elif command_off is not None and value == command_off:
                 self._state = False
             else:
                 _LOGGER.warning(
-                    f"Unknown register value {raw_value} for switch {self._attr_name}"
+                    "Unknown register value %s for switch %s", value, self._attr_name
                 )
+                self._state = None
         else:
-            _LOGGER.warning(f"No register data received for switch {self._attr_name}")
+            self._state = None
 
-    @property
-    def is_on(self):
-        """
-        Returns True if the switch is on, False otherwise.
-        """
-        return self._state
+        # Update the coordinator data with the new state
+        await self.coordinator.async_update_value(
+            self._key,
+            self._state,
+            register=register,
+            scale=self.definition.get("scale"),
+            unit=self.definition.get("unit"),
+            entity_type=get_entity_type(self),
+        )
 
-    def turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs):
         """
-        Turns the switch on by writing the command_on value to the Modbus register.
-        Updates internal state and schedules a state update in Home Assistant.
+        Turn the switch on by writing the 'command_on' value to the register.
         """
         command_on = self.definition.get("command_on")
         if command_on is None:
-            _LOGGER.warning(f"No command_on value defined for switch {self._attr_name}")
+            _LOGGER.warning("No command_on value defined for switch %s", self._attr_name)
             return
 
-        success = self.coordinator.client.write_register(self.definition["register"], command_on)
+        success = await self.coordinator.async_write_value(
+            register=self._register,
+            value=command_on,
+            data_type=self.definition.get("data_type", "uint16"),
+            key=self._key,
+            scale=self.definition.get("scale", 1),
+            unit=self.definition.get("unit"),
+            entity_type=get_entity_type(self),
+        )
         if success:
             self._state = True
-            self.schedule_update_ha_state()
-        else:
-            _LOGGER.warning(f"Failed to turn on switch {self._attr_name}")
+            self.async_write_ha_state()
 
-    def turn_off(self, **kwargs):
+    async def async_turn_off(self, **kwargs):
         """
-        Turns the switch off by writing the command_off value to the Modbus register.
-        Updates internal state and schedules a state update in Home Assistant.
+        Turn the switch off by writing the 'command_off' value to the register.
         """
         command_off = self.definition.get("command_off")
         if command_off is None:
-            _LOGGER.warning(f"No command_off value defined for switch {self._attr_name}")
+            _LOGGER.warning("No command_off value defined for switch %s", self._attr_name)
             return
 
-        success = self.coordinator.client.write_register(self.definition["register"], command_off)
+        success = await self.coordinator.async_write_value(
+            register=self._register,
+            value=command_off,
+            data_type=self.definition.get("data_type", "uint16"),
+            key=self._key,
+            scale=self.definition.get("scale", 1),
+            unit=self.definition.get("unit"),
+            entity_type=get_entity_type(self),
+        )
         if success:
             self._state = False
-            self.schedule_update_ha_state()
-        else:
-            _LOGGER.warning(f"Failed to turn off switch {self._attr_name}")
+            self.async_write_ha_state()
 
     @property
-    def device_info(self):
-        """Return device information to associate entities with a device in the UI.
+    def device_info(self) -> dict:
+        """
+        Return device info for device registry grouping.
 
-        This enables the "Rename associated entities?" dialog when the user renames the integration instance.
-        It also groups all entities under one device in the Home Assistant device registry.
+        This information groups entities under the same device.
         """
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
             "name": self.coordinator.config_entry.title,
             "manufacturer": MANUFACTURER,
             "model": MODEL,
-            "entry_type": "service"
+            "entry_type": "service",
         }

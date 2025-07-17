@@ -8,6 +8,7 @@ MODEL = "Venus E"
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
 DEFAULT_MESSAGE_WAIT_MS = 80  # Default wait time for Modbus messages in milliseconds
+DEFAULT_UNIT_ID = 1  # Default Modbus slave ID (unit ID)
 
 # Default polling intervals (seconds) per sensor category.
 # These values can be overridden via modbus.yaml using the
@@ -130,7 +131,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "energy",
         "state_class": "measurement",
         "key": "battery_total_energy",
-        "enabled_by_default": False,
+        "enabled_by_default": True, ###False,
         "data_type": "uint16",
         "precision": 3,
         "background_read": True,
@@ -350,7 +351,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "energy",
         "state_class": "total_increasing",
         "key": "total_monthly_charging_energy",
-        "enabled_by_default": False,
+        "enabled_by_default": True, ###False,
         "data_type": "uint32",
         "precision": 2,
         "background_read": True,
@@ -366,7 +367,7 @@ SENSOR_DEFINITIONS = [
         "device_class": "energy",
         "state_class": "total_increasing",
         "key": "total_monthly_discharging_energy",
-        "enabled_by_default": False,
+        "enabled_by_default": True, ###False,
         "data_type": "int32",
         "precision": 2,
         "background_read": True,
@@ -426,8 +427,7 @@ SENSOR_DEFINITIONS = [
         "count": 4,
         "data_type": "uint16",
         "key": "fault_status",
-        "enabled_by_default": False,
-        "background_read": True,
+        "enabled_by_default": True,
         "scan_interval": "scan_interval.state",
         "bit_descriptions": {
             # Register 36100 (bits 0-15)
@@ -703,7 +703,7 @@ NUMBER_DEFINITIONS = [
         "scan_interval": "scan_interval.state"
     },
     {
-        # 
+        # Charging cutoff capacity as a percentage 
         "name": "Charging Cutoff Capacity",
         "register": 44000,
         "key": "charging_cutoff_capacity",
@@ -717,7 +717,7 @@ NUMBER_DEFINITIONS = [
         "scan_interval": "scan_interval.state"
     },
     {
-        # Maximum power that can be discharged from the battery in watts
+        # Discharging cutoff capacity as a percentage
         "name": "Discharging Cutoff Capacity",
         "register": 44001,
         "key": "discharging_cutoff_capacity",
@@ -729,7 +729,21 @@ NUMBER_DEFINITIONS = [
         "scale": 0.1,
         "data_type": "uint16",
         "scan_interval": "scan_interval.state"
-    }
+    },
+    {
+        # charge or discharge to SOC as a percentage of total battery capacity
+        "name": "Charge to SOC",
+        "register": 42011,
+        "key": "charge_to_soc",
+        "enabled_by_default": False,
+        "min": 10,
+        "max": 100, 
+        "step": 1,
+        "unit": "%",
+        "scale": 1,       
+        "data_type": "uint16",        
+        "scan_interval": "scan_interval.state"
+    }  
 ]
 
 # Definitions for button actions (one-time triggers)

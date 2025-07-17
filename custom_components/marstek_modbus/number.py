@@ -58,16 +58,22 @@ class MarstekNumber(NumberEntity):
         """Initialize the number entity."""
         self.coordinator = coordinator
         self.definition = definition
+
+        # Set entity attributes from definition
+        self._attr_name = f"{definition['name']}"       
         self._attr_name = self.definition["name"]
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{definition['key']}"
         self._attr_has_entity_name = True
+
+        # Set optional attributes if provided in definition
+        self._attr_native_unit_of_measurement = definition["unit"]       
         self._attr_native_min_value = definition["min"]
         self._attr_native_max_value = definition["max"]
         self._attr_native_step = definition["step"]
-        self._attr_native_unit_of_measurement = definition["unit"]
         self._register = definition["register"]
         self._key = definition["key"]
 
+        # disable entity by default if specified
         if self.definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
@@ -94,7 +100,7 @@ class MarstekNumber(NumberEntity):
 
         try:
             # Request the register value asynchronously
-            raw_value = await self.coordinator.client.async_read_register(
+            value = await self.coordinator.client.async_read_register(
                 register=register,
                 data_type=data_type,
                 count=count,
@@ -104,20 +110,20 @@ class MarstekNumber(NumberEntity):
             _LOGGER.error("Error reading register 0x%X: %s", register, e)
             return
 
-        # Process raw_value based on sensor config
-        if raw_value is not None:
-            if isinstance(raw_value, (int, float)):
+        # Process value based on sensor config
+        if value is not None:
+            if isinstance(value, (int, float)):
                 # Apply scale and offset if specified, round to precision
-                scaled = raw_value * self.definition.get("scale", 1)
+                scaled = value * self.definition.get("scale", 1)
                 scaled += self.definition.get("offset", 0)
                 precision = self.definition.get("precision", 0)
                 self._state = round(scaled, precision)
 
             else:
-                # Fallback: just store raw_value directly
-                self._state = raw_value
+                # Fallback: just store value directly
+                self._state = value
 
-            await self.coordinator.async_update_sensor(
+            await self.coordinator.async_update_value(
                 self.definition["key"],
                 self._state,
                 register=self.definition.get("register"),
@@ -150,4 +156,28 @@ class MarstekNumber(NumberEntity):
             "manufacturer": MANUFACTURER,
             "model": MODEL,
             "entry_type": "service",
-        }  
+        }
+
+    async def async_set_native_value(self, value: float) -> None:
+        """Write the value to the Modbus register."""
+        register = self.definition["register"]
+        data_type = self.definition.get("data_type", "uint16")
+        scale = self.definition.get("scale", 1)
+        offset = self.definition.get("offset", 0)
+
+        # Bereken ruwe waarde terug vanuit geschaalde waarde
+        value = int((value - offset) / scale)
+
+        success = await self.coordinator.async_write_value(
+            register=register,
+            value=value,
+            data_type=data_type,
+            key=self._key,
+            scale=scale,
+            unit=self.definition.get("unit"),
+            entity_type=get_entity_type(self),
+        )
+
+        if success:
+            self._state = value
+            self.async_write_ha_state()

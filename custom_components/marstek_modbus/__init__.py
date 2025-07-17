@@ -2,8 +2,10 @@
 Main integration setup for Marstek Venus Modbus component.
 
 Handles setting up and unloading config entries, initializing
-the data coordinator, and forwarding setup to sensor platforms.
+the data coordinator, and forwarding setup to sensor and select platforms.
 """
+
+import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -11,60 +13,86 @@ from homeassistant.core import HomeAssistant
 from .const import DOMAIN
 from .coordinator import MarstekCoordinator
 
-PLATFORMS = ["sensor"]
-# Potential expansions: "switch", "number", "select", "button"
+_LOGGER = logging.getLogger(__name__)
+
+PLATFORMS = [
+    "sensor",
+    "switch",
+    "select",
+    "button",
+    "number",
+]  # List of supported platforms for this integration
 
 
-async def async_setup(hass: HomeAssistant, config):
+async def async_setup(hass: HomeAssistant, config: dict) -> bool:
     """
     General setup of the integration.
 
-    Called once when Home Assistant starts.
-    Does not perform any configuration and always returns True.
+    This is called once when Home Assistant starts.
+    It does not perform any configuration and always returns True.
+
+    Args:
+        hass: Home Assistant instance.
+        config: Configuration dict.
+
+    Returns:
+        True always.
     """
     return True
 
 
-async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """
     Set up a config entry.
 
     Initializes the coordinator for this entry and stores it in hass.data.
-    Also forwards the setup to platforms (e.g., sensor) used by this integration.
+    Forwards setup to platforms (e.g., sensor, select) used by this integration.
 
     Args:
-        hass: The Home Assistant instance.
-        entry: The config entry being set up.
+        hass: Home Assistant instance.
+        entry: ConfigEntry to setup.
 
     Returns:
-        bool: True if setup was successful.
+        True if setup successful, False otherwise.
     """
-    coordinator = MarstekCoordinator(hass, entry)
-    await coordinator.async_init()
+    try:
+        # Create and initialize the coordinator for data management
+        coordinator = MarstekCoordinator(hass, entry)
+        await coordinator.async_init()
 
-    # Ensure there is a dict for this domain in hass.data
-    hass.data.setdefault(DOMAIN, {})
-    # Store the coordinator under this entry's ID
-    hass.data[DOMAIN][entry.entry_id] = coordinator
+        # Store the coordinator in hass data for later reference
+        hass.data.setdefault(DOMAIN, {})
+        hass.data[DOMAIN][entry.entry_id] = coordinator
 
-    # Forward the entry to the platforms to initialize them
-    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
-    return True
+        # Forward setup to all platforms defined in PLATFORMS
+        await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+        return True
+    except Exception as err:
+        _LOGGER.error("Error setting up entry %s: %s", entry.entry_id, err)
+        return False
 
 
-async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry):
+async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     """
     Unload a config entry and its associated platforms.
 
     Args:
-        hass: The Home Assistant instance.
-        entry: The config entry being unloaded.
+        hass: Home Assistant instance.
+        entry: ConfigEntry to unload.
 
     Returns:
-        bool: True if unload was successful.
+        True if unload successful, False otherwise.
     """
-    # Unload the platforms (e.g., sensor) associated with this entry
-    await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
-    # Remove the coordinator from hass.data
-    hass.data[DOMAIN].pop(entry.entry_id)
-    return True
+    try:
+        # Unload all platforms for the entry
+        unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+        if unload_ok:
+            # Remove coordinator reference from hass data
+            hass.data[DOMAIN].pop(entry.entry_id, None)
+
+        return unload_ok
+    except Exception as err:
+        _LOGGER.error("Error unloading entry %s: %s", entry.entry_id, err)
+        return False

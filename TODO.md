@@ -1,23 +1,24 @@
 # TODO List
 
-
-- [ ] Fix icon display in HACS
-- [ ] Improve HACS documentation and visibility
-- [ ] Provide a Lovelace dashboard example in the integration folder
-- [ ] fix reset button
-- [ ] Implement bulk reading of grouped registers to improve polling efficiency
-- [ ] Add dynamic polling interval adjustments per sensor group
-- [ ] Refactor sensor update logic to handle bulk register reads
-- [ ] Improve error handling and retry logic for Modbus communication
-- [ ] Add support for user-configurable message wait time and timeout in UI
-- [ ] Provide Lovelace dashboard example with key sensors and controls
-- [ ] Add tests for new sensor types and bit flag decoding logic
-- [x] Enable only key sensors (e.g. voltage, SOC, current, mode) by default
-- [x] add fault / alarm sensor
-- [x] add Round-Trip Efficiency
-- [x] poll interval for single sensor
-- [x] add sensors
-- [x] Add all relevant Modbus sensors with `enabled_by_default: false`
-- [x] Fix for int32/char handling 
-- [x] Use device_name as device name in Home Assistant
-- [x] Update documentation
+- [ ] Icoonweergave in HACS corrigeren  
+- [ ] Gebruik maken van `CoordinatorEntity`  
+- [ ] Ombouwen naar async  
+- [ ] Documentatie en zichtbaarheid in HACS verbeteren  
+- [ ] Voorbeeld van een Lovelace-dashboard toevoegen in de integratiemap  
+- [ ] Resetknop repareren  
+- [ ] Bulk lezen van gegroepeerde registers implementeren om polling-efficiëntie te verbeteren  
+- [ ] Dynamische polling-intervals per sensorgroep toevoegen  
+- [ ] Sensor-updatelogica refactoren voor bulkregister-lezen  
+- [ ] Foutafhandeling en herhaal-logica voor Modbus-communicatie verbeteren  
+- [ ] Ondersteuning toevoegen voor instelbare wachttijd en time-out in de gebruikersinterface  
+- [ ] Voorbeeld Lovelace-dashboard bieden met belangrijke sensoren en knoppen  
+- [ ] Tests toevoegen voor nieuwe sensortypes en bitflag-decodering  
+- [x] Alleen belangrijke sensoren (zoals spanning, SOC, stroom, modus) standaard inschakelen  
+- [x] Fout-/alarmsensor toevoegen  
+- [x] Round-Trip Efficiency toevoegen  
+- [x] Pollinterval per sensor instelbaar maken  
+- [x] Sensoren toevoegen  
+- [x] Alle relevante Modbus-sensoren toevoegen met `enabled_by_default: false`  
+- [x] Fix voor int32/char-verwerking  
+- [x] `device_name` gebruiken als apparaatnaam in Home Assistant  
+- [x] Documentatie bijwerken  
