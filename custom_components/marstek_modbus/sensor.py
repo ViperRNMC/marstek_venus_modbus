@@ -6,6 +6,8 @@ from homeassistant.components.sensor import SensorEntity
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.helpers.entity import Entity
+
 from .const import (
     SENSOR_DEFINITIONS,
     DOMAIN,
@@ -20,40 +22,42 @@ import logging
 
 _LOGGER = logging.getLogger(__name__)
 
+def get_entity_type(entity) -> str:
+    for base in entity.__class__.__mro__:
+        if issubclass(base, Entity) and base.__name__.endswith("Entity"):
+            return base.__name__.replace("Entity", "").lower()
+    return "entity"
 
-async def async_setup_entry(
-    hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
-):
+
+async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
     """
     Set up sensor entities when the config entry is loaded.
 
     This function creates a coordinator and uses sensor definitions
     to instantiate sensor entities, then adds them to Home Assistant.
     """
-    # Create a coordinator instance for managing data updates
-    coordinator = MarstekCoordinator(hass, entry)
+    # Get the coordinator instance from hass.data
+    coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Await the first data refresh so coordinator.data is populated before sensors use it
+    # Await the first data refresh so coordinator.data is populated before use it
     await coordinator.async_config_entry_first_refresh()
 
-    sensors = []
+    entities = []
 
-    # Add sensors defined in SENSOR_DEFINITIONS
-    for sensor_def in SENSOR_DEFINITIONS:
-        sensors.append(MarstekSensor(coordinator, sensor_def))
+    # Add entities defined in SENSOR_DEFINITIONS
+    for definition in SENSOR_DEFINITIONS:
+        entities.append(MarstekSensor(coordinator, definition))
 
-    # Add battery efficiency sensors from definitions
+    # Add battery efficiency entities from definitions
     for definition in EFFICIENCY_SENSOR_DEFINITIONS:
-        sensors.append(MarstekEfficiencySensor(coordinator, definition))
+        entities.append(MarstekEfficiencySensor(coordinator, definition))
 
-    # Add stored energy sensors from definitions
+    # Add stored energy entities from definitions
     for definition in STORED_ENERGY_SENSOR_DEFINITIONS:
-        sensors.append(MarstekStoredEnergySensor(coordinator, definition))
+        entities.append(MarstekStoredEnergySensor(coordinator, definition))
 
     # Register all created sensor entities with Home Assistant
-    async_add_entities(sensors)
+    async_add_entities(entities)
 
 
 class MarstekSensor(SensorEntity):
@@ -124,8 +128,6 @@ class MarstekSensor(SensorEntity):
         register = self.definition["register"]
         count = self.definition.get("count", 1)
 
-        _LOGGER.debug("Reading register 0x%X (%s)", register, self.definition.get("name"))
-
         try:
             # Request the register value asynchronously
             raw_value = await self.coordinator.client.async_read_register(
@@ -138,7 +140,6 @@ class MarstekSensor(SensorEntity):
             _LOGGER.error("Error reading register 0x%X: %s", register, e)
             return
 
-        _LOGGER.debug("Raw value for %s: %s", self.definition.get("name"), raw_value)
 
         # If multiple registers returned, combine them
         if isinstance(raw_value, (list, tuple)):
@@ -170,18 +171,28 @@ class MarstekSensor(SensorEntity):
                 # Fallback: just store raw_value directly
                 self._state = raw_value
 
+            await self.coordinator.async_update_sensor(
+                self.definition["key"],
+                self._state,
+                register=self.definition.get("register"),
+                scale=self.definition.get("scale"),
+                unit=self.definition.get("unit"),
+                entity_type=get_entity_type(self)
+            )
+
             # Map integer state to predefined states if applicable
             if self.states and isinstance(self._state, int) and self._state in self.states:
                 self._state = self.states[self._state]
-
-            _LOGGER.debug("Updated sensor %s with value %s", self.name, self._state)
 
     @property
     def native_value(self):
         """
         Return the current state value for Home Assistant.
         """
-        return self._state
+        # Use the coordinator's data for the sensor value
+        if self.coordinator.data and isinstance(self.coordinator.data, dict):
+            return self.coordinator.data.get(self.definition["key"])
+        return None
 
     @property
     def device_info(self):

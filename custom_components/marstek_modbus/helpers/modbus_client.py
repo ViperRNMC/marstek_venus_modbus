@@ -92,15 +92,12 @@ class MarstekModbusClient:
             data_type (str): Data type for interpretation, e.g. 'int16', 'int32', 'char', 'bit'.
             count (Optional[int]): Number of registers to read (default depends on data_type).
             bit_index (Optional[int]): Bit position for 'bit' data type (0-15).
+            sensor_key (Optional[str]): Sensor key for logging.
 
         Returns:
             int, str, bool, or None: Interpreted value or None on error.
         """
-        if sensor_key:
-            self._current_sensor_key = sensor_key
-        else:
-            self._current_sensor_key = 'unknown'
-        # Check connection and reconnect if necessary before reading
+
         if not self.client.connected:
             _LOGGER.warning(
                 "Modbus client not connected, attempting reconnect before register %d (0x%04X)",
@@ -116,37 +113,69 @@ class MarstekModbusClient:
                 )
                 return None
 
-        # Determine how many registers to read based on data type if not specified
         if count is None:
             count = 2 if data_type in ["int32", "uint32"] else 1
+
+        if not (0 <= register <= 0xFFFF):
+            _LOGGER.error(
+                "Invalid register address: %d (0x%04X). Must be 0-65535.",
+                register,
+                register,
+            )
+            return None
+
+        if not (1 <= count <= 125):  # Modbus spec limit
+            _LOGGER.error(
+                "Invalid register count: %d. Must be between 1 and 125.",
+                count,
+            )
+            return None
+
+        async def _read_once():
+            try:
+                result = await self.client.read_holding_registers(
+                    address=register, count=count, slave=self.unit_id
+                )
+                if result.isError():
+                    _LOGGER.error(
+                        "Modbus read error at register %d (0x%04X)", register, register
+                    )
+                    return None
+                return result.registers
+            except Exception as e:
+                _LOGGER.exception("Exception during modbus read: %s", e)
+                return None
+
+        regs = await _read_once()
+        if regs is None or len(regs) < count:
+            _LOGGER.warning(
+                "Expected %d registers for %s at register %d (0x%04X), got %s. Retrying once...",
+                count,
+                data_type,
+                register,
+                register,
+                len(regs) if regs else 0,
+            )
+            await asyncio.sleep(0.1)
+            regs = await _read_once()
+            if regs is None or len(regs) < count:
+                _LOGGER.error(
+                    "Failed to read required registers after retry at register %d (0x%04X)",
+                    register,
+                    register,
+                )
+                return None
 
         _LOGGER.debug(
             "Requesting register %d (0x%04X) for sensor '%s' (type: %s, count: %s)",
             register,
             register,
-            self._current_sensor_key if hasattr(self, '_current_sensor_key') else 'unknown',
+            sensor_key or 'unknown',
             data_type,
             count,
         )
+        _LOGGER.debug("Received data from register %d (0x%04X): %s", register, register, regs)
 
-        try:
-            # Perform async read from Modbus server
-            result = await self.client.read_holding_registers(
-                address=register, count=count, slave=self.unit_id
-            )
-
-            if result.isError():
-                _LOGGER.error("Modbus read error at register %d (0x%04X)", register, register)
-                return None
-
-            regs = result.registers
-            _LOGGER.debug("Received data from register %d (0x%04X): %s", register, register, regs)
-
-        except Exception as e:
-            _LOGGER.exception("Exception during modbus read: %s", e)
-            return None
-
-        # Interpret register data based on requested data type
         if data_type == "int16":
             val = regs[0]
             return val - 0x10000 if val >= 0x8000 else val
@@ -157,7 +186,10 @@ class MarstekModbusClient:
         elif data_type == "int32":
             if len(regs) < 2:
                 _LOGGER.warning(
-                    "Expected 2 registers for int32 at register %d (0x%04X), got %s", register, register, len(regs)
+                    "Expected 2 registers for int32 at register %d (0x%04X), got %s",
+                    register,
+                    register,
+                    len(regs),
                 )
                 return None
             val = (regs[0] << 16) | regs[1]
@@ -166,7 +198,10 @@ class MarstekModbusClient:
         elif data_type == "uint32":
             if len(regs) < 2:
                 _LOGGER.warning(
-                    "Expected 2 registers for uint32 at register %d (0x%04X), got %s", register, register, len(regs)
+                    "Expected 2 registers for uint32 at register %d (0x%04X), got %s",
+                    register,
+                    register,
+                    len(regs),
                 )
                 return None
             return (regs[0] << 16) | regs[1]
@@ -174,17 +209,14 @@ class MarstekModbusClient:
         elif data_type == "char":
             byte_array = bytearray()
             for reg in regs:
-                # Each register has two bytes; extract high and low bytes
                 byte_array.append((reg >> 8) & 0xFF)
                 byte_array.append(reg & 0xFF)
-            # Decode ASCII string, ignore errors, strip trailing nulls
             return byte_array.decode("ascii", errors="ignore").rstrip('\x00')
 
         elif data_type == "bit":
             if bit_index is None or not (0 <= bit_index < 16):
                 raise ValueError("bit_index must be between 0 and 15 for bit data_type")
             reg_val = regs[0]
-            # Extract the specific bit value as boolean
             return bool((reg_val >> bit_index) & 1)
 
         else:

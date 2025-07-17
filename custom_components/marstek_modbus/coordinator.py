@@ -4,15 +4,21 @@ Handles connection setup and periodic data refresh scheduling.
 """
 
 from datetime import timedelta
-from time import monotonic
 import logging
 
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-
 from .helpers.modbus_client import MarstekModbusClient
-from .const import SCAN_INTERVAL, SENSOR_DEFINITIONS, DEFAULT_MESSAGE_WAIT_MS
+from .const import (
+    SCAN_INTERVAL,
+    DEFAULT_MESSAGE_WAIT_MS,
+    SENSOR_DEFINITIONS,
+    SWITCH_DEFINITIONS,
+    BUTTON_DEFINITIONS,
+    NUMBER_DEFINITIONS,
+    SELECT_DEFINITIONS,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -51,24 +57,33 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         # Prepare sensor polling list with metadata (intervals, register, etc.)
         self._poll_list = []
-        for sensor in SENSOR_DEFINITIONS:
-            scan_interval = _get_scan_interval(sensor.get("scan_interval", 10))
+        all_definitions = (
+            SENSOR_DEFINITIONS
+            + SELECT_DEFINITIONS
+            + SWITCH_DEFINITIONS
+            + BUTTON_DEFINITIONS
+            + NUMBER_DEFINITIONS
+        )
+
+        for entity in all_definitions:
+            if "register" not in entity or "data_type" not in entity or "key" not in entity:
+                continue  # Skip incomplete definitions
+
+            scan_interval = _get_scan_interval(entity.get("scan_interval", 10))
             self._poll_list.append(
                 {
-                    "key": sensor["key"],
-                    "register": sensor["register"],
-                    "count": sensor.get("count", 1),
-                    "data_type": sensor["data_type"],
-                    "scale": sensor.get("scale", 1),
+                    "key": entity["key"],
+                    "register": entity["register"],
+                    "count": entity.get("count", 1),
+                    "data_type": entity["data_type"],
+                    "scale": entity.get("scale", 1),
                     "scan_interval": scan_interval,
-                    "background_read": sensor.get("background_read", False),
-                    # Set last read time in the past to allow immediate first read
-                    "last_read": monotonic() - scan_interval,
+                    "background_read": entity.get("background_read", False),
                 }
             )
 
         # Determine update interval as the shortest scan interval among sensors
-        self.interval = min(sensor["scan_interval"] for sensor in self._poll_list)
+        self.interval = min((sensor["scan_interval"] for sensor in self._poll_list), default=10)
 
         # Initialize Modbus client (connection not made yet)
         self.client = MarstekModbusClient(
@@ -86,7 +101,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         super().__init__(
             hass,
             _LOGGER,
-            name="Marstek Venus Modbus Coordinator",
+            name="Coordinator",
             update_interval=None,
         )
 
@@ -101,7 +116,6 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Attempt to connect to Modbus device asynchronously
         connected = await self.client.async_connect()
         if connected:
-            _LOGGER.info("Connected to Modbus device at %s:%d", self.host, self.port)
 
             # Set update interval now that connection is confirmed
             self.update_interval = timedelta(seconds=self.interval)
@@ -124,56 +138,32 @@ class MarstekCoordinator(DataUpdateCoordinator):
             dict: Sensor key to value mapping.
         """
         data = {}
-        now = monotonic()
-
-        for sensor in self._poll_list:
-            # Skip sensors with no valid register or zero count (non-physical)
-            if sensor["count"] <= 0 or sensor["register"] == 0:
-                continue
-
-            # Skip sensor if its scan interval has not yet elapsed
-            if now - sensor["last_read"] < sensor["scan_interval"]:
-                continue
-
-            # Update last read timestamp to current time
-            sensor["last_read"] = now
-
-            try:
-                # Read register value asynchronously from Modbus device, passing sensor_key
-                value = await self.client.async_read_register(
-                    register=sensor["register"],
-                    data_type=sensor["data_type"],
-                    count=sensor["count"],
-                    sensor_key=sensor["key"],
-                )
-
-                # Apply scaling factor if specified
-                if sensor["scale"] != 1:
-                    value = round(value * sensor["scale"], 3)
-
-                old_value = data.get(sensor["key"])
-                if value != old_value:
-                    _LOGGER.debug(
-                        "Sensor '%s' updated: register=0x%04X old=%s new=%s",
-                        sensor["key"],
-                        sensor["register"],
-                        old_value,
-                        value,
-                    )
-
-                # Store the new sensor value
-                data[sensor["key"]] = value
-
-            except Exception as err:
-                # Log and store None on read failure
-                _LOGGER.error(
-                    "Error reading register 0x%04X (%s): %s",
-                    sensor["register"],
-                    sensor["key"],
-                    err,
-                )
-                data[sensor["key"]] = None
 
         # Update internal data store with latest readings
         self.data = data
         return data
+    
+    async def async_update_sensor(
+        self, key: str, value, *, register=None, scale=None, unit=None, entity_type="unknown"
+    ):
+        """Update a single entity value in the coordinator and log it."""
+        self.data[key] = value
+
+        if register is not None:
+            _LOGGER.debug(
+                "Updated %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
+                entity_type,
+                key,
+                register,
+                register,
+                value,
+                scale if scale is not None else 1,
+                unit if unit is not None else "N/A",
+            )
+        else:
+            _LOGGER.debug(
+                "Updated %s '%s' with value %s",
+                entity_type,
+                key,
+                value,
+            )
