@@ -145,13 +145,11 @@ class MarstekModbusClient:
                     )
                     return None
 
-                if hasattr(result, "address") and result.address != register:
+                if not hasattr(result, "registers") or result.registers is None:
                     _LOGGER.error(
-                        "Response address mismatch: expected register %d (0x%04X), got %d (0x%04X)",
+                        "No registers returned from Modbus read at register %d (0x%04X)",
                         register,
                         register,
-                        result.address,
-                        result.address,
                     )
                     return None
 
