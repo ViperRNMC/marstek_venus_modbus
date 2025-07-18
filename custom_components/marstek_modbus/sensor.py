@@ -173,7 +173,13 @@ class MarstekSensor(SensorEntity):
                 scaled = value * self.definition.get("scale", 1)
                 scaled += self.definition.get("offset", 0)
                 precision = self.definition.get("precision", 0)
-                self._state = round(scaled, precision)
+                scaled_value = round(scaled, precision)
+                
+                # If the sensor definition includes a 'states' mapping (as defined in const), use it to convert int state to label
+                if self.states and isinstance(scaled_value, int) and scaled_value in self.states:
+                    self._state = self.states[scaled_value]
+                else:
+                    self._state = scaled_value
 
             else:
                 self._state = value
@@ -187,10 +193,6 @@ class MarstekSensor(SensorEntity):
                 unit=self.definition.get("unit"),
                 entity_type=get_entity_type(self),
             )
-
-            # Map integer states to readable strings if defined
-            if self.states and isinstance(self._state, int) and self._state in self.states:
-                self._state = self.states[self._state]
 
     @property
     def native_value(self):
