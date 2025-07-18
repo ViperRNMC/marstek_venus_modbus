@@ -557,6 +557,47 @@ SENSOR_DEFINITIONS = [
             0: "High (2500 W)",
             1: "Low (800 W)",        
         }
+    },
+    {
+        # WiFi connection status
+        "name": "WiFi Status",
+        "register": 30300,
+        "data_type": "uint16",
+        "unit": None,
+        "key": "wifi_status",
+        "enabled_by_default": False,
+        "precision": 0,
+        "states": {
+            0: "Disconnected",
+            1: "Connected"
+        },
+        "scan_interval": "scan_interval.state"
+    },
+    {
+        # Cloud connection status
+        "name": "Cloud Status",
+        "register": 30302,
+        "data_type": "uint16",
+        "unit": None,
+        "key": "cloud_status",
+        "enabled_by_default": False,
+        "precision": 0,
+        "states": {
+            0: "Disconnected",
+            1: "Connected"
+        },
+        "scan_interval": "scan_interval.state"
+    },
+    {
+        # WiFi signal strength in dBm
+        "name": "WiFi Signal Strength",
+        "register": 30303,
+        "data_type": "uint16",
+        "unit": "dBm",
+        "key": "wifi_signal_strength",
+        "enabled_by_default": False,
+        "precision": 0,
+        "scan_interval": "scan_interval.state"
     }
 ]
 
