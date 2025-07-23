@@ -592,6 +592,7 @@ SENSOR_DEFINITIONS = [
         # WiFi signal strength in dBm
         "name": "WiFi Signal Strength",
         "register": 30303,
+        "scale": -1,
         "data_type": "uint16",
         "unit": "dBm",
         "key": "wifi_signal_strength",
