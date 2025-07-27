@@ -65,7 +65,7 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 
 ## 🚀 Installation
 
-1. Add this repository to HACS (Integrations → Custom repositories)
+1. Add this repository to HACS **Integrations → Custom repositories**
 [![Add repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ViperRNMC&repository=marstek_venus_modbus)
 2. Install the “Marstek Venus Modbus” integration
 3. Restart Home Assistant
