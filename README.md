@@ -1,5 +1,8 @@
 # Marstek Venus Battery - Home Assistant Integration
 
+[![GitHub Release](https://img.shields.io/github/v/release/ViperRNMC/marstek_venus_modbus)](https://github.com/ViperRNMC/marstek_venus_modbus/releases)
+[![GitHub Issues](https://img.shields.io/github/issues/ViperRNMC/marstek_venus_modbus)](https://github.com/ViperRNMC/marstek_venus_modbus/issues)
+
 🇬🇧 **English**
 
 This is a custom HACS-compatible integration for the Marstek Venus E home battery system, using **Modbus TCP** via an **EW11 RS485-to-WiFi gateway**. No YAML required. The integration provides sensors, switches and number controls to monitor and manage the battery directly from Home Assistant.
@@ -63,9 +66,11 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 ## 🚀 Installation
 
 1. Add this repository to HACS (Integrations → Custom repositories)
+[![Add repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ViperRNMC&repository=marstek_venus_modbus)
 2. Install the “Marstek Venus Modbus” integration
 3. Restart Home Assistant
 4. Add the integration via **Settings → Devices & Services**
+[![Open your Home Assistant instance and show the integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=marstek_modbus)  
 5. Enter the IP and port of your EW11 gateway (default: port 502)
 
 ---
