@@ -79,7 +79,7 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 
 The following Modbus registers are used by this integration:
 
-| reg    | Name                         | type     | bytes | scale | unit | ha type               | Description / Options / Commands                                      |
+| Reg    | Name                         | Type     | Bytes | Scale | Unit | HA type               | Description / Options / Commands                                      |
 |:------:|:-----------------------------|:---------|:-----:|:-----:|:----:|:---------------------:|----------------------------------------------------------------------|
 | 30300  | WiFi Status                  | uint16   | 2     | 1     |  -   | sensor                | WiFi connection status (0=Disconnected, 1=Connected)                |
 | 30302  | Cloud Status                 | uint16   | 2     | 1     |  -   | sensor                | Cloud connection status (0=Disconnected, 1=Connected)               |
