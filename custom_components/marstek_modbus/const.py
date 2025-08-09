@@ -377,7 +377,7 @@ SENSOR_DEFINITIONS = [
         # Maximum cell temperature in degrees Celsius
         "name": "Max Cell Temperature",
         "register": 35010,
-        "scale": 0.1,
+        "scale": 1,
         "unit": "°C",
         "device_class": "temperature",
         "state_class": "measurement",
@@ -391,7 +391,7 @@ SENSOR_DEFINITIONS = [
         # Minimum cell temperature in degrees Celsius
         "name": "Min Cell Temperature",
         "register": 35011,
-        "scale": 0.1,
+        "scale": 1,
         "unit": "°C",
         "device_class": "temperature",
         "state_class": "measurement",
