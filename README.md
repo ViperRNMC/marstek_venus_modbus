@@ -83,7 +83,7 @@ The following Modbus registers are used by this integration:
 |:------:|:-----------------------------|:---------|:-----:|:-----:|:----:|:---------------------:|----------------------------------------------------------------------|
 | 30300  | WiFi Status                  | uint16   | 2     | 1     |  -   | sensor                | WiFi connection status (0=Disconnected, 1=Connected)                |
 | 30302  | Cloud Status                 | uint16   | 2     | 1     |  -   | sensor                | Cloud connection status (0=Disconnected, 1=Connected)               |
-| 30303  | WiFi Signal Strength         | uint16   | 2     | 1     | dbm  | sensor                | WiFi signal strength in dBm                                         |
+| 30303  | WiFi Signal Strength         | uint16   | 2     | -1    | dbm  | sensor                | WiFi signal strength in dBm                                         |
 | 30399  | BMS Version                  | uint16   | 2     | 1     |  -   | sensor                | Battery Management System version                                   |
 | 30401  | Firmware Version             | uint16   | 2     | 1     |  -   | sensor                | Firmware version                                                   |
 | 30402  | MAC Address                  | char     | 12    |  -    |  -   | sensor                | MAC address                                                        |
@@ -112,8 +112,8 @@ The following Modbus registers are used by this integration:
 | 35000  | Internal Temperature       | int16    | 2     | 0.1   | °c   | sensor                | Internal device temperature                                 |
 | 35001  | Internal MOS1 Temperature  | int16    | 2     | 0.1   | °c   | sensor                | Internal MOS1 temperature                                   |
 | 35002  | Internal MOS2 Temperature  | int16    | 2     | 0.1   | °c   | sensor                | Internal MOS2 temperature                                   |
-| 35010  | Max Cell Temperature       | int16    | 2     | 0.1   | °c   | sensor                | Maximum cell temperature                                   |
-| 35011  | Min Cell Temperature       | int16    | 2     | 0.1   | °c   | sensor                | Minimum cell temperature                                   |
+| 35010  | Max Cell Temperature       | int16    | 2     | 1     | °c   | sensor                | Maximum cell temperature                                   |
+| 35011  | Min Cell Temperature       | int16    | 2     | 1     | °c   | sensor                | Minimum cell temperature                                   |
 | 35100  | Inverter State             | uint16   | 2     | 1     |  -   | sensor                | Inverter state (0=Sleep, 1=Standby, 2=Charge, 3=Discharge, 4=Backup Mode, 5=OTA Upgrade) |
 | 36000  | Alarm Status               | uint16   | 4     | -     |  -   | sensor                | Alarm status bits (see bit descriptions)                    |
 | 36100  | Fault Status               | uint16   | 8     | -     |  -   | sensor                | Fault status bits (64 bits total over 4 registers)          |
