@@ -8,7 +8,7 @@ import logging
 from homeassistant.components.binary_sensor import BinarySensorEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import Entity, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import MarstekCoordinator
@@ -82,17 +82,25 @@ class MarstekBinarySensor(BinarySensorEntity):
         self.coordinator = coordinator
         self.definition = definition
 
-        self._attr_name = definition["name"]
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{definition['key']}"
+        # Set entity attributes from definition
+        self._attr_name = f"{self.definition['name']}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
 
+        # Set optional attributes if provided in definition
         self._state = None
         self._key = definition["key"]
         self._register = definition["register"]
 
+        # set category if defined in the definition
+        if "category" in self.definition:
+            self._attr_entity_category = EntityCategory(self.definition.get("category"))
+
+        # Set icon if defined in the button definition
         if "icon" in self.definition:
             self._attr_icon = self.definition.get("icon")
 
+        # Optional: disable entity by default if specified in the definition
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 

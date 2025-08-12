@@ -9,33 +9,27 @@ It includes:
 import logging
 
 from homeassistant.components.sensor import SensorEntity
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.core import HomeAssistant
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.helpers.entity import Entity
+from homeassistant.core import HomeAssistant
+from homeassistant.helpers.entity import Entity, EntityCategory
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import (
-    SENSOR_DEFINITIONS,
-    DOMAIN,
-    MANUFACTURER,
-    MODEL,
-    EFFICIENCY_SENSOR_DEFINITIONS,
-    STORED_ENERGY_SENSOR_DEFINITIONS,
-)
 from .coordinator import MarstekCoordinator
+from .const import DOMAIN, MANUFACTURER, MODEL, SENSOR_DEFINITIONS, EFFICIENCY_SENSOR_DEFINITIONS, STORED_ENERGY_SENSOR_DEFINITIONS
 
 _LOGGER = logging.getLogger(__name__)
 
 
 def get_entity_type(entity) -> str:
     """
-    Determine the entity type (sensor, switch, select, etc.) based on the class name.
+    Determine the entity type based on its class inheritance.
 
     Args:
-        entity: Home Assistant entity instance.
+        entity: The entity instance.
 
     Returns:
-        Lowercase string representing the type of the entity.
+        A lowercase string representing the entity type
+        (e.g., 'switch', 'sensor', 'binary_sensor').
     """
     for base in entity.__class__.__mro__:
         if issubclass(base, Entity) and base.__name__.endswith("Entity"):
@@ -97,15 +91,34 @@ class MarstekSensor(SensorEntity):
         self.coordinator = coordinator
         self.definition = definition
 
-        self._attr_name = definition["name"]
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{definition['key']}"
+        # Set entity attributes from definition
+        self._attr_name = f"{self.definition['name']}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
+
+        # Set optional attributes if provided in definition
         self._attr_native_unit_of_measurement = definition.get("unit")
         self._attr_device_class = definition.get("device_class")
         self._attr_state_class = definition.get("state_class")
         self.states = definition.get("states")
         self._state = None
 
+        # Set entity category (e.g., diagnostic) if defined
+        if "category" in definition:
+            try:
+                self._attr_entity_category = EntityCategory(definition["category"])
+            except ValueError:
+                _LOGGER.warning(
+                    "Unknown entity category %s for switch %s",
+                    definition["category"],
+                    self._attr_name,
+                )
+
+        # Set custom icon if provided
+        if "icon" in definition:
+            self._attr_icon = definition["icon"]
+
+        # Disable entity by default if specified
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
@@ -202,12 +215,8 @@ class MarstekSensor(SensorEntity):
         return None
 
     @property
-    def device_info(self):
-        """
-        Provide device info for Home Assistant device registry.
-
-        Groups all entities under the same device.
-        """
+    def device_info(self) -> dict:
+        """Return device info for device registry grouping."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
             "name": self.coordinator.config_entry.title,
