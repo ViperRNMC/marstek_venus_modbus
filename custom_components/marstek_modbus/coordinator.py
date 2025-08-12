@@ -151,84 +151,18 @@ class MarstekCoordinator(DataUpdateCoordinator):
         return connected
 
     async def _async_update_data(self):
-        """
-        Fetch new data from device for background sensors.
-
-        Only polls sensors marked as background_read and that are disabled in HA.
-
-        Returns:
-            dict: Sensor key to value mapping.
-        """
         data = {}
-
+        """ 
+        Asynchronously update data from Modbus registers.
+        Reads values from Modbus registers based on the polling list.
+        Returns:
+            dict: Updated data dictionary with sensor values.
+        """
+        # Iterate over polling list to read values from Modbus registers
         if self.data is None:
             self.data = {}
 
-        # Get entity registry to check enabled/disabled status
-        entity_registry = er.async_get(self.hass)
-
-        enabled_keys = {
-            entity.unique_id
-            for entity in entity_registry.entities.values()
-            if entity.domain == "sensor" and not entity.disabled
-        }
-        
-        already_polled_keys = set()
-
-        # for sensor in self._poll_list:
-        #     key = sensor["key"]
-
-        #     if not sensor.get("background_read", False):
-        #         continue
-
-        #     if key in already_polled_keys:
-        #         continue
-
-        #     # Check if the entity is enabled in HA (default to True)
-        #     is_enabled = False
-        #     for domain in ["sensor", "select", "switch", "number", "button"]:
-        #         entity_id = f"{domain}.{key}"
-        #         entry = entity_registry.entities.get(entity_id)
-        #         if entry:
-        #             is_enabled = not entry.disabled
-        #             break
-
-        #     if is_enabled:
-        #         _LOGGER.debug(
-        #             "Skipping background sensor '%s' because it is enabled in HA",
-        #             key,
-        #         )
-        #         continue
-
-        #     register = sensor["register"]
-        #     count = sensor.get("count", 1)
-        #     data_type = sensor["data_type"]
-
-        #     try:
-        #         value = await self.client.async_read_register(
-        #             register=register,
-        #             data_type=data_type,
-        #             count=count,
-        #             sensor_key=key,
-        #         )
-        #         scale = sensor.get("scale", 1)
-        #         data[key] = value * scale
-        #         already_polled_keys.add(key)
-        #         _LOGGER.debug(
-        #             "Updated background sensor '%s': register=%d (0x%04X), value=%s, scale=%s",
-        #             key,
-        #             register,
-        #             register,
-        #             value * scale,
-        #             scale,
-        #         )
-        #     except Exception as err:
-        #         _LOGGER.warning(
-        #             "Failed to update background sensor '%s': %s",
-        #             key,
-        #             err,
-        #         )
-
+        # Iterate over polling list to read values from Modbus registers
         self.data.update(data)
         return self.data
 
