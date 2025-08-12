@@ -3,17 +3,18 @@ This module defines a ButtonEntity for triggering actions on a Marstek Venus bat
 via Modbus register writes.
 """
 
-# Import necessary components and modules
+import logging
+
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from .const import BUTTON_DEFINITIONS, DOMAIN, MANUFACTURER, MODEL
-from .coordinator import MarstekCoordinator
 
-# Set up logging for debugging purposes
-import logging
+from .coordinator import MarstekCoordinator
+from .const import BUTTON_DEFINITIONS, DOMAIN, MANUFACTURER, MODEL
+
 _LOGGER = logging.getLogger(__name__)
+
 
 class MarstekButton(ButtonEntity):
     """ButtonEntity to trigger actions on the Marstek Venus battery."""
@@ -31,13 +32,17 @@ class MarstekButton(ButtonEntity):
         self._register = self.definition["register"]
         self._value = self.definition.get("value", 1)  # Default value to write on press
 
-        # Optional: disable entity by default if specified in the button definition
+        # Set icon if defined in the button definition
+        if "icon" in self.definition:
+            self._attr_icon = self.definition.get("icon")
+
+        # Optional: disable entity by default if specified in the definition
         if self.definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
     async def async_press(self) -> None:
         """Handle button press by writing the specified value to the Modbus register."""
-        success = self.coordinator.client.write_register(self._register, self._value)
+        success = await self.coordinator.client.async_write_register(self._register, self._value)
         if success:
             _LOGGER.debug("Successfully wrote value %s to register %s on button press", self._value, self._register)
         else:
@@ -61,6 +66,7 @@ class MarstekButton(ButtonEntity):
 # Setup function to add the button entities to Home Assistant
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry, async_add_entities: AddEntitiesCallback):
     """Set up the MarstekButton entities using the provided config entry."""
-    coordinator = MarstekCoordinator(hass, entry)
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+    await coordinator.async_config_entry_first_refresh()
     entities = [MarstekButton(coordinator, definition) for definition in BUTTON_DEFINITIONS]
     async_add_entities(entities)

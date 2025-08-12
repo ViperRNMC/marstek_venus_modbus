@@ -73,7 +73,11 @@ class MarstekNumber(NumberEntity):
         self._register = definition["register"]
         self._key = definition["key"]
 
-        # disable entity by default if specified
+        # Set icon if defined in the button definition
+        if "icon" in self.definition:
+            self._attr_icon = self.definition.get("icon")
+
+        # Optional: disable entity by default if specified in the definition
         if self.definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
