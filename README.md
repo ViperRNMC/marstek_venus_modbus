@@ -23,7 +23,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 - Select entity for control modes (e.g., force mode, grid standard)
 - Backup mode control and charge/discharge to SOC included
 - Includes calculated sensors: round-trip efficiency (total/monthly) and stored energy
-<!-- - Efficient background polling with per-sensor scan intervals -->
+- Reset button to allow manual reset of the battery management system via Home Assistant
 - Some advanced sensors are disabled by default to keep the UI clean
 - UI-based configuration (Config Flow)
 - Fully local, no cloud required
@@ -53,7 +53,7 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 - Select-entiteiten voor bedieningsmodi (bijv. force mode, netstandaard)
 - Back-up modus besturing en laden/ontladen tot SOC inbegrepen
 - Inclusief berekende sensoren: round-trip rendement (totaal/maandelijks) en opgeslagen energie
-<!-- - Efficiënte achtergrondpolling met per-sensor scan-intervallen -->
+- Resetknop om handmatig het batterijbeheersysteem te resetten via Home Assistant
 - Sommige geavanceerde sensoren standaard uitgeschakeld voor een schone gebruikersinterface
 - Configuratie via UI (Config Flow)
 - Volledig lokaal, geen cloud nodig
@@ -74,7 +74,7 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 
 The following Modbus registers are used by this integration:
 
-| reg    | Name                         | type     | bytes | scale | unit | ha type               | Description / Options / Commands                                      |
+| Reg    | Name                         | Type     | Bytes | Scale | Unit | HA type               | Description / Options / Commands                                      |
 |:------:|:-----------------------------|:---------|:-----:|:-----:|:----:|:---------------------:|----------------------------------------------------------------------|
 | 30300  | WiFi Status                  | uint16   | 2     | 1     |  -   | sensor                | WiFi connection status (0=Disconnected, 1=Connected)                |
 | 30302  | Cloud Status                 | uint16   | 2     | 1     |  -   | sensor                | Cloud connection status (0=Disconnected, 1=Connected)               |
@@ -110,6 +110,8 @@ The following Modbus registers are used by this integration:
 | 35010  | Max Cell Temperature       | int16    | 2     | 0.1   | °c   | sensor                | Maximum cell temperature                                   |
 | 35011  | Min Cell Temperature       | int16    | 2     | 0.1   | °c   | sensor                | Minimum cell temperature                                   |
 | 35100  | Inverter State             | uint16   | 2     | 1     |  -   | sensor                | Inverter state (0=Sleep, 1=Standby, 2=Charge, 3=Discharge, 4=Backup Mode, 5=OTA Upgrade) |
+| 37007  | Max Cell Voltage           | uint16   | 2     | 0.001 | V    | sensor                | Maximum cell voltage across battery cells                   |
+| 37008  | Min Cell Voltage           | uint16   | 2     | 0.001 | V    | sensor                | Minimum cell voltage across battery cells                   |
 | 36000  | Alarm Status               | uint16   | 4     | -     |  -   | sensor                | Alarm status bits (see bit descriptions)                    |
 | 36100  | Fault Status               | uint16   | 8     | -     |  -   | sensor                | Fault status bits (64 bits total over 4 registers)          |
 | 41010  | Discharge Limit            | uint16   | 2     | 1     |  -   | sensor                | Discharge limit mode switch (0=High (2500 W), 1=Low (800 W))|
