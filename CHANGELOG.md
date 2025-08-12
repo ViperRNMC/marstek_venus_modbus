@@ -1,6 +1,11 @@
 # Changelog
 
-# Changelog
+## [2025.8.1] - 2025-08-12
+
+### Added
+- New Min Cell Voltage sensor (register 35043) to monitor minimum battery cell voltage
+- New Max Cell Voltage sensor (register 36943) to monitor maximum battery cell voltage
+- New Reset Device button (register 41000) to allow resetting the battery management system via Home Assistant
 
 ## [2025.8.0] - 2025-08-09
 

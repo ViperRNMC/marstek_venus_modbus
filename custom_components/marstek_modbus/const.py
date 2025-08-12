@@ -55,6 +55,8 @@ SENSOR_DEFINITIONS = [
         "register": 31100,
         "scale": 0.01,
         "unit": None,
+        "icon": "mdi:update",
+        "category": "diagnostic",
         "key": "software_version",
         "enabled_by_default": True,
         "data_type": "uint16",
@@ -62,11 +64,26 @@ SENSOR_DEFINITIONS = [
         "scan_interval": "scan_interval.info"
     },
     {
-
+        # BMS version, stored as a 16-bit unsigned integer
         "name": "BMS Version",
-        "register": 30399,
+        "register": 31102,
         "unit": None,
+        "icon": "mdi:update",
+        "category": "diagnostic",
         "key": "bms_version",
+        "enabled_by_default": True,
+        "data_type": "uint16",
+        "precision": 0,
+        "scan_interval": "scan_interval.info"
+    },
+    {
+        # Firmware version, stored as a 16-bit unsigned integer
+        "name": "Firmware Version",
+        "register": 31101,
+        "unit": None,
+        "category": "diagnostic",
+        "icon": "mdi:update",
+        "key": "firmware_version",
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 0,
@@ -78,6 +95,8 @@ SENSOR_DEFINITIONS = [
         "register": 30800,
         "count": 6,
         "unit": None,
+        "category": "diagnostic",
+        "icon": "mdi:update",
         "key": "comm_module_firmware",
         "enabled_by_default": True,
         "data_type": "char",
@@ -85,18 +104,7 @@ SENSOR_DEFINITIONS = [
         "scan_interval": "scan_interval.info"
     },
     {
-        # Firmware version of the device, stored as a 16-bit unsigned integer
-        "name": "Firmware Version",
-        "register": 30401,
-        "unit": None,
-        "key": "firmware_version",
-        "enabled_by_default": True,
-        "data_type": "uint16",
-        "precision": 0,
-        "scan_interval": "scan_interval.info"
-    },
-    {
-        
+        # MAC address of the device, stored as a string in multiple registers
         "name": "MAC Address",
         "register": 30402,
         "count": 6,
@@ -117,9 +125,9 @@ SENSOR_DEFINITIONS = [
         "state_class": "measurement",
         "key": "battery_soc",
         "enabled_by_default": True,
+        "internal_use": True,  
         "data_type": "uint16",
         "precision": 1,
-        "background_read": True,
         "scan_interval": "scan_interval.soc"
     },
     {
@@ -132,9 +140,9 @@ SENSOR_DEFINITIONS = [
         "state_class": "measurement",
         "key": "battery_total_energy",
         "enabled_by_default": True, ###False,
+        "internal_use": True,
         "data_type": "uint16",
         "precision": 3,
-        "background_read": True,
         "scan_interval": "scan_interval.energy"
     },
     {
@@ -290,9 +298,9 @@ SENSOR_DEFINITIONS = [
         "state_class": "total_increasing",
         "key": "total_charging_energy",
         "enabled_by_default": True,
+        "internal_use": True,
         "data_type": "uint32",
         "precision": 2,
-        "background_read": True,
         "scan_interval": "scan_interval.energy"
     },
     {
@@ -306,9 +314,9 @@ SENSOR_DEFINITIONS = [
         "state_class": "total_increasing",
         "key": "total_discharging_energy",
         "enabled_by_default": True,
+        "internal_use": True,
         "data_type": "int32",
         "precision": 2,
-        "background_read": True,
         "scan_interval": "scan_interval.energy"
     },    
     {
@@ -352,9 +360,9 @@ SENSOR_DEFINITIONS = [
         "state_class": "total_increasing",
         "key": "total_monthly_charging_energy",
         "enabled_by_default": True, ###False,
+        "internal_use": True, 
         "data_type": "uint32",
         "precision": 2,
-        "background_read": True,
         "scan_interval": "scan_interval.energy"
     },
     {
@@ -368,9 +376,9 @@ SENSOR_DEFINITIONS = [
         "state_class": "total_increasing",
         "key": "total_monthly_discharging_energy",
         "enabled_by_default": True, ###False,
+        "internal_use": True,
         "data_type": "int32",
         "precision": 2,
-        "background_read": True,
         "scan_interval": "scan_interval.energy"
     },      
     {
@@ -384,7 +392,7 @@ SENSOR_DEFINITIONS = [
         "key": "max_cell_temperature",
         "enabled_by_default": False,
         "data_type": "int16",
-        "precision": 2,
+        "precision": 1,
         "scan_interval": "scan_interval.temperature"
     },
     {
@@ -398,8 +406,38 @@ SENSOR_DEFINITIONS = [
         "key": "min_cell_temperature",
         "enabled_by_default": False,
         "data_type": "int16",
-        "precision": 2,
+        "precision": 1,
         "scan_interval": "scan_interval.temperature"
+    },
+    {
+        # Minimum cell voltage
+        "name": "Max Cell Voltage",
+        "register": 37007,
+        "scale": 0.001,
+        "unit": "V",
+        "device_class": "voltage",
+        "state_class": "measurement",
+        "key": "max_cell_voltage",
+        "enabled_by_default": False,
+        "internal_use": True, 
+        "data_type": "int16",
+        "precision": 2,
+        "scan_interval": "scan_interval.electrical"
+    },
+    {
+        # Minimum cell voltage 
+        "name": "Min Cell Voltage",
+        "register": 37008,
+        "scale": 0.001,
+        "unit": "V",
+        "device_class": "voltage",
+        "state_class": "measurement",
+        "key": "min_cell_voltage",
+        "enabled_by_default": False,
+        "internal_use": True, 
+        "data_type": "int16",
+        "precision": 2,
+        "scan_interval": "scan_interval.electrical"
     },
     {
         # Current state of the inverter device
@@ -407,6 +445,7 @@ SENSOR_DEFINITIONS = [
         "register": 35100,
         "scale": 1,
         "unit": None,
+        "icon": "mdi:state-machine",
         "key": "inverter_state",
         "enabled_by_default": True,
         "data_type": "uint16",
@@ -417,16 +456,21 @@ SENSOR_DEFINITIONS = [
             2: "Charge",
             3: "Discharge",
             4: "Backup Mode",
-            5: "OTA Upgrade"
+            5: "OTA Upgrade",
+            6: "Bypass",
         },
         "scan_interval": "scan_interval.state"
     },
     {
+        # Fault status bits indicating various device faults
         "name": "Fault Status",
         "register": 36100,
         "count": 4,
         "data_type": "uint16",
         "key": "fault_status",
+        "device_class": "problem",
+        "icon": "mdi:alert",
+        "category": "diagnostic",
         "enabled_by_default": True,
         "scan_interval": "scan_interval.state",
         "bit_descriptions": {
@@ -471,7 +515,10 @@ SENSOR_DEFINITIONS = [
         "count": 2,
         "data_type": "uint16",
         "key": "alarm_status",
+        "device_class": "problem",
+        "icon": "mdi:alert",
         "enabled_by_default": True,
+        "category": "diagnostic",
         "unit": None,
         "precision": 0,
         "scan_interval": "scan_interval.state",
@@ -497,6 +544,7 @@ SENSOR_DEFINITIONS = [
         "register": 41100,
         "data_type": "uint16",
         "unit": None,
+        "icon": "mdi:home-automation", 
         "key": "modbus_address",
         "enabled_by_default": False,
         "scan_interval": "scan_interval.info",
@@ -545,32 +593,37 @@ SENSOR_DEFINITIONS = [
         "precision": 0,
         "scan_interval": "scan_interval.power"
     },
-    {   
-        # Discharge limit mode switch
-        "name": "Discharge Limit",
-        "register": 41010,
-        "key": "discharge_limit_mode",
-        "enabled_by_default": False,
+    {
+        # WiFi signal strength in dBm
+        "name": "WiFi Signal Strength",
+        "register": 30303,
+        "scale": -1,
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state",
-        "states": {
-            0: "High (2500 W)",
-            1: "Low (800 W)",        
-        }
-    },
+        "device_class": "diagnostic",
+        "unit": "dBm",
+        "icon": "mdi:wifi",
+        "category": "diagnostic",
+        "key": "wifi_signal_strength",
+        "enabled_by_default": False,
+        "precision": 0,
+        "scan_interval": "scan_interval.state"
+    }
+]
+
+# Definitions for binary sensors that represent on/off states
+# Each binary sensor includes the Modbus register and bit position
+BINARY_SENSOR_DEFINITIONS = [
     {
         # WiFi connection status
         "name": "WiFi Status",
         "register": 30300,
         "data_type": "uint16",
         "unit": None,
+        "category": "diagnostic",
+        "device_class": "connectivity",
+        "icon": "mdi:check-network-outline",
         "key": "wifi_status",
         "enabled_by_default": False,
-        "precision": 0,
-        "states": {
-            0: "Disconnected",
-            1: "Connected"
-        },
         "scan_interval": "scan_interval.state"
     },
     {
@@ -579,27 +632,24 @@ SENSOR_DEFINITIONS = [
         "register": 30302,
         "data_type": "uint16",
         "unit": None,
+        "category": "diagnostic",
+        "device_class": "connectivity",
+        "icon": "mdi:cloud-outline",
         "key": "cloud_status",
         "enabled_by_default": False,
-        "precision": 0,
-        "states": {
-            0: "Disconnected",
-            1: "Connected"
-        },
         "scan_interval": "scan_interval.state"
     },
-    {
-        # WiFi signal strength in dBm
-        "name": "WiFi Signal Strength",
-        "register": 30303,
-        "scale": -1,
+    {   
+        # Discharge limit mode switch
+        "name": "Discharge Limit",
+        "register": 41010,
         "data_type": "uint16",
-        "unit": "dBm",
-        "key": "wifi_signal_strength",
+        "unit": None,
+        "icon": "mdi:battery-arrow-down-outline",
+        "key": "discharge_limit_mode",
         "enabled_by_default": False,
-        "precision": 0,
-        "scan_interval": "scan_interval.state"
-    }
+        "scan_interval": "scan_interval.state",
+    },
 ]
 
 # Definitions for selectable options (e.g. operating modes)
@@ -688,7 +738,7 @@ SWITCH_DEFINITIONS = [
     #     "enabled_by_default": False,
     #     "data_type": "uint16",
     #     "scan_interval": "scan_interval.state"
-    # }
+    # } 
 ]
 
 # Definitions for numeric configuration parameters
@@ -704,6 +754,7 @@ NUMBER_DEFINITIONS = [
         "max": 2500,
         "step": 50,
         "unit": "W",
+        "data_type": "uint16",
         "scan_interval": "scan_interval.state"
     },
     {
@@ -716,6 +767,7 @@ NUMBER_DEFINITIONS = [
         "max": 2500,
         "step": 50,
         "unit": "W",
+        "data_type": "uint16",
         "scan_interval": "scan_interval.state"
     },
     {
@@ -790,15 +842,17 @@ NUMBER_DEFINITIONS = [
 
 # Definitions for button actions (one-time triggers)
 BUTTON_DEFINITIONS = [
-    # {
-    #     # Reset device via Modbus command
-    #     "name": "Reset Device",
-    #     "register": 41000,
-    #     "command": 21930,  # 0x55AA
-    #     "key": "reset_device",
-    #     "enabled_by_default": False,
-    #     "data_type": "uint16"
-    # }
+    {
+        # Reset device via Modbus command
+        "name": "Reset Device",
+        "register": 41000,
+        "command": 21930,  # 0x55AA
+        "icon": "mdi:restart",
+        "category": "diagnostic",
+        "key": "reset_device",
+        "enabled_by_default": False,
+        "data_type": "uint16"
+    }
 ]
 
 # Definitions for efficiency sensors

@@ -96,7 +96,11 @@ class MarstekSelect(SelectEntity):
         self._key: str = definition["key"]
         self._register: int = definition["register"]
 
-        # Disable entity by default if specified in definition
+        # Set icon if defined in the button definition
+        if "icon" in self.definition:
+            self._attr_icon = self.definition.get("icon")
+
+        # Optional: disable entity by default if specified in the definition
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
