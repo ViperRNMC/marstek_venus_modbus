@@ -30,7 +30,7 @@ class MarstekButton(ButtonEntity):
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
         self._register = self.definition["register"]
-        self._value = self.definition.get("value", 1)  # Default value to write on press
+        self._command = self.definition.get("command", 1)  # Default value to write on press
 
         # Set icon if defined in the button definition
         if "icon" in self.definition:
@@ -42,11 +42,11 @@ class MarstekButton(ButtonEntity):
 
     async def async_press(self) -> None:
         """Handle button press by writing the specified value to the Modbus register."""
-        success = await self.coordinator.client.async_write_register(self._register, self._value)
+        success = await self.coordinator.client.async_write_register(self._register, self._command)
         if success:
-            _LOGGER.debug("Successfully wrote value %s to register %s on button press", self._value, self._register)
+            _LOGGER.debug("Successfully wrote value %s to register %s on button press", self._command, self._register)
         else:
-            _LOGGER.warning("Failed to write value %s to register %s on button press", self._value, self._register)
+            _LOGGER.warning("Failed to write value %s to register %s on button press", self._command, self._register)
 
     @property
     def device_info(self):

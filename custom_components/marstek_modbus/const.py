@@ -799,16 +799,16 @@ NUMBER_DEFINITIONS = [
 
 # Definitions for button actions (one-time triggers)
 BUTTON_DEFINITIONS = [
-    # {
-    #     # Reset device via Modbus command
-    #     "name": "Reset Device",
-    #     "register": 41000,
-    #     "command": 21930,  # 0x55AA
-    #     "icon": "mdi:restart",
-    #     "key": "reset_device",
-    #     "enabled_by_default": False,
-    #     "data_type": "uint16"
-    # }
+    {
+        # Reset device via Modbus command
+        "name": "Reset Device",
+        "register": 41000,
+        "command": 21930,  # 0x55AA
+        "icon": "mdi:restart",
+        "key": "reset_device",
+        "enabled_by_default": False,
+        "data_type": "uint16"
+    }
 ]
 
 # Definitions for efficiency sensors
