@@ -55,6 +55,7 @@ SENSOR_DEFINITIONS = [
         "register": 31100,
         "scale": 0.01,
         "unit": None,
+        "icon": "mdi:update",
         "key": "software_version",
         "enabled_by_default": True,
         "data_type": "uint16",
@@ -62,11 +63,24 @@ SENSOR_DEFINITIONS = [
         "scan_interval": "scan_interval.info"
     },
     {
-
+        # BMS version, stored as a 16-bit unsigned integer
         "name": "BMS Version",
-        "register": 30399,
+        "register": 31102,
         "unit": None,
+        "icon": "mdi:update",
         "key": "bms_version",
+        "enabled_by_default": True,
+        "data_type": "uint16",
+        "precision": 0,
+        "scan_interval": "scan_interval.info"
+    },
+    {
+        # Firmware version, stored as a 16-bit unsigned integer
+        "name": "Firmware Version",
+        "register": 31101,
+        "unit": None,
+        "icon": "mdi:update",
+        "key": "firmware_version",
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 0,
@@ -78,6 +92,7 @@ SENSOR_DEFINITIONS = [
         "register": 30800,
         "count": 6,
         "unit": None,
+        "icon": "mdi:update",
         "key": "comm_module_firmware",
         "enabled_by_default": True,
         "data_type": "char",
@@ -85,18 +100,7 @@ SENSOR_DEFINITIONS = [
         "scan_interval": "scan_interval.info"
     },
     {
-        # Firmware version of the device, stored as a 16-bit unsigned integer
-        "name": "Firmware Version",
-        "register": 30401,
-        "unit": None,
-        "key": "firmware_version",
-        "enabled_by_default": True,
-        "data_type": "uint16",
-        "precision": 0,
-        "scan_interval": "scan_interval.info"
-    },
-    {
-        
+        # MAC address of the device, stored as a string in multiple registers
         "name": "MAC Address",
         "register": 30402,
         "count": 6,
@@ -407,6 +411,7 @@ SENSOR_DEFINITIONS = [
         "register": 35100,
         "scale": 1,
         "unit": None,
+        "icon": "mdi:state-machine",
         "key": "inverter_state",
         "enabled_by_default": True,
         "data_type": "uint16",
@@ -417,7 +422,8 @@ SENSOR_DEFINITIONS = [
             2: "Charge",
             3: "Discharge",
             4: "Backup Mode",
-            5: "OTA Upgrade"
+            5: "OTA Upgrade",
+            6: "Bypass",
         },
         "scan_interval": "scan_interval.state"
     },
@@ -427,6 +433,8 @@ SENSOR_DEFINITIONS = [
         "count": 4,
         "data_type": "uint16",
         "key": "fault_status",
+        "device_class": "problem",
+        "icon": "mdi:alert",
         "enabled_by_default": True,
         "scan_interval": "scan_interval.state",
         "bit_descriptions": {
@@ -471,6 +479,8 @@ SENSOR_DEFINITIONS = [
         "count": 2,
         "data_type": "uint16",
         "key": "alarm_status",
+        "device_class": "problem",
+        "icon": "mdi:alert",
         "enabled_by_default": True,
         "unit": None,
         "precision": 0,
@@ -497,6 +507,7 @@ SENSOR_DEFINITIONS = [
         "register": 41100,
         "data_type": "uint16",
         "unit": None,
+        "icon": "mdi:home-automation", 
         "key": "modbus_address",
         "enabled_by_default": False,
         "scan_interval": "scan_interval.info",
@@ -545,32 +556,34 @@ SENSOR_DEFINITIONS = [
         "precision": 0,
         "scan_interval": "scan_interval.power"
     },
-    {   
-        # Discharge limit mode switch
-        "name": "Discharge Limit",
-        "register": 41010,
-        "key": "discharge_limit_mode",
-        "enabled_by_default": False,
+    {
+        # WiFi signal strength in dBm
+        "name": "WiFi Signal Strength",
+        "register": 30303,
+        "scale": -1,
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state",
-        "states": {
-            0: "High (2500 W)",
-            1: "Low (800 W)",        
-        }
-    },
+        "unit": "dBm",
+        "icon": "mdi:wifi",
+        "key": "wifi_signal_strength",
+        "enabled_by_default": False,
+        "precision": 0,
+        "scan_interval": "scan_interval.state"
+    }
+]
+
+# Definitions for binary sensors that represent on/off states
+# Each binary sensor includes the Modbus register and bit position
+BINARY_SENSOR_DEFINITIONS = [
     {
         # WiFi connection status
         "name": "WiFi Status",
         "register": 30300,
         "data_type": "uint16",
         "unit": None,
+        "device_class": "connectivity",
+        "icon": "mdi:check-network-outline",
         "key": "wifi_status",
         "enabled_by_default": False,
-        "precision": 0,
-        "states": {
-            0: "Disconnected",
-            1: "Connected"
-        },
         "scan_interval": "scan_interval.state"
     },
     {
@@ -579,27 +592,23 @@ SENSOR_DEFINITIONS = [
         "register": 30302,
         "data_type": "uint16",
         "unit": None,
+        "device_class": "connectivity",
+        "icon": "mdi:cloud-outline",
         "key": "cloud_status",
         "enabled_by_default": False,
-        "precision": 0,
-        "states": {
-            0: "Disconnected",
-            1: "Connected"
-        },
         "scan_interval": "scan_interval.state"
     },
-    {
-        # WiFi signal strength in dBm
-        "name": "WiFi Signal Strength",
-        "register": 30303,
-        "scale": -1,
+    {   
+        # Discharge limit mode switch
+        "name": "Discharge Limit",
+        "register": 41010,
         "data_type": "uint16",
-        "unit": "dBm",
-        "key": "wifi_signal_strength",
+        "unit": None,
+        "icon": "mdi:battery-arrow-down-outline",
+        "key": "discharge_limit_mode",
         "enabled_by_default": False,
-        "precision": 0,
-        "scan_interval": "scan_interval.state"
-    }
+        "scan_interval": "scan_interval.state",
+    },
 ]
 
 # Definitions for selectable options (e.g. operating modes)
@@ -688,7 +697,7 @@ SWITCH_DEFINITIONS = [
     #     "enabled_by_default": False,
     #     "data_type": "uint16",
     #     "scan_interval": "scan_interval.state"
-    # }
+    # } 
 ]
 
 # Definitions for numeric configuration parameters
@@ -795,6 +804,7 @@ BUTTON_DEFINITIONS = [
     #     "name": "Reset Device",
     #     "register": 41000,
     #     "command": 21930,  # 0x55AA
+    #     "icon": "mdi:restart",
     #     "key": "reset_device",
     #     "enabled_by_default": False,
     #     "data_type": "uint16"

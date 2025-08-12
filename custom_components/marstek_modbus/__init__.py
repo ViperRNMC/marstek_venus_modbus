@@ -21,6 +21,8 @@ PLATFORMS = [
     "select",
     "button",
     "number",
+    "binary_sensor",
+    # "update",
 ]  # List of supported platforms for this integration
 
 
