@@ -7,6 +7,9 @@
 - New Max Cell Voltage sensor (register 36943) to monitor maximum battery cell voltage
 - New Reset Device button (register 41000) to allow resetting the battery management system via Home Assistant
 
+### Changed
+- Clean up code and improve overall code quality
+
 ## [2025.8.0] - 2025-08-09
 
 ### Fixed
