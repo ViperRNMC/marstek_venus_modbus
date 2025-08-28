@@ -46,7 +46,7 @@ SENSOR_DEFINITIONS = [
         "unit": None,
         "key": "sn_code",
         "enabled_by_default": False,
-        "scan_interval": "scan_interval.info",
+        "scan_interval": "info",
         "precision": 0
     },
     {
@@ -61,7 +61,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 2,
-        "scan_interval": "scan_interval.info"
+        "scan_interval": "info"
     },
     {
         # BMS version, stored as a 16-bit unsigned integer
@@ -74,7 +74,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 0,
-        "scan_interval": "scan_interval.info"
+        "scan_interval": "info"
     },
     {
         # EMS version, stored as a 16-bit unsigned integer
@@ -87,7 +87,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 0,
-        "scan_interval": "scan_interval.info"
+        "scan_interval": "info"
     },
     {
         # Communication module firmware version, stored as a string in multiple registers
@@ -101,7 +101,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "char",
         "precision": 0,
-        "scan_interval": "scan_interval.info"
+        "scan_interval": "info"
     },
     {
         # MAC address of the device, stored as a string in multiple registers
@@ -113,7 +113,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "char",
         "precision": 0,
-        "scan_interval": "scan_interval.info"
+        "scan_interval": "info"
     },
     {
         # Battery State of Charge (SOC) as a percentage
@@ -128,7 +128,7 @@ SENSOR_DEFINITIONS = [
         "internal_use": True,  
         "data_type": "uint16",
         "precision": 1,
-        "scan_interval": "scan_interval.soc"
+        "scan_interval": "soc"
     },
     {
         # Total stored battery energy in kilowatt-hours
@@ -143,7 +143,7 @@ SENSOR_DEFINITIONS = [
         "internal_use": True,
         "data_type": "uint16",
         "precision": 3,
-        "scan_interval": "scan_interval.energy"
+        "scan_interval": "energy"
     },
     {
         # Battery voltage in volts
@@ -157,7 +157,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 1,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # Battery current in amperes
@@ -171,7 +171,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "int16",
         "precision": 1,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # Battery power in watts
@@ -186,7 +186,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "int32",
         "precision": 1,
-        "scan_interval": "scan_interval.power"
+        "scan_interval": "power"
     },
     {
         # Internal temperature in degrees Celsius
@@ -200,7 +200,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "int16",
         "precision": 2,
-        "scan_interval": "scan_interval.temperature"        
+        "scan_interval": "temperature"        
     },
     {
         # Internal MOS 1 temperature in degrees Celsius
@@ -214,7 +214,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "int16",
         "precision": 2,
-        "scan_interval": "scan_interval.temperature"          
+        "scan_interval": "temperature"          
     },
     {
         # Internal MOS 2 temperature in degrees Celsius
@@ -228,7 +228,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "int16",
         "precision": 2,
-        "scan_interval": "scan_interval.temperature"
+        "scan_interval": "temperature"
     },
     {
         # Battery AC voltage in volts
@@ -242,7 +242,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 1,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # Battery AC current in amperes
@@ -256,7 +256,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "int16",
         "precision": 1,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # Battery AC power in watts
@@ -271,7 +271,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "int32",
         "precision": 0,
-        "scan_interval": "scan_interval.power"
+        "scan_interval": "power"
     },
     {
         # Battery AC frequency in hertz
@@ -285,7 +285,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "int16",
         "precision": 2,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # Total energy charged into the battery in kilowatt-hours
@@ -301,7 +301,7 @@ SENSOR_DEFINITIONS = [
         "internal_use": True,
         "data_type": "uint32",
         "precision": 2,
-        "scan_interval": "scan_interval.energy"
+        "scan_interval": "energy"
     },
     {
         # Total energy discharged from the battery in kilowatt-hours
@@ -317,7 +317,7 @@ SENSOR_DEFINITIONS = [
         "internal_use": True,
         "data_type": "int32",
         "precision": 2,
-        "scan_interval": "scan_interval.energy"
+        "scan_interval": "energy"
     },    
     {
         # Total energy charged into the battery in kilowatt-hours per day
@@ -332,7 +332,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "uint32",
         "precision": 2,
-        "scan_interval": "scan_interval.energy"
+        "scan_interval": "energy"
     },
     {
         # Total energy discharged from the battery in kilowatt-hours per day
@@ -347,7 +347,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "int32",
         "precision": 2,
-        "scan_interval": "scan_interval.energy"
+        "scan_interval": "energy"
     },   
     {
         # Total energy charged into the battery in kilowatt-hours per month
@@ -363,7 +363,7 @@ SENSOR_DEFINITIONS = [
         "internal_use": True, 
         "data_type": "uint32",
         "precision": 2,
-        "scan_interval": "scan_interval.energy"
+        "scan_interval": "energy"
     },
     {
         # Total energy discharged from the battery in kilowatt-hours per month
@@ -379,7 +379,7 @@ SENSOR_DEFINITIONS = [
         "internal_use": True,
         "data_type": "int32",
         "precision": 2,
-        "scan_interval": "scan_interval.energy"
+        "scan_interval": "energy"
     },      
     {
         # Maximum cell temperature in degrees Celsius
@@ -393,7 +393,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "int16",
         "precision": 1,
-        "scan_interval": "scan_interval.temperature"
+        "scan_interval": "temperature"
     },
     {
         # Minimum cell temperature in degrees Celsius
@@ -407,7 +407,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "int16",
         "precision": 1,
-        "scan_interval": "scan_interval.temperature"
+        "scan_interval": "temperature"
     },
     {
         # Minimum cell voltage
@@ -422,7 +422,7 @@ SENSOR_DEFINITIONS = [
         "internal_use": True, 
         "data_type": "int16",
         "precision": 2,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # Minimum cell voltage 
@@ -437,7 +437,7 @@ SENSOR_DEFINITIONS = [
         "internal_use": True, 
         "data_type": "int16",
         "precision": 2,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # Current state of the inverter device
@@ -459,7 +459,7 @@ SENSOR_DEFINITIONS = [
             5: "OTA Upgrade",
             6: "Bypass",
         },
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # Fault status bits indicating various device faults
@@ -472,7 +472,7 @@ SENSOR_DEFINITIONS = [
         "icon": "mdi:alert",
         "category": "diagnostic",
         "enabled_by_default": True,
-        "scan_interval": "scan_interval.state",
+        "scan_interval": "state",
         "bit_descriptions": {
             # Register 36100 (bits 0-15)
             0: "Grid Overvoltage",
@@ -521,7 +521,7 @@ SENSOR_DEFINITIONS = [
         "category": "diagnostic",
         "unit": None,
         "precision": 0,
-        "scan_interval": "scan_interval.state",
+        "scan_interval": "state",
         "bit_descriptions": {
             # Register 36000 (bits 0-15)
             0: "PLL Abnormal Restart",
@@ -547,7 +547,7 @@ SENSOR_DEFINITIONS = [
         "icon": "mdi:home-automation", 
         "key": "modbus_address",
         "enabled_by_default": False,
-        "scan_interval": "scan_interval.info",
+        "scan_interval": "info",
         "precision": 0
     },
     {
@@ -562,7 +562,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "uint16",
         "precision": 1,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # AC Offgrid Current in amperes
@@ -576,7 +576,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "uint16",
         "precision": 1,
-        "scan_interval": "scan_interval.electrical"
+        "scan_interval": "electrical"
     },
     {
         # AC Offgrid Power in watts
@@ -591,7 +591,7 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": False,
         "data_type": "int32",
         "precision": 0,
-        "scan_interval": "scan_interval.power"
+        "scan_interval": "power"
     },
     {
         # WiFi signal strength in dBm
@@ -606,7 +606,7 @@ SENSOR_DEFINITIONS = [
         "key": "wifi_signal_strength",
         "enabled_by_default": False,
         "precision": 0,
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     }
 ]
 
@@ -624,7 +624,7 @@ BINARY_SENSOR_DEFINITIONS = [
         "icon": "mdi:check-network-outline",
         "key": "wifi_status",
         "enabled_by_default": False,
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # Cloud connection status
@@ -637,7 +637,7 @@ BINARY_SENSOR_DEFINITIONS = [
         "icon": "mdi:cloud-outline",
         "key": "cloud_status",
         "enabled_by_default": False,
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {   
         # Discharge limit mode switch
@@ -648,7 +648,7 @@ BINARY_SENSOR_DEFINITIONS = [
         "icon": "mdi:battery-arrow-down-outline",
         "key": "discharge_limit_mode",
         "enabled_by_default": False,
-        "scan_interval": "scan_interval.state",
+        "scan_interval": "state",
     },
 ]
 
@@ -661,7 +661,7 @@ SELECT_DEFINITIONS = [
         "register": 43000,
         "key": "user_work_mode",
         "enabled_by_default": True,
-        "scan_interval": "scan_interval.state", 
+        "scan_interval": "state", 
         "options": {
             "Manual": 0,
             "Anti-Feed": 1,
@@ -674,7 +674,7 @@ SELECT_DEFINITIONS = [
         "register": 42010,
         "key": "force_mode",
         "enabled_by_default": False,
-        "scan_interval": "scan_interval.state",
+        "scan_interval": "state",
         "options": {
             "None": 0,
             "Charge": 1,
@@ -687,7 +687,7 @@ SELECT_DEFINITIONS = [
         "register": 44100,
         "key": "grid_standard",
         "enabled_by_default": True,
-        "scan_interval": "scan_interval.state", 
+        "scan_interval": "state", 
         "options": {
             "Auto": 0,
             "EN50549": 1,
@@ -715,7 +715,7 @@ SWITCH_DEFINITIONS = [
         "key": "backup_function",
         "enabled_by_default": True,
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # RS485 communication control mode switch
@@ -726,7 +726,7 @@ SWITCH_DEFINITIONS = [
         "key": "rs485_control_mode",
         "enabled_by_default": False,
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     # {   
     #     # Discharge limit mode switch
@@ -737,7 +737,7 @@ SWITCH_DEFINITIONS = [
     #     "key": "discharge_limit_mode",
     #     "enabled_by_default": False,
     #     "data_type": "uint16",
-    #     "scan_interval": "scan_interval.state"
+    #     "scan_interval": "state"
     # } 
 ]
 
@@ -756,7 +756,7 @@ NUMBER_DEFINITIONS = [
         "step": 50,
         "unit": "W",
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # Set power limit for forced discharging in watts
@@ -770,7 +770,7 @@ NUMBER_DEFINITIONS = [
         "step": 50,
         "unit": "W",
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # Maximum power that can be charged into the battery in watts
@@ -784,7 +784,7 @@ NUMBER_DEFINITIONS = [
         "step": 50,
         "unit": "W",
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # Maximum power that can be discharged from the battery in watts
@@ -798,7 +798,7 @@ NUMBER_DEFINITIONS = [
         "step": 50,
         "unit": "W",
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # Charging cutoff capacity as a percentage 
@@ -813,7 +813,7 @@ NUMBER_DEFINITIONS = [
         "unit": "%",
         "scale": 0.1,
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # Discharging cutoff capacity as a percentage
@@ -828,7 +828,7 @@ NUMBER_DEFINITIONS = [
         "unit": "%",
         "scale": 0.1,
         "data_type": "uint16",
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     },
     {
         # charge or discharge to SOC as a percentage of total battery capacity
@@ -843,7 +843,7 @@ NUMBER_DEFINITIONS = [
         "unit": "%",
         "scale": 1,       
         "data_type": "uint16",        
-        "scan_interval": "scan_interval.state"
+        "scan_interval": "state"
     }  
 ]
 
