@@ -83,9 +83,11 @@ class MarstekModbusClient:
         count: Optional[int] = None,
         bit_index: Optional[int] = None,
         sensor_key: Optional[str] = None,
+        max_retries: int = 3,
+        retry_delay: float = 0.1,
     ):
         """
-        Read registers and interpret the data asynchronously.
+        Robustly read registers and interpret the data asynchronously with retries.
 
         Args:
             register (int): Register address to read from.
@@ -93,28 +95,13 @@ class MarstekModbusClient:
             count (Optional[int]): Number of registers to read (default depends on data_type).
             bit_index (Optional[int]): Bit position for 'bit' data type (0-15).
             sensor_key (Optional[str]): Sensor key for logging.
+            max_retries (int): Maximum number of read attempts.
+            retry_delay (float): Delay in seconds between retries.
 
         Returns:
             int, str, bool, or None: Interpreted value or None on error.
         """
 
-        # Ensure the client is connected; reconnect if needed
-        if not self.client.connected:
-            _LOGGER.warning(
-                "Modbus client not connected, attempting reconnect before register %d (0x%04X)",
-                register,
-                register,
-            )
-            connected = await self.async_connect()
-            if not connected:
-                _LOGGER.error(
-                    "Reconnect failed, skipping register %d (0x%04X)",
-                    register,
-                    register,
-                )
-                return None
-
-        # Validate register address and read count
         if count is None:
             count = 2 if data_type in ["int32", "uint32"] else 1
 
@@ -133,108 +120,115 @@ class MarstekModbusClient:
             )
             return None
 
-        # Define inner function to perform a single read attempt
-        async def _read_once():
+        attempt = 0
+        while attempt < max_retries:
+            if not self.client.connected:
+                _LOGGER.warning(
+                    "Modbus client not connected, attempting reconnect before register %d (0x%04X)",
+                    register,
+                    register,
+                )
+                connected = await self.async_connect()
+                if not connected:
+                    _LOGGER.error(
+                        "Reconnect failed, skipping register %d (0x%04X)",
+                        register,
+                        register,
+                    )
+                    return None
+
             try:
                 result = await self.client.read_holding_registers(
                     address=register, count=count, slave=self.unit_id
                 )
                 if result.isError():
                     _LOGGER.error(
-                        "Modbus read error at register %d (0x%04X)", register, register
-                    )
-                    return None
-
-                if not hasattr(result, "registers") or result.registers is None:
-                    _LOGGER.error(
-                        "No registers returned from Modbus read at register %d (0x%04X)",
+                        "Modbus read error at register %d (0x%04X) on attempt %d",
                         register,
                         register,
+                        attempt + 1,
                     )
-                    return None
+                elif not hasattr(result, "registers") or result.registers is None or len(result.registers) < count:
+                    _LOGGER.warning(
+                        "Incomplete data received at register %d (0x%04X) on attempt %d: expected %d registers, got %s",
+                        register,
+                        register,
+                        attempt + 1,
+                        count,
+                        len(result.registers) if result.registers else 0,
+                    )
+                else:
+                    regs = result.registers
+                    _LOGGER.debug(
+                        "Requesting register %d (0x%04X) for sensor '%s' (type: %s, count: %s)",
+                        register,
+                        register,
+                        sensor_key or 'unknown',
+                        data_type,
+                        count,
+                    )
+                    _LOGGER.debug("Received data from register %d (0x%04X): %s", register, register, regs)
 
-                return result.registers
+                    if data_type == "int16":
+                        val = regs[0]
+                        return val - 0x10000 if val >= 0x8000 else val
+
+                    elif data_type == "uint16":
+                        return regs[0]
+
+                    elif data_type == "int32":
+                        if len(regs) < 2:
+                            _LOGGER.warning(
+                                "Expected 2 registers for int32 at register %d (0x%04X), got %s",
+                                register,
+                                register,
+                                len(regs),
+                            )
+                            return None
+                        val = (regs[0] << 16) | regs[1]
+                        return val - 0x100000000 if val >= 0x80000000 else val
+
+                    elif data_type == "uint32":
+                        if len(regs) < 2:
+                            _LOGGER.warning(
+                                "Expected 2 registers for uint32 at register %d (0x%04X), got %s",
+                                register,
+                                register,
+                                len(regs),
+                            )
+                            return None
+                        return (regs[0] << 16) | regs[1]
+
+                    elif data_type == "char":
+                        byte_array = bytearray()
+                        for reg in regs:
+                            byte_array.append((reg >> 8) & 0xFF)
+                            byte_array.append(reg & 0xFF)
+                        return byte_array.decode("ascii", errors="ignore").rstrip('\x00')
+
+                    elif data_type == "bit":
+                        if bit_index is None or not (0 <= bit_index < 16):
+                            raise ValueError("bit_index must be between 0 and 15 for bit data_type")
+                        reg_val = regs[0]
+                        return bool((reg_val >> bit_index) & 1)
+
+                    else:
+                        raise ValueError(f"Unsupported data_type: {data_type}")
 
             except Exception as e:
-                _LOGGER.exception("Exception during Modbus read: %s", e)
-                return None
+                _LOGGER.exception("Exception during Modbus read at register %d (0x%04X) on attempt %d: %s", register, register, attempt + 1, e)
 
-        # Retry once if initial read fails or returns incomplete data
-        regs = await _read_once()
-        if regs is None or len(regs) < count:
-            _LOGGER.warning(
-                "Expected %d registers for %s at register %d (0x%04X), got %s. Retrying once...",
-                count,
-                data_type,
-                register,
-                register,
-                len(regs) if regs else 0,
-            )
-            await asyncio.sleep(0.1)
-            regs = await _read_once()
-            if regs is None or len(regs) < count:
-                _LOGGER.error(
-                    "Failed to read required registers after retry at register %d (0x%04X)",
-                    register,
-                    register,
-                )
-                return None
+            attempt += 1
+            if attempt < max_retries:
+                await asyncio.sleep(retry_delay)
 
-        _LOGGER.debug(
-            "Requesting register %d (0x%04X) for sensor '%s' (type: %s, count: %s)",
+        _LOGGER.error(
+            "Failed to read register %d (0x%04X) after %d attempts",
             register,
             register,
-            sensor_key or 'unknown',
-            data_type,
-            count,
+            max_retries,
         )
-        _LOGGER.debug("Received data from register %d (0x%04X): %s", register, register, regs)
-
-        if data_type == "int16":
-            val = regs[0]
-            return val - 0x10000 if val >= 0x8000 else val
-
-        elif data_type == "uint16":
-            return regs[0]
-
-        elif data_type == "int32":
-            if len(regs) < 2:
-                _LOGGER.warning(
-                    "Expected 2 registers for int32 at register %d (0x%04X), got %s",
-                    register,
-                    register,
-                    len(regs),
-                )
-                return None
-            val = (regs[0] << 16) | regs[1]
-            return val - 0x100000000 if val >= 0x80000000 else val
-
-        elif data_type == "uint32":
-            if len(regs) < 2:
-                _LOGGER.warning(
-                    "Expected 2 registers for uint32 at register %d (0x%04X), got %s",
-                    register,
-                    register,
-                    len(regs),
-                )
-                return None
-            return (regs[0] << 16) | regs[1]
-
-        elif data_type == "char":
-            byte_array = bytearray()
-            for reg in regs:
-                byte_array.append((reg >> 8) & 0xFF)
-                byte_array.append(reg & 0xFF)
-            return byte_array.decode("ascii", errors="ignore").rstrip('\x00')
-
-        elif data_type == "bit":
-            if bit_index is None or not (0 <= bit_index < 16):
-                raise ValueError("bit_index must be between 0 and 15 for bit data_type")
-            reg_val = regs[0]
-            return bool((reg_val >> bit_index) & 1)
-
-        else:
-            raise ValueError(f"Unsupported data_type: {data_type}")
+        return None
 
     async def async_write_register(self, register: int, value: int) -> bool:
         """
