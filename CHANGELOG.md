@@ -1,5 +1,17 @@
 # Changelog
 
+## [2025.9.0] - 2025-09-03
+
+### Added
+- Dependency keys registration so required values are always fetched even if disabled in Home Assistant.
+- Polling now handled centrally via the DataUpdateCoordinator.
+- Dynamic polling intervals based on sensor definitions and dependencies.
+
+### Changed
+- Calculated sensors (Round-Trip Efficiency Total, Round-Trip Efficiency Monthly, Stored Energy) with dependency handling
+- Improved logging for dependency mapping, calculation, and skipping disabled entities.
+- Cleaned up and refactored sensor calculation logic to be reusable and PEP8 compliant.
+
 ## [2025.8.1] - 2025-08-12
 
 ### Added

@@ -14,6 +14,9 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 ### 🔧 Features
 
 - Native Modbus TCP polling via `pymodbus`
+- Polling is now handled centrally via the DataUpdateCoordinator with dynamic polling intervals
+- Dynamic polling intervals per entity type
+- Dependency entities are always polled, even if the related entity is disabled
 - Fully asynchronous operation for optimal performance and responsiveness
 - Sensors for voltage, current, SOC, power, energy, and fault/alarm status (combined bits)
 - Switches for force charge/discharge control
@@ -44,6 +47,9 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 ### 🔧 Functies
 
 - Native Modbus TCP polling via `pymodbus`
+- Polling wordt nu centraal afgehandeld via de DataUpdateCoordinator met dynamische pollingintervallen
+- Dynamische pollingintervallen per entiteitstype
+- Afhankelijke entiteiten worden altijd opgehaald, zelfs als de bijbehorende entiteit is uitgeschakeld
 - Volledig asynchrone werking voor optimale performance en responsiveness
 - Sensoren voor spanning, stroom, SOC, vermogen, energie en fout-/alarmstatus (gecombineerde bits)
 - Schakelaars voor geforceerd laden/ontladen
