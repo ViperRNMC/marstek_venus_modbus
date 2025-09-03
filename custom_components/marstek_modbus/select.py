@@ -9,29 +9,14 @@ from typing import Any
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.select import SelectEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import Entity
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import MarstekCoordinator
 from .const import DOMAIN, MANUFACTURER, MODEL, SELECT_DEFINITIONS
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def get_entity_type(entity: Entity) -> str:
-    """
-    Determine the entity type from the class inheritance hierarchy.
-
-    Args:
-        entity: The entity instance to check.
-
-    Returns:
-        A lowercase string representing the entity type, derived from the class name.
-    """
-    for base in entity.__class__.__mro__:
-        if issubclass(base, Entity) and base.__name__.endswith("Entity"):
-            return base.__name__.replace("Entity", "").lower()
-    return "entity"
 
 
 async def async_setup_entry(
@@ -40,39 +25,29 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """
-    Set up select entities when the config entry is loaded.
+    Set up select sensor entities when the config entry is loaded.
 
     This function retrieves the coordinator from hass.data,
-    creates select entities based on the SELECT_DEFINITIONS,
+    creates select entities based on SELECT_DEFINITIONS,
     and registers them with Home Assistant.
 
     Args:
-        hass: The HomeAssistant instance.
-        entry: The configuration entry.
-        async_add_entities: Function to add entities to Home Assistant.
+        hass: Home Assistant instance.
+        entry: Configuration entry.
+        async_add_entities: Callback to add entities.
     """
-    # Get the coordinator instance from hass.data
-    coordinator: MarstekCoordinator = hass.data[DOMAIN][entry.entry_id]
-
-    # Await the first data refresh so coordinator.data is populated before use
-    await coordinator.async_config_entry_first_refresh()
-
-    entities = []
-
-    # Create select entities defined in SELECT_DEFINITIONS
-    for definition in SELECT_DEFINITIONS:
-        entities.append(MarstekSelect(coordinator, definition))
-
-    # Register all created select entities with Home Assistant
+    # Retrieve the coordinator instance from hass data and add entities
+    coordinator = hass.data[DOMAIN][entry.entry_id]
+    entities = [MarstekSelect(coordinator, definition) for definition in SELECT_DEFINITIONS]
     async_add_entities(entities)
 
 
-class MarstekSelect(SelectEntity):
+class MarstekSelect(CoordinatorEntity, SelectEntity):
     """
     Representation of a Modbus select entity for Marstek Venus.
 
-    This entity allows selecting and reading options corresponding to
-    specific registers via the Modbus protocol.
+    Select state is read and write asynchronously via
+    the coordinator communicating with the Modbus device.
     """
 
     def __init__(self, coordinator: MarstekCoordinator, definition: dict[str, Any]) -> None:
@@ -83,18 +58,27 @@ class MarstekSelect(SelectEntity):
             coordinator: The MarstekCoordinator instance managing data updates.
             definition: A dictionary defining the select entity's properties.
         """
-        self.coordinator = coordinator
-        self.definition = definition
+        super().__init__(coordinator)
+
+        # Store the key and definition
+        self._key = definition["key"]
+        self.definition = definition   
+
+        # Assign the entity type to the coordinator mapping
+        self.coordinator._entity_types[self._key] = self.entity_type
 
         # Set entity attributes from definition
-        self._attr_name = f"{definition['name']}"
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{definition['key']}"
+        self._attr_name = definition["name"]
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self._key}"
         self._attr_has_entity_name = True
 
-        # Internal state and configuration
-        self._state: str | None = None
-        self._key: str = definition["key"]
-        self._register: int = definition["register"]
+        # Internal state variables
+        self._state = None
+        self._register = definition["register"]
+
+        # set category if defined in the definition
+        if "category" in self.definition:
+            self._attr_entity_category = EntityCategory(self.definition.get("category"))
 
         # Set icon if defined in the button definition
         if "icon" in self.definition:
@@ -104,24 +88,21 @@ class MarstekSelect(SelectEntity):
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
-    async def async_added_to_hass(self) -> None:
+    @property
+    def entity_type(self) -> str:
         """
-        Called when entity is added to Home Assistant.
-
-        Triggers an initial update and writes the state.
+        Return the type of this entity for logging purposes.
+        This allows the coordinator to show more descriptive messages.
         """
-        await self.async_update()
-        self.async_write_ha_state()
+        return "select"
 
     @property
     def available(self) -> bool:
         """
-        Return True if coordinator data update was successful and state is known.
-
-        Returns:
-            bool: Availability status.
+        Return True if the coordinator has successfully fetched data.
+        Used by Home Assistant to determine entity availability.
         """
-        return self.coordinator.last_update_success and (self._state is not None)
+        return self.coordinator.last_update_success
 
     @property
     def options(self) -> list[str]:
@@ -131,78 +112,33 @@ class MarstekSelect(SelectEntity):
         Returns:
             List of option strings.
         """
-        return list(self.definition.get("options", {}).keys())
+        return list(self.definition.get("options", {}).keys())  
 
     @property
     def current_option(self) -> str | None:
         """
         Return the currently selected option.
 
-        Returns:
-            The current option string or None if unknown.
+        The value is obtained from the coordinator's shared data dictionary.
+        Maps the numeric register value back to the option string.
         """
-        return self._state
+        data = self.coordinator.data
+        if data is None:
+            return None
 
-    async def async_update(self) -> None:
-        """
-        Fetch the latest state from the coordinator's data.
+        value = data.get(self._key)
+        if value is None:
+            return None
 
-        Reads the register value asynchronously and updates the internal state.
-        """
-        data_type = self.definition.get("data_type", "uint16")
-        register = self.definition["register"]
-        count = self.definition.get("count", 1)
+        options_map = self.definition.get("options", {})
+        # Reverse the mapping: {int_value: option_name}
+        reversed_map = {int(v): k for k, v in options_map.items()}
 
-        try:
-            # Request the register value asynchronously
-            value = await self.coordinator.client.async_read_register(
-                register=register,
-                data_type=data_type,
-                count=count,
-                sensor_key=self.definition.get("key", self.definition.get("name", "unknown")),
-            )
-        except Exception as e:
-            _LOGGER.error("Error reading register 0x%X: %s", register, e)
-            return
-
-        if value is not None:
-            options_map = self.definition.get("options", {})
-            # Reverse the options map to map values back to keys
-            reversed_map = {int(v): k for k, v in options_map.items()}
-            try:
-                int_value = int(value)
-                self._state = reversed_map.get(int_value)
-            except (ValueError, TypeError):
-                self._state = None
-                _LOGGER.warning(
-                    "Unable to convert value '%s' to int for select %s",
-                    value,
-                    self._attr_name,
-                )
-
-            if self._state is None:
-                _LOGGER.warning(
-                    "Unknown register value %s for select %s (expected one of %s)",
-                    value,
-                    self._attr_name,
-                    list(reversed_map.keys()),
-                )
-        else:
-            self._state = None
-
-        # Update the coordinator with the new value
-        await self.coordinator.async_update_value(
-            self.definition["key"],
-            self._state,
-            register=self.definition.get("register"),
-            scale=self.definition.get("scale"),
-            unit=self.definition.get("unit"),
-            entity_type=get_entity_type(self),
-        )
+        return reversed_map.get(int(value))
 
     async def async_select_option(self, option: str) -> None:
         """
-        Change the selected option.
+        Change the selected option by writing to the device register.
 
         Args:
             option: The option string to select.
@@ -214,7 +150,7 @@ class MarstekSelect(SelectEntity):
 
         value = options_map[option]
 
-        # Write the new value to the register
+        # Write the new value to the register via the coordinator
         success = await self.coordinator.async_write_value(
             register=self._register,
             value=value,
@@ -222,7 +158,7 @@ class MarstekSelect(SelectEntity):
             key=self._key,
             scale=self.definition.get("scale", 1),
             unit=self.definition.get("unit"),
-            entity_type=get_entity_type(self),
+            entity_type=self.entity_type,
         )
 
         if success:
@@ -230,16 +166,14 @@ class MarstekSelect(SelectEntity):
 
             # Wait briefly to allow the device to process the change
             await asyncio.sleep(0.5)
-            # Refresh the state after writing
-            await self.async_update()
+            # Request coordinator to refresh data
+            await self.coordinator.async_request_refresh()
 
     @property
-    def device_info(self) -> dict[str, Any]:
+    def device_info(self) -> dict:
         """
-        Return device info for device registry grouping.
-
-        Returns:
-            Dictionary containing device information.
+        Return device information for Home Assistant's device registry.
+        Includes identifiers, name, manufacturer, model, and entry type.
         """
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
@@ -248,3 +182,97 @@ class MarstekSelect(SelectEntity):
             "model": MODEL,
             "entry_type": "service",
         }
+
+    # def _update_state_from_coordinator(self) -> None:
+    #     """
+    #     Update the internal state from the coordinator's data.
+
+    #     This method reads the register value, maps it to the option key,
+    #     and updates the internal _state attribute.
+    #     """
+    #     data = self.coordinator.data
+    #     if data is None:
+    #         self._state = None
+    #         return
+
+    #     data_type = self.definition.get("data_type", "uint16")
+    #     register = self.definition["register"]
+    #     count = self.definition.get("count", 1)
+
+    #     # The coordinator data structure should contain the register values
+    #     # Here we assume coordinator.data is a dict with keys as register addresses
+    #     # or keys, adjust if necessary.
+    #     # For safety, we attempt to read by key first, then register.
+    #     value = None
+    #     if self._key in data:
+    #         value = data[self._key]
+    #     elif register in data:
+    #         value = data[register]
+
+    #     if value is None:
+    #         self._state = None
+    #         return
+
+    #     options_map = self.definition.get("options", {})
+    #     # Reverse the options map to map values back to keys (int values)
+    #     reversed_map = {int(v): k for k, v in options_map.items()}
+
+    #     try:
+    #         int_value = int(value)
+    #         self._state = reversed_map.get(int_value)
+    #     except (ValueError, TypeError):
+    #         self._state = None
+    #         _LOGGER.warning(
+    #             "Unable to convert value '%s' to int for select %s",
+    #             value,
+    #             self._attr_name,
+    #         )
+
+    #     if self._state is None:
+    #         _LOGGER.warning(
+    #             "Unknown register value %s for select %s (expected one of %s)",
+    #             value,
+    #             self._attr_name,
+    #             list(reversed_map.keys()),
+    #         )
+
+    # @property
+    # def extra_state_attributes(self) -> dict[str, Any]:
+    #     """
+    #     Return additional state attributes if needed.
+
+    #     Returns:
+    #         Dictionary of extra state attributes.
+    #     """
+    #     return {}
+
+    # @property
+    # def should_poll(self) -> bool:
+    #     """
+    #     Disable polling as updates are pushed via the coordinator.
+
+    #     Returns:
+    #         False, polling is not needed.
+    #     """
+    #     return False
+
+    # @property
+    # def native_value(self) -> str | None:
+    #     """
+    #     Return the current option value for the select entity.
+
+    #     Returns:
+    #         The current option string or None if unknown.
+    #     """
+    #     return self._state
+
+    # @CoordinatorEntity._handle_coordinator_update
+    # def _handle_coordinator_update(self) -> None:
+    #     """
+    #     Handle updated data from the coordinator.
+
+    #     This method is called when the coordinator has new data.
+    #     It updates the internal state and writes the state to Home Assistant.
+    #     """
+    #     self._update_state_from_coordinator()
+    #     self.async_write_ha_state()
