@@ -8,8 +8,8 @@ import logging
 from homeassistant.components.button import ButtonEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.entity import EntityCategory
+from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .coordinator import MarstekCoordinator
 from .const import BUTTON_DEFINITIONS, DOMAIN, MANUFACTURER, MODEL
@@ -27,17 +27,11 @@ async def async_setup_entry(
 
     Retrieves the coordinator and creates button entities
     from the button definitions, then adds them to Home Assistant.
+    Also registers the entity type in the coordinator to skip polling for buttons.
     """
-    # Retrieve coordinator instance for this config entry
+    # Retrieve the coordinator instance from hass data and add entities
     coordinator = hass.data[DOMAIN][entry.entry_id]
-
-    # Ensure coordinator has latest data before creating entities
-    await coordinator.async_config_entry_first_refresh()
-
-    # Create button entities for all button definitions
     entities = [MarstekButton(coordinator, definition) for definition in BUTTON_DEFINITIONS]
-
-    # Register all button entities with Home Assistant
     async_add_entities(entities)
 
 
@@ -46,56 +40,83 @@ class MarstekButton(ButtonEntity):
 
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """
-        Initialize the button entity with the coordinator and set attributes.
+        Initialize the button entity.
 
         Args:
             coordinator: Data update coordinator instance.
             definition: Dictionary with button configuration.
         """
+        # Store the coordinator
         self.coordinator = coordinator
+        self._key = definition["key"]
         self.definition = definition
+        self._command = definition.get("command", 1)  # default command value
+        self._register = definition["register"]
 
-        # Set entity name and unique ID
+        # Register entity type in coordinator
+        self.coordinator._entity_types[self._key] = "button"
+
+        # Set entity attributes from definition
         self._attr_name = self.definition["name"]
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self._key}"
         self._attr_has_entity_name = True
 
-        # Register and command value to write on button press
-        self._register = self.definition["register"]
-        self._command = self.definition.get("command", 1)  # Default command is 1
-
-        # Set entity category if defined in the definition
+        # Optional: set entity category
         if "category" in self.definition:
-            try:
-                self._attr_entity_category = EntityCategory(self.definition["category"])
-            except ValueError:
-                _LOGGER.warning(
-                    "Unknown entity category %s for button %s",
-                    self.definition["category"],
-                    self._attr_name,
-                )
+            self._attr_entity_category = EntityCategory(self.definition.get("category"))
 
-        # Set icon if defined in the button definition
+        # Optional: set icon
         if "icon" in self.definition:
-            self._attr_icon = self.definition["icon"]
+            self._attr_icon = self.definition.get("icon")
 
-        # Disable entity by default if specified in the definition
-        if self.definition.get("enabled_by_default") is False:
+        # Optional: disable entity by default
+        if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
+
+    @property
+    def entity_type(self) -> str:
+        """
+        Return the type of this entity for logging purposes.
+        This allows the coordinator to show more descriptive messages.
+        """
+        return "button"
+
+    @property
+    def available(self) -> bool:
+        """
+        Return True if the coordinator has successfully fetched data.
+        Used by Home Assistant to determine entity availability.
+        """
+        return self.coordinator.last_update_success
 
     async def async_press(self) -> None:
         """
         Handle button press by writing the specified value to the Modbus register.
         """
-        success = await self.coordinator.client.async_write_register(
-            self._register, self._command
+        # Write the command value to the Modbus register asynchronously
+        success = await self.coordinator.async_write_value(
+            register=self._register,
+            value=self._command,
+            data_type=self.definition.get("data_type", "uint16"),
+            key=self._key,
+            scale=self.definition.get("scale", 1),
+            unit=self.definition.get("unit"),
+            entity_type=self.entity_type,
         )
+
         if success:
+            import asyncio
+
             _LOGGER.debug(
                 "Successfully wrote value %s to register %s on button press",
                 self._command,
                 self._register,
             )
+
+            # Wait briefly to allow the device to process the change
+            await asyncio.sleep(0.5)
+            # Request coordinator to refresh data
+            await self.coordinator.async_request_refresh()
         else:
             _LOGGER.warning(
                 "Failed to write value %s to register %s on button press",
@@ -104,11 +125,10 @@ class MarstekButton(ButtonEntity):
             )
 
     @property
-    def device_info(self):
+    def device_info(self) -> dict:
         """
-        Return device information to associate entities with a device in the UI.
-
-        This enables grouping of entities and supports the "Rename associated entities?" dialog.
+        Return device information for Home Assistant's device registry.
+        Includes identifiers, name, manufacturer, model, and entry type.
         """
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},

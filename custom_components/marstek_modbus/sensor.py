@@ -1,222 +1,124 @@
 """
-This module defines sensor entities for the Marstek Venus Modbus integration.
+Marstek Venus Modbus sensor entities.
 
-It includes:
-- Basic sensors reading registers via Modbus.
-- Specialized sensors for battery efficiency and stored energy calculations.
+All sensors now derive their values from the shared coordinator data.
+No separate async_update needed; coordinator handles polling.
 """
 
 import logging
 
-from homeassistant.components.sensor import SensorEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.components.sensor import SensorEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity, EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import MarstekCoordinator
-from .const import DOMAIN, MANUFACTURER, MODEL, SENSOR_DEFINITIONS, EFFICIENCY_SENSOR_DEFINITIONS, STORED_ENERGY_SENSOR_DEFINITIONS
+from .const import (
+    DOMAIN,
+    MANUFACTURER,
+    MODEL,
+    SENSOR_DEFINITIONS,
+    BINARY_SENSOR_DEFINITIONS,
+    EFFICIENCY_SENSOR_DEFINITIONS,
+    STORED_ENERGY_SENSOR_DEFINITIONS,
+)
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def get_entity_type(entity) -> str:
-    """
-    Determine the entity type based on its class inheritance.
-
-    Args:
-        entity: The entity instance.
-
-    Returns:
-        A lowercase string representing the entity type
-        (e.g., 'switch', 'sensor', 'binary_sensor').
-    """
-    for base in entity.__class__.__mro__:
-        if issubclass(base, Entity) and base.__name__.endswith("Entity"):
-            return base.__name__.replace("Entity", "").lower()
-    return "entity"
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-):
-    """
-    Set up sensor entities when the config entry is loaded.
-
-    Retrieves the coordinator from hass.data, waits for the initial refresh,
-    and creates sensor entities based on definitions.
-
-    Args:
-        hass: Home Assistant instance.
-        entry: Configuration entry.
-        async_add_entities: Callback function to add entities to Home Assistant.
-    """
+) -> None:
+    """Set up all Marstek sensors from definitions."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    await coordinator.async_config_entry_first_refresh()
 
-    entities = []
+    # Create sensor entities from definitions
+    entities = [MarstekSensor(coordinator, d) for d in SENSOR_DEFINITIONS]
+    entities.extend(
+        MarstekEfficiencySensor(coordinator, d) for d in EFFICIENCY_SENSOR_DEFINITIONS
+    )
+    entities.extend(
+        MarstekStoredEnergySensor(coordinator, d) for d in STORED_ENERGY_SENSOR_DEFINITIONS
+    )
 
-    # Add basic sensors defined in SENSOR_DEFINITIONS
-    for definition in SENSOR_DEFINITIONS:
-        entities.append(MarstekSensor(coordinator, definition))
-
-    # Add battery efficiency sensors from definitions
-    for definition in EFFICIENCY_SENSOR_DEFINITIONS:
-        entities.append(MarstekEfficiencySensor(coordinator, definition))
-
-    # Add stored energy sensors from definitions
-    for definition in STORED_ENERGY_SENSOR_DEFINITIONS:
-        entities.append(MarstekStoredEnergySensor(coordinator, definition))
-
+    # Add all entities to Home Assistant
     async_add_entities(entities)
 
 
-class MarstekSensor(SensorEntity):
-    """
-    Represents a single Modbus sensor for the Marstek Venus battery.
-
-    Reads data from registers via the coordinator and updates its state accordingly.
-    """
+class MarstekSensor(CoordinatorEntity, SensorEntity):
+    """Generic Modbus sensor reading from the coordinator."""
 
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
-        """
-        Initialize the sensor entity.
+        super().__init__(coordinator)
 
-        Args:
-            coordinator: Coordinator managing data retrieval.
-            definition: Sensor definition dictionary with config like register, scale, unit.
-        """
-        self.coordinator = coordinator
-        self.definition = definition
+        # Store the key and definition
+        self._key = definition["key"]
+        self.definition = definition     
+
+        # Assign the entity type to the coordinator mapping
+        self.coordinator._entity_types[self._key] = self.entity_type
 
         # Set entity attributes from definition
         self._attr_name = f"{self.definition['name']}"
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
 
-        # Set optional attributes if provided in definition
+        # Set basic attributes from definition
         self._attr_native_unit_of_measurement = definition.get("unit")
         self._attr_device_class = definition.get("device_class")
         self._attr_state_class = definition.get("state_class")
-        self.states = definition.get("states")
-        self._state = None
 
-        # Set entity category (e.g., diagnostic) if defined
+        # Optional: entity category and icon
         if "category" in definition:
-            try:
-                self._attr_entity_category = EntityCategory(definition["category"])
-            except ValueError:
-                _LOGGER.warning(
-                    "Unknown entity category %s for switch %s",
-                    definition["category"],
-                    self._attr_name,
-                )
-
-        # Set custom icon if provided
+            self._attr_entity_category = EntityCategory(definition["category"])
         if "icon" in definition:
             self._attr_icon = definition["icon"]
-
-        # Disable entity by default if specified
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
-    async def async_added_to_hass(self):
-        """Call on entity addition, update state immediately."""
-        await self.async_update()
-        self.async_write_ha_state()
+        # Optional states mapping for int → label conversion
+        self.states = definition.get("states")
 
     @property
-    def available(self):
-        """Return True if sensor data is available and last update succeeded."""
-        return self.coordinator.last_update_success and self._state is not None
-
-    def _combine_registers(self, registers):
+    def entity_type(self) -> str:
         """
-        Combine multiple 16-bit registers into a single integer value (little-endian).
-
-        Args:
-            registers: List of register values.
-
-        Returns:
-            Combined integer value.
+        Return the type of this entity for logging purposes.
+        This allows the coordinator to show more descriptive messages.
         """
-        value = 0
-        for i, reg in enumerate(registers):
-            value |= (reg & 0xFFFF) << (16 * i)
-        return value
+        return "sensor"
 
-    async def async_update(self):
-        """
-        Asynchronously update the sensor's state by reading Modbus registers.
-
-        Handles bit flags, char types, scaling, offset, and rounding.
-        """
-        data_type = self.definition.get("data_type", "uint16")
-        register = self.definition["register"]
-        count = self.definition.get("count", 1)
-
-        try:
-            value = await self.coordinator.client.async_read_register(
-                register=register,
-                data_type=data_type,
-                count=count,
-                sensor_key=self.definition.get("key", self.definition.get("name", "unknown")),
-            )
-        except Exception as err:
-            _LOGGER.error("Error reading register 0x%X: %s", register, err)
-            return
-
-        if isinstance(value, (list, tuple)):
-            value = self._combine_registers(value)
-
-        if value is not None:
-            if self.definition.get("bit_descriptions"):
-                # Decode bit flags into human-readable labels
-                active_flags = [
-                    label for bit, label in self.definition["bit_descriptions"].items() if value & (1 << bit)
-                ]
-                self._state = ", ".join(active_flags) if active_flags else "Normal"
-
-            elif data_type == "char":
-                self._state = str(value)
-
-            elif isinstance(value, (int, float)):
-                scaled = value * self.definition.get("scale", 1)
-                scaled += self.definition.get("offset", 0)
-                precision = self.definition.get("precision", 0)
-                scaled_value = round(scaled, precision)
-                
-                # If the sensor definition includes a 'states' mapping (as defined in const), use it to convert int state to label
-                if self.states and isinstance(scaled_value, int) and scaled_value in self.states:
-                    self._state = self.states[scaled_value]
-                else:
-                    self._state = scaled_value
-
-            else:
-                self._state = value
-
-            # Update coordinator with new value for logging and data storage
-            await self.coordinator.async_update_value(
-                self.definition["key"],
-                self._state,
-                register=register,
-                scale=self.definition.get("scale"),
-                unit=self.definition.get("unit"),
-                entity_type=get_entity_type(self),
-            )
+    @property
+    def available(self) -> bool:
+        """Return True if coordinator has valid data for this sensor."""
+        # Ensure coordinator data is a dict and contains the key, and update was successful
+        return (
+            getattr(self.coordinator, "last_update_success", False)
+            and isinstance(getattr(self.coordinator, "data", None), dict)
+            and self._key in self.coordinator.data
+        )
 
     @property
     def native_value(self):
-        """Return current sensor value from coordinator data."""
-        if self.coordinator.data and isinstance(self.coordinator.data, dict):
-            return self.coordinator.data.get(self.definition["key"])
-        return None
+        """Return the value from coordinator data with scaling and states applied."""
+        if self._key not in self.coordinator.data:
+            return None
+        value = self.coordinator.data[self._key]
+
+        if isinstance(value, (int, float)):
+            value = value * self.definition.get("scale", 1) + self.definition.get("offset", 0)
+            value = round(value, self.definition.get("precision", 0))
+
+        if self.states and value in self.states:
+            return self.states[value]
+
+        return value
 
     @property
     def device_info(self) -> dict:
-        """Return device info for device registry grouping."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
             "name": self.coordinator.config_entry.title,
@@ -226,43 +128,79 @@ class MarstekSensor(SensorEntity):
         }
 
 
-class MarstekEfficiencySensor(SensorEntity):
+class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):
     """
-    Sensor for round-trip battery efficiency calculation.
+    Base class for calculated sensors that depend on multiple coordinator keys.
 
-    Uses charge, discharge, SOC, and max energy values from coordinator data.
+    Handles registration of dependency keys and provides update handling.
     """
 
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
-        """Initialize the efficiency sensor."""
-        self.coordinator = coordinator
+        """Initialize the calculated sensor and register dependencies."""
+        super().__init__(coordinator)
+
+        # Store the key and definition
+        self._key = definition["key"]
         self.definition = definition
 
-        self._attr_name = definition["name"]
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{definition['unique_id_key']}"
-        self._attr_native_unit_of_measurement = "%"
-        self._attr_device_class = "battery"
-        self._attr_state_class = "measurement"
-        self._attr_enabled_by_default = True
+        # Assign the entity type to the coordinator mapping
+        self.coordinator._entity_types[self._key] = self.entity_type
+
+        # Set entity attributes from definition
+        self._attr_name = f"{self.definition['name']}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
 
-    async def async_added_to_hass(self):
-        """Called when entity is added to Home Assistant."""
-        self.async_write_ha_state()
+        # Set basic attributes from definition
+        self._attr_native_unit_of_measurement = definition.get("unit")
+        self._attr_device_class = definition.get("device_class")
+        self._attr_state_class = definition.get("state_class")
+        self._attr_has_entity_name = True
+
+        # Optional: entity category and icon
+        if "category" in definition:
+            self._attr_entity_category = EntityCategory(definition["category"])
+        if "icon" in definition:
+            self._attr_icon = definition["icon"]
+        if definition.get("enabled_by_default") is False:
+            self._attr_entity_registry_enabled_default = False
+
+        # Register dependency keys in coordinator and set scales
+        for alias, dep_key in self.get_dependency_keys().items():
+            if not dep_key:
+                continue
+
+            self.coordinator._entity_types[dep_key] = "sensor"
+
+            # Combine all definitions for iteration
+            if not hasattr(self, "_all_definitions"):
+                self._all_definitions = (
+                    SENSOR_DEFINITIONS
+                    + BINARY_SENSOR_DEFINITIONS
+                )
+            all_definitions = self._all_definitions
+
+            # Get scale from all definitions or fallback to current sensor dependency_defs
+            scale = next((d.get("scale", 1) for d in all_definitions if d.get("key") == dep_key), None)
+            scale = scale or self.definition.get("dependency_defs", {}).get(alias, 1)
+
+            self.coordinator._scales[dep_key] = scale
+
+    def get_dependency_keys(self):
+        """Return the keys this sensor depends on."""
+        return self.definition.get("dependency_keys", {})
 
     @property
-    def should_poll(self):
-        """No polling needed, data derived from coordinator."""
-        return False
+    def entity_type(self) -> str:
+        """
+        Return the type of this entity for logging purposes.
+        This allows the coordinator to show more descriptive messages.
+        """
+        return "sensor"
 
     @property
-    def available(self):
-        """True if coordinator data is valid and updated."""
-        return self.coordinator.last_update_success and self.coordinator.data is not None
-
-    @property
-    def device_info(self):
-        """Device info for grouping entities."""
+    def device_info(self) -> dict:
+        """Return device info so sensor is linked to the integration/device."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
             "name": self.coordinator.config_entry.title,
@@ -271,94 +209,98 @@ class MarstekEfficiencySensor(SensorEntity):
             "entry_type": "service",
         }
 
-    @property
-    def native_value(self):
-        """Calculate and return the round-trip efficiency percentage."""
+    def _handle_coordinator_update(self) -> None:
+        """
+        Handle coordinator update by recalculating the sensor value.
+
+        Calls the subclass's calculate_value method and updates state.
+        """
+        if not getattr(self.coordinator, "last_update_success", False):
+            self._attr_native_value = None
+            self.async_write_ha_state()
+            return
+
         data = self.coordinator.data if isinstance(self.coordinator.data, dict) else {}
 
-        charge = data.get(self.definition["charge_key"])
-        discharge = data.get(self.definition["discharge_key"])
-        soc = data.get(self.definition["soc_key"])
-        max_energy = data.get(self.definition["max_energy_key"])
-        if None in (charge, discharge, soc, max_energy):
-            return None
+        self._calculate(data)
+        self.async_write_ha_state()
+
+    def _calculate(self, data: dict) -> None:
+        """
+        Centralized method to check dependencies, log missing values,
+        calculate value, and update native_value attribute.
+        """
+        dependency_keys = self.get_dependency_keys()
+        dep_values = {}
+        missing = []
+
+        # dependency_keys is a dict alias -> actual key
+        for alias, actual_key in dependency_keys.items():
+            val = data.get(actual_key)
+            scale = self.coordinator._scales.get(actual_key, 1)
+            if val is None:
+                missing.append(alias)
+            else:
+                dep_values[alias] = float(val) * scale
+
+        if missing:
+            _LOGGER.warning(
+                "%s missing required value(s): %s. Current data: %s. Cannot calculate value.",
+                self._attr_name, ", ".join(missing), {k: data.get(v) for k, v in dependency_keys.items()},
+            )
+            self._attr_native_value = None
+            return
 
         try:
-            charge = float(charge)
-            discharge = float(discharge)
-            soc = float(soc)
-            max_energy = float(max_energy)
+            value = self.calculate_value(dep_values)
+            _LOGGER.debug(
+                "Calculated value for %s: %s (input values: %s)",
+                self._attr_name,
+                value,
+                dep_values
+            )
+            self._attr_native_value = value
+        except Exception as ex:
+            _LOGGER.warning(
+                "Error calculating value for sensor %s: %s", self._attr_name, ex
+            )
+            self._attr_native_value = None
 
-            stored_energy = soc / 100 * max_energy
+    def calculate_value(self, dep_values: dict):
+        """
+        Calculate the sensor value from scaled dependency values.
 
-            if charge > 0:
-                efficiency = ((discharge + stored_energy) / charge) * 100
-                return round(efficiency, 1)
-        except (ValueError, TypeError):
-            return None
-
-        return 0
+        Must be implemented by subclasses.
+        """
+        raise NotImplementedError
 
 
-class MarstekStoredEnergySensor(SensorEntity):
+class MarstekStoredEnergySensor(MarstekCalculatedSensor):
     """
     Sensor calculating stored battery energy (kWh).
 
-    Uses SOC and max energy values from coordinator data.
+    Uses SOC (%) and battery total energy (kWh) from coordinator data.
     """
+    def calculate_value(self, dep_values: dict):
+        """Calculate stored energy based on SOC and capacity dynamically."""
+        soc = dep_values.get("soc")
+        capacity = dep_values.get("capacity")
+        stored_energy = round((soc / 100) * capacity, 2)
+        self._attr_native_value = stored_energy
+        return stored_energy
 
-    def __init__(self, coordinator: MarstekCoordinator, definition: dict):
-        """Initialize stored energy sensor."""
-        self.coordinator = coordinator
-        self.definition = definition
 
-        self._attr_name = definition["name"]
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{definition['unique_id_key']}"
-        self._attr_native_unit_of_measurement = "kWh"
-        self._attr_device_class = "energy"
-        self._attr_state_class = "measurement"
-        self._attr_enabled_by_default = True
-        self._attr_has_entity_name = True
+class MarstekEfficiencySensor(MarstekCalculatedSensor):
+    """
+    Calculate Round Trip Efficiency (RTE) as a percentage.
 
-    async def async_added_to_hass(self):
-        """Called when entity is added to Home Assistant."""
-        self.async_write_ha_state()
-
-    @property
-    def should_poll(self):
-        """No polling required since value derived from coordinator data."""
-        return False
-
-    @property
-    def available(self):
-        """True if coordinator data is valid and updated."""
-        return self.coordinator.last_update_success and self.coordinator.data is not None
-
-    @property
-    def device_info(self):
-        """Device info for grouping entities."""
-        return {
-            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
-            "name": self.coordinator.config_entry.title,
-            "manufacturer": MANUFACTURER,
-            "model": MODEL,
-            "entry_type": "service",
-        }
-
-    @property
-    def native_value(self):
-        """Calculate and return stored energy in kWh."""
-        data = self.coordinator.data if isinstance(self.coordinator.data, dict) else {}
-
-        soc = data.get(self.definition["soc_key"])
-        max_energy = data.get(self.definition["max_energy_key"])
-
-        if None in (soc, max_energy):
-            return None
-
-        try:
-            soc = float(soc)
-            max_energy = float(max_energy)
-            return round(soc / 100 * max_energy, 2)
-        except (ValueError, TypeError):
-            return None
+    Uses charge (kWh) and discharge (kWh) energy values from coordinator data. 
+    """
+    def calculate_value(self, dep_values: dict):
+        """Calculate efficiency dynamically from definition."""
+        charge = dep_values.get("charge")
+        discharge = dep_values.get("discharge")
+        efficiency = min((discharge / charge) * 100, 100.0)
+        efficiency_rounded = round(efficiency, 1)
+        self._attr_native_value = efficiency_rounded
+        return efficiency_rounded

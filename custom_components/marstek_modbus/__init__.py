@@ -22,8 +22,7 @@ PLATFORMS = [
     "button",
     "number",
     "binary_sensor",
-    # "update",
-]  # List of supported platforms for this integration
+] 
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -60,14 +59,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
     try:
         # Create and initialize the coordinator for data management
         coordinator = MarstekCoordinator(hass, entry)
-        await coordinator.async_init()
-
-        # Store the coordinator in hass data for later reference
-        hass.data.setdefault(DOMAIN, {})
-        hass.data[DOMAIN][entry.entry_id] = coordinator
+        hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
         # Forward setup to all platforms defined in PLATFORMS
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+        # Perform first refresh to ensure coordinator has up-to-date data
+        await coordinator.async_config_entry_first_refresh()
 
         return True
     except Exception as err:

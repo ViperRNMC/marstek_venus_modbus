@@ -1,16 +1,17 @@
 """
-Module for creating switch entities for Marstek Venus battery devices.
-Switches read and write Modbus registers asynchronously via the
-coordinator.
+Module for creating switch sensor entities for Marstek Venus battery devices.
+switch sensors read and write Modbus registers asynchronously via the coordinator.
+All entities are registered through the coordinator to enable centralized polling.
 """
 
 import logging
 
-from homeassistant.components.switch import SwitchEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.components.switch import SwitchEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import Entity, EntityCategory
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import MarstekCoordinator
 from .const import DOMAIN, MANUFACTURER, MODEL, SWITCH_DEFINITIONS
@@ -18,212 +19,123 @@ from .const import DOMAIN, MANUFACTURER, MODEL, SWITCH_DEFINITIONS
 _LOGGER = logging.getLogger(__name__)
 
 
-def get_entity_type(entity) -> str:
-    """Determine entity type based on its class inheritance."""
-    for base in entity.__class__.__mro__:
-        if issubclass(base, Entity) and base.__name__.endswith("Entity"):
-            return base.__name__.replace("Entity", "").lower()
-    return "entity"
-
-
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-):
+) -> None:
     """
-    Set up switch entities when the config entry is loaded.
+    Set up switch sensor entities when the config entry is loaded.
 
-    This function retrieves the coordinator instance,
-    creates switch entities based on definitions,
+    This function retrieves the coordinator from hass.data,
+    creates switch entities based on SWITCH_DEFINITIONS,
     and registers them with Home Assistant.
+
+    Args:
+        hass: Home Assistant instance.
+        entry: Configuration entry.
+        async_add_entities: Callback to add entities.
     """
-    # Retrieve coordinator for this config entry
+    # Retrieve the coordinator instance from hass data and add entities
     coordinator = hass.data[DOMAIN][entry.entry_id]
-
-    # Ensure coordinator has latest data before creating entities
-    await coordinator.async_config_entry_first_refresh()
-
-    # Create MarstekSwitch entities for all defined switches
-    entities = [
-        MarstekSwitch(coordinator, definition)
-        for definition in SWITCH_DEFINITIONS
-    ]
-
-    # Register all created entities with Home Assistant
+    entities = [MarstekSwitch(coordinator, definition) for definition in SWITCH_DEFINITIONS]
     async_add_entities(entities)
 
 
-class MarstekSwitch(SwitchEntity):
+class MarstekSwitch(CoordinatorEntity, SwitchEntity):
     """
     Representation of a Modbus switch entity for Marstek Venus.
 
-    Switch state is read and controlled asynchronously via
+    Sensor state is read and write asynchronously via
     the coordinator communicating with the Modbus device.
     """
 
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """
-        Initialize the switch entity with coordinator and configuration.
+        Initialize the switch entity.
 
         Args:
-            coordinator: Data update coordinator instance.
-            definition: Dictionary with switch configuration.
+            coordinator: The data update coordinator instance.
+            definition: Dictionary containing sensor configuration.
         """
-        self.coordinator = coordinator
-        self.definition = definition
+        super().__init__(coordinator)
 
-        # Set entity name and unique ID for Home Assistant
-        self._attr_name = definition["name"]
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{definition['key']}"
+        # Store the key and definition
+        self._key = definition["key"]
+        self.definition = definition     
+
+        # Assign the entity type to the coordinator mapping
+        self.coordinator._entity_types[self._key] = self.entity_type
+
+        # Set entity attributes from definition
+        self._attr_name = f"{self.definition['name']}"
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
 
         # Internal state variables
         self._state = None
-        self._key = definition["key"]
         self._register = definition["register"]
 
-        # Set entity category (e.g., diagnostic) if defined
-        if "category" in definition:
-            try:
-                self._attr_entity_category = EntityCategory(definition["category"])
-            except ValueError:
-                _LOGGER.warning(
-                    "Unknown entity category %s for switch %s",
-                    definition["category"],
-                    self._attr_name,
-                )
+        # set category if defined in the definition
+        if "category" in self.definition:
+            self._attr_entity_category = EntityCategory(self.definition.get("category"))
 
-        # Set custom icon if provided
-        if "icon" in definition:
-            self._attr_icon = definition["icon"]
+        # Set icon if defined in the button definition
+        if "icon" in self.definition:
+            self._attr_icon = self.definition.get("icon")
 
-        # Disable entity by default if specified
+        # Optional: disable entity by default if specified in the definition
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
-    async def async_added_to_hass(self):
+    @property
+    def entity_type(self) -> str:
         """
-        Called when entity is added to Home Assistant.
-
-        Fetch the initial state to ensure correct representation.
+        Return the type of this entity for logging purposes.
+        This allows the coordinator to show more descriptive messages.
         """
-        await self.async_update()
-        self.async_write_ha_state()
+        return "switch"
 
     @property
     def available(self) -> bool:
-        """Return True if the entity is available."""
-        return self.coordinator.last_update_success and self._state is not None
+        """
+        Return True if the coordinator has successfully fetched data.
+        Used by Home Assistant to determine entity availability.
+        """
+        return self.coordinator.last_update_success
 
     @property
     def is_on(self) -> bool | None:
-        """Return True if the switch is on, False if off, None if unknown."""
-        return self._state
-
-    async def async_update(self):
         """
-        Update the switch state by reading the Modbus register asynchronously.
-
-        Reads the configured register and interprets the value based on
-        command_on and command_off definitions.
+        Return True if switch sensor is on, False if off, None if unknown.
+        State is obtained from the coordinator's shared data dictionary.
         """
-        data_type = self.definition.get("data_type", "uint16")
-        register = self._register
-        count = self.definition.get("count", 1)
+        data = self.coordinator.data
+        if data is None:
+            return None
+        return bool(data.get(self._key)) if self._key in data else None
 
-        try:
-            # Read register value from Modbus client
-            value = await self.coordinator.client.async_read_register(
-                register=register,
-                data_type=data_type,
-                count=count,
-                sensor_key=self._key,
-            )
-        except Exception as exc:
-            _LOGGER.error("Error reading register 0x%X: %s", register, exc)
-            self._state = None
-            return
-
-        # Interpret register value according to configured commands
-        if value is not None:
-            command_on = self.definition.get("command_on")
-            command_off = self.definition.get("command_off")
-
-            if command_on is not None and value == command_on:
-                self._state = True
-            elif command_off is not None and value == command_off:
-                self._state = False
-            else:
-                _LOGGER.warning(
-                    "Unknown register value %s for switch %s", value, self._attr_name
-                )
-                self._state = None
-        else:
-            self._state = None
-
-        # Update the coordinator data cache with new state
-        await self.coordinator.async_update_value(
-            self._key,
-            self._state,
-            register=register,
-            scale=self.definition.get("scale"),
-            unit=self.definition.get("unit"),
-            entity_type=get_entity_type(self),
-        )
-
-    async def async_turn_on(self, **kwargs):
+    async def async_turn_on(self, **kwargs) -> None:
         """
-        Turn the switch on by writing the 'command_on' value to the Modbus register.
+        Turn the switch on via the coordinator.
+        This should trigger writing to the Modbus register.
         """
-        command_on = self.definition.get("command_on")
-        if command_on is None:
-            _LOGGER.warning("No command_on value defined for switch %s", self._attr_name)
-            return
+        await self.coordinator.async_write_register(self._register, True)
+        await self.coordinator.async_refresh()
 
-        success = await self.coordinator.async_write_value(
-            register=self._register,
-            value=command_on,
-            data_type=self.definition.get("data_type", "uint16"),
-            key=self._key,
-            scale=self.definition.get("scale", 1),
-            unit=self.definition.get("unit"),
-            entity_type=get_entity_type(self),
-        )
-
-        if success:
-            self._state = True
-            self.async_write_ha_state()
-
-    async def async_turn_off(self, **kwargs):
+    async def async_turn_off(self, **kwargs) -> None:
         """
-        Turn the switch off by writing the 'command_off' value to the Modbus register.
+        Turn the switch off via the coordinator.
+        This should trigger writing to the Modbus register.
         """
-        command_off = self.definition.get("command_off")
-        if command_off is None:
-            _LOGGER.warning("No command_off value defined for switch %s", self._attr_name)
-            return
-
-        success = await self.coordinator.async_write_value(
-            register=self._register,
-            value=command_off,
-            data_type=self.definition.get("data_type", "uint16"),
-            key=self._key,
-            scale=self.definition.get("scale", 1),
-            unit=self.definition.get("unit"),
-            entity_type=get_entity_type(self),
-        )
-
-        if success:
-            self._state = False
-            self.async_write_ha_state()
+        await self.coordinator.async_write_register(self._register, False)
+        await self.coordinator.async_refresh()
 
     @property
     def device_info(self) -> dict:
         """
-        Return device info to group entities under the same device in HA.
-
-        This metadata is used by Home Assistant's device registry.
+        Return device information for Home Assistant's device registry.
+        Includes identifiers, name, manufacturer, model, and entry type.
         """
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},

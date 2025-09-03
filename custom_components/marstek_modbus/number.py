@@ -1,174 +1,155 @@
 """
 Module for creating number entities for Marstek Venus battery devices.
-The number entities retrieve data by reading Modbus registers.
+Numbers read Modbus registers asynchronously via the coordinator.
+All entities are registered through the coordinator to enable centralized polling.
 """
 
 import logging
 
-from homeassistant.components.number import NumberEntity
 from homeassistant.config_entries import ConfigEntry
+from homeassistant.components.number import NumberEntity
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import Entity, EntityCategory
+from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .const import NUMBER_DEFINITIONS, DOMAIN, MANUFACTURER, MODEL
 from .coordinator import MarstekCoordinator
+from .const import DOMAIN, MANUFACTURER, MODEL, NUMBER_DEFINITIONS
 
 _LOGGER = logging.getLogger(__name__)
-
-
-def get_entity_type(entity) -> str:
-    """Determine entity type based on its class inheritance."""
-    for base in entity.__class__.__mro__:
-        if issubclass(base, Entity) and base.__name__.endswith("Entity"):
-            return base.__name__.replace("Entity", "").lower()
-    return "entity"
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
-):
+) -> None:
     """
     Set up number entities when the config entry is loaded.
 
-    Retrieves the coordinator instance,
-    creates number entities from definitions,
+    This function retrieves the coordinator from hass.data,
+    creates number entities based on NUMBER_DEFINITIONS,
     and registers them with Home Assistant.
+
+    Args:
+        hass: Home Assistant instance.
+        entry: Configuration entry.
+        async_add_entities: Callback to add entities.
     """
-    # Retrieve coordinator for this config entry
+    # Retrieve the coordinator instance from hass data and add entities
     coordinator = hass.data[DOMAIN][entry.entry_id]
-
-    # Refresh data to ensure coordinator data is available
-    await coordinator.async_config_entry_first_refresh()
-
-    # Create number entities for all definitions
     entities = [MarstekNumber(coordinator, definition) for definition in NUMBER_DEFINITIONS]
-
-    # Register the created entities
-    async_add_entities(entities)
+    async_add_entities(entities)   
 
 
-class MarstekNumber(NumberEntity):
-    """Representation of a Modbus number entity for Marstek Venus."""
+class MarstekNumber(CoordinatorEntity, NumberEntity):
+    """
+    Representation of a Modbus number entity for Marstek Venus.
+
+    Number state is read and write asynchronously via
+    the coordinator communicating with the Modbus device.
+    """
 
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """
         Initialize the number entity.
 
         Args:
-            coordinator: Data update coordinator instance.
-            definition: Dictionary with number configuration.
+            coordinator: The data update coordinator instance.
+            definition: Dictionary containing sensor configuration.
         """
-        self.coordinator = coordinator
-        self.definition = definition
+        super().__init__(coordinator)
+
+        # Store the key and definition
+        self._key = definition["key"]
+        self.definition = definition     
+
+        # Assign the entity type to the coordinator mapping
+        self.coordinator._entity_types[self._key] = self.entity_type
 
         # Set entity attributes from definition
-        self._attr_name = self.definition["name"]
+        self._attr_name = f"{self.definition['name']}"
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
 
-        self._attr_native_unit_of_measurement = definition.get("unit")
-        self._attr_native_min_value = definition.get("min")
-        self._attr_native_max_value = definition.get("max")
-        self._attr_native_step = definition.get("step")
+        # Internal state variables
+        self._state = None
         self._register = definition["register"]
-        self._key = definition["key"]
+        
+        # Set min, max, and step from definition if provided
+        self._attr_native_min_value = self.definition.get('min', 0)
+        self._attr_native_max_value = self.definition.get('max', 100)
+        self._attr_native_step = self.definition.get('step', 1)
+        self._data_type = definition.get("data_type", "uint16")
+        self._scale = definition.get("scale", 1)
+        self._unit = definition.get("unit", None)
 
-        # Set entity category if defined
+        # set category if defined in the definition
         if "category" in self.definition:
-            try:
-                self._attr_entity_category = EntityCategory(self.definition.get("category"))
-            except ValueError:
-                _LOGGER.warning(
-                    "Unknown entity category %s for number %s",
-                    self.definition.get("category"),
-                    self._attr_name,
-                )
+            self._attr_entity_category = EntityCategory(self.definition.get("category"))
 
-        # Set icon if defined
+        # Set icon if defined in the button definition
         if "icon" in self.definition:
             self._attr_icon = self.definition.get("icon")
 
-        # Disable entity by default if specified
+        # Optional: disable entity by default if specified in the definition
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
-        # Initialize internal state variable
-        self._state = None
-
-    async def async_added_to_hass(self):
-        """Called when entity is added to Home Assistant."""
-        await self.async_update()
-        self.async_write_ha_state()
+    @property
+    def entity_type(self) -> str:
+        """
+        Return the type of this entity for logging purposes.
+        This allows the coordinator to show more descriptive messages.
+        """
+        return "number"
 
     @property
     def available(self) -> bool:
-        """Return True if coordinator data update succeeded and state is set."""
-        return self.coordinator.last_update_success and self._state is not None
-
-    async def async_update(self):
         """
-        Asynchronously update the sensor state.
-
-        Reads register values via the coordinator's client and processes
-        them based on the number's data type and configuration.
+        Return True if the coordinator has successfully fetched data.
+        Used by Home Assistant to determine entity availability.
         """
-        data_type = self.definition.get("data_type", "uint16")
-        register = self._register
-        count = self.definition.get("count", 1)
-
-        try:
-            # Request the register value asynchronously
-            value = await self.coordinator.client.async_read_register(
-                register=register,
-                data_type=data_type,
-                count=count,
-                sensor_key=self._key,
-            )
-        except Exception as e:
-            _LOGGER.error("Error reading register 0x%X: %s", register, e)
-            self._state = None
-            return
-
-        # Process the received value
-        if value is not None:
-            if isinstance(value, (int, float)):
-                # Apply scale and offset if specified, round to precision
-                scaled = value * self.definition.get("scale", 1)
-                scaled += self.definition.get("offset", 0)
-                precision = self.definition.get("precision", 0)
-                self._state = round(scaled, precision)
-            else:
-                # Fallback: just store value directly
-                self._state = value
-
-            # Update the coordinator data cache
-            await self.coordinator.async_update_value(
-                self._key,
-                self._state,
-                register=register,
-                scale=self.definition.get("scale"),
-                unit=self.definition.get("unit"),
-                entity_type=get_entity_type(self),
-            )
-        else:
-            self._state = None
+        return self.coordinator.last_update_success
 
     @property
-    def native_value(self):
-        """Return the current state value for Home Assistant."""
-        if self.coordinator.data and isinstance(self.coordinator.data, dict):
-            return self.coordinator.data.get(self._key)
-        return None
+    def native_value(self) -> float | None:
+        """
+        Return the current value of the number entity.
+        Value is obtained from the coordinator's shared data dictionary.
+        """
+        data = self.coordinator.data
+        if data is None:
+            return None
+        return data.get(self._key)
+
+    async def async_set_native_value(self, value: float) -> None:
+        """
+        Write the given value to the Modbus register via the coordinator.
+        This updates the number entity in Home Assistant.
+        """
+        # Convert the float value to an integer for Modbus
+        modbus_value = int(value)  
+        
+        # Write the value using the coordinator's async_write_value method
+        success = await self.coordinator.async_write_value(
+            register=self._register,
+            value=modbus_value,
+            data_type=self._data_type,
+            key=self._key,
+            scale=self._scale,
+            unit=self._unit,
+            entity_type=self.entity_type,
+        )
+        if success:
+            self._state = value
+            self.async_write_ha_state()
 
     @property
     def device_info(self) -> dict:
         """
-        Return device information for Home Assistant device registry.
-
-        Groups entities under the same device in the UI.
+        Return device information for Home Assistant's device registry.
+        Includes identifiers, name, manufacturer, model, and entry type.
         """
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
@@ -177,31 +158,3 @@ class MarstekNumber(NumberEntity):
             "model": MODEL,
             "entry_type": "service",
         }
-
-    async def async_set_native_value(self, value: float) -> None:
-        """
-        Write the value to the Modbus register.
-
-        Converts scaled value back to raw before writing.
-        """
-        register = self._register
-        data_type = self.definition.get("data_type", "uint16")
-        scale = self.definition.get("scale", 1)
-        offset = self.definition.get("offset", 0)
-
-        # Convert scaled value back to raw register value
-        raw_value = int((value - offset) / scale)
-
-        success = await self.coordinator.async_write_value(
-            register=register,
-            value=raw_value,
-            data_type=data_type,
-            key=self._key,
-            scale=scale,
-            unit=self.definition.get("unit"),
-            entity_type=get_entity_type(self),
-        )
-
-        if success:
-            self._state = value
-            self.async_write_ha_state()
