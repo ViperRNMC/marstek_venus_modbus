@@ -150,8 +150,12 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
 
         value = options_map[option]
 
+        # Optimistically update the coordinator data so HA shows the new state immediately
+        self.coordinator.data[self._key] = value
+        self.async_write_ha_state()
+
         # Write the new value to the register via the coordinator
-        success = await self.coordinator.async_write_value(
+        await self.coordinator.async_write_value(
             register=self._register,
             value=value,
             data_type=self.definition.get("data_type", "uint16"),
@@ -160,14 +164,6 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
             unit=self.definition.get("unit"),
             entity_type=self.entity_type,
         )
-
-        if success:
-            import asyncio
-
-            # Wait briefly to allow the device to process the change
-            await asyncio.sleep(0.5)
-            # Request coordinator to refresh data
-            await self.coordinator.async_request_refresh()
 
     @property
     def device_info(self) -> dict:
@@ -182,97 +178,3 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
             "model": MODEL,
             "entry_type": "service",
         }
-
-    # def _update_state_from_coordinator(self) -> None:
-    #     """
-    #     Update the internal state from the coordinator's data.
-
-    #     This method reads the register value, maps it to the option key,
-    #     and updates the internal _state attribute.
-    #     """
-    #     data = self.coordinator.data
-    #     if data is None:
-    #         self._state = None
-    #         return
-
-    #     data_type = self.definition.get("data_type", "uint16")
-    #     register = self.definition["register"]
-    #     count = self.definition.get("count", 1)
-
-    #     # The coordinator data structure should contain the register values
-    #     # Here we assume coordinator.data is a dict with keys as register addresses
-    #     # or keys, adjust if necessary.
-    #     # For safety, we attempt to read by key first, then register.
-    #     value = None
-    #     if self._key in data:
-    #         value = data[self._key]
-    #     elif register in data:
-    #         value = data[register]
-
-    #     if value is None:
-    #         self._state = None
-    #         return
-
-    #     options_map = self.definition.get("options", {})
-    #     # Reverse the options map to map values back to keys (int values)
-    #     reversed_map = {int(v): k for k, v in options_map.items()}
-
-    #     try:
-    #         int_value = int(value)
-    #         self._state = reversed_map.get(int_value)
-    #     except (ValueError, TypeError):
-    #         self._state = None
-    #         _LOGGER.warning(
-    #             "Unable to convert value '%s' to int for select %s",
-    #             value,
-    #             self._attr_name,
-    #         )
-
-    #     if self._state is None:
-    #         _LOGGER.warning(
-    #             "Unknown register value %s for select %s (expected one of %s)",
-    #             value,
-    #             self._attr_name,
-    #             list(reversed_map.keys()),
-    #         )
-
-    # @property
-    # def extra_state_attributes(self) -> dict[str, Any]:
-    #     """
-    #     Return additional state attributes if needed.
-
-    #     Returns:
-    #         Dictionary of extra state attributes.
-    #     """
-    #     return {}
-
-    # @property
-    # def should_poll(self) -> bool:
-    #     """
-    #     Disable polling as updates are pushed via the coordinator.
-
-    #     Returns:
-    #         False, polling is not needed.
-    #     """
-    #     return False
-
-    # @property
-    # def native_value(self) -> str | None:
-    #     """
-    #     Return the current option value for the select entity.
-
-    #     Returns:
-    #         The current option string or None if unknown.
-    #     """
-    #     return self._state
-
-    # @CoordinatorEntity._handle_coordinator_update
-    # def _handle_coordinator_update(self) -> None:
-    #     """
-    #     Handle updated data from the coordinator.
-
-    #     This method is called when the coordinator has new data.
-    #     It updates the internal state and writes the state to Home Assistant.
-    #     """
-    #     self._update_state_from_coordinator()
-    #     self.async_write_ha_state()
