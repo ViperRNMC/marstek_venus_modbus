@@ -80,7 +80,6 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         self._attr_native_min_value = self.definition.get('min', 0)
         self._attr_native_max_value = self.definition.get('max', 100)
         self._attr_native_step = self.definition.get('step', 1)
-        self._data_type = definition.get("data_type", "uint16")
         self._scale = definition.get("scale", 1)
         self._unit = definition.get("unit", None)
 
