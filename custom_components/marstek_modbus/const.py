@@ -122,7 +122,6 @@ SENSOR_DEFINITIONS = [
         "state_class": "measurement",
         "key": "battery_soc",
         "enabled_by_default": True,
-        "internal_use": True,  
         "data_type": "uint16",
         "precision": 1,
         "scan_interval": "medium"
@@ -137,7 +136,6 @@ SENSOR_DEFINITIONS = [
         "state_class": "measurement",
         "key": "battery_total_energy",
         "enabled_by_default": True, ###False,
-        "internal_use": True,
         "data_type": "uint16",
         "precision": 3,
         "scan_interval": "low"
@@ -295,7 +293,6 @@ SENSOR_DEFINITIONS = [
         "state_class": "total_increasing",
         "key": "total_charging_energy",
         "enabled_by_default": True,
-        "internal_use": True,
         "data_type": "uint32",
         "precision": 2,
         "scan_interval": "low"
@@ -311,7 +308,6 @@ SENSOR_DEFINITIONS = [
         "state_class": "total_increasing",
         "key": "total_discharging_energy",
         "enabled_by_default": True,
-        "internal_use": True,
         "data_type": "int32",
         "precision": 2,
         "scan_interval": "low"
@@ -357,7 +353,6 @@ SENSOR_DEFINITIONS = [
         "state_class": "total_increasing",
         "key": "total_monthly_charging_energy",
         "enabled_by_default": False,
-        "internal_use": True, 
         "data_type": "uint32",
         "precision": 2,
         "scan_interval": "low"
@@ -373,7 +368,6 @@ SENSOR_DEFINITIONS = [
         "state_class": "total_increasing",
         "key": "total_monthly_discharging_energy",
         "enabled_by_default": False,
-        "internal_use": True,
         "data_type": "int32",
         "precision": 2,
         "scan_interval": "low"
@@ -416,7 +410,6 @@ SENSOR_DEFINITIONS = [
         "state_class": "measurement",
         "key": "max_cell_voltage",
         "enabled_by_default": False,
-        "internal_use": True, 
         "data_type": "int16",
         "precision": 2,
         "scan_interval": "medium"
@@ -431,7 +424,6 @@ SENSOR_DEFINITIONS = [
         "state_class": "measurement",
         "key": "min_cell_voltage",
         "enabled_by_default": False,
-        "internal_use": True, 
         "data_type": "int16",
         "precision": 2,
         "scan_interval": "medium"
