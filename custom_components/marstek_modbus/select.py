@@ -158,7 +158,6 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
         await self.coordinator.async_write_value(
             register=self._register,
             value=value,
-            data_type=self.definition.get("data_type", "uint16"),
             key=self._key,
             scale=self.definition.get("scale", 1),
             unit=self.definition.get("unit"),
