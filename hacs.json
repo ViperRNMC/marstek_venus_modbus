@@ -2,7 +2,7 @@
   "name": "Marstek Venus Modbus",
   "config_flow": true,
   "domains": ["marstek_modbus"],
-  "homeassistant": "2025.6.0",
+  "homeassistant": "2025.9.0",
   "country": "NL",
   "render_readme": true,
   "render_hacs": true,

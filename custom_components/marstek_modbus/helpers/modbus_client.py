@@ -40,7 +40,7 @@ class MarstekModbusClient:
         )
 
         self.client.message_wait_milliseconds = message_wait_ms
-        self.unit_id = 1  # Default slave ID
+        self.unit_id = 1  # Default Unit ID
 
     async def async_connect(self) -> bool:
         """
@@ -139,7 +139,7 @@ class MarstekModbusClient:
 
             try:
                 result = await self.client.read_holding_registers(
-                    address=register, count=count, slave=self.unit_id
+                    address=register, count=count, device_id=self.unit_id
                 )
                 if result.isError():
                     _LOGGER.error(
@@ -243,7 +243,7 @@ class MarstekModbusClient:
         """
         try:
             result = await self.client.write_register(
-                address=register, value=value, slave=self.unit_id
+                address=register, value=value, device_id=self.unit_id
             )
             return not result.isError()
 
