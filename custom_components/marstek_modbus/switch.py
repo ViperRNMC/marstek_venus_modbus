@@ -108,28 +108,65 @@ class MarstekSwitch(CoordinatorEntity, SwitchEntity):
     def is_on(self) -> bool | None:
         """
         Return True if switch sensor is on, False if off, None if unknown.
-        State is obtained from the coordinator's shared data dictionary.
+
+        Uses the coordinator's shared data dictionary and compares
+        with the command_on value from the definition to handle
+        inverted logic (0 = on, 1 = off).
         """
         data = self.coordinator.data
-        if data is None:
+        if data is None or self._key not in data:
             return None
-        return bool(data.get(self._key)) if self._key in data else None
+
+        current_value = data[self._key]
+        return current_value == self.definition.get("command_on")
 
     async def async_turn_on(self, **kwargs) -> None:
         """
         Turn the switch on via the coordinator.
         This should trigger writing to the Modbus register.
         """
-        await self.coordinator.async_write_register(self._register, True)
-        await self.coordinator.async_refresh()
+        value = self.definition.get("command_on")
+        if value is None:
+            _LOGGER.error("No command_on value defined for switch %s", self._attr_name)
+            return
+
+        # Optimistically update the coordinator data so HA shows the new state immediately
+        self.coordinator.data[self._key] = value
+        self.async_write_ha_state()
+
+        # Write the value using the coordinator's async_write_value method
+        await self.coordinator.async_write_value(
+            register=self._register,
+            value=value,
+            key=self._key,
+            scale=self.definition.get("scale", 1),
+            unit=self.definition.get("unit"),
+            entity_type=self.entity_type,
+        )
 
     async def async_turn_off(self, **kwargs) -> None:
         """
         Turn the switch off via the coordinator.
         This should trigger writing to the Modbus register.
         """
-        await self.coordinator.async_write_register(self._register, False)
-        await self.coordinator.async_refresh()
+        value = self.definition.get("command_off")
+        if value is None:
+            _LOGGER.error("No command_off value defined for switch %s", self._attr_name)
+            return
+
+        # Optimistically update the coordinator data so HA shows the new state immediately
+        self.coordinator.data[self._key] = value
+        self.async_write_ha_state()
+
+        # Write the value using the coordinator's async_write_value method
+        await self.coordinator.async_write_value(
+            register=self._register,
+            value=value,
+            key=self._key,
+            scale=self.definition.get("scale", 1),
+            unit=self.definition.get("unit"),
+            entity_type=self.entity_type,
+        )
 
     @property
     def device_info(self) -> dict:

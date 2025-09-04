@@ -129,21 +129,23 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         This updates the number entity in Home Assistant.
         """
         # Convert the float value to an integer for Modbus
-        modbus_value = int(value)  
+        value = int(value)  
         
+        # Optimistically update the coordinator data so HA shows the new state immediately
+        self.coordinator.data[self._key] = value
+        self.async_write_ha_state()
+
         # Write the value using the coordinator's async_write_value method
-        success = await self.coordinator.async_write_value(
+        await self.coordinator.async_write_value(
             register=self._register,
-            value=modbus_value,
-            data_type=self._data_type,
+            value=value,
             key=self._key,
             scale=self._scale,
             unit=self._unit,
             entity_type=self.entity_type,
         )
-        if success:
-            self._state = value
-            self.async_write_ha_state()
+        # Refresh to get the actual state
+        await self.coordinator.async_read_value(self.definition, self._key)
 
     @property
     def device_info(self) -> dict:
