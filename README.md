@@ -83,10 +83,6 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 
 ## ⚠️ Known Issues / Bugs
 
-- **Switches may briefly show incorrect state after writing**  
-  Some switches (e.g., `backup_function` or `rs485_control_mode`) may temporarily display the wrong state in Home Assistant immediately after being toggled.  
-  This occurs because the battery device takes a few seconds to apply changes internally. After the next polling cycle, the correct state is reflected.  
-  **Workaround:** Wait for the coordinator polling interval (usually 5–10 seconds) for the displayed state to update.
 - **User Work Mode (AI Optimized) not reflected correctly**  
   Setting `User Work Mode` to `2 (Trade Mode)` in Home Assistant may not correctly show the updated state.  
   The Marstek app shows the correct mode, but Home Assistant may continue to display the previous state due to a discrepancy in the Modbus register response.  

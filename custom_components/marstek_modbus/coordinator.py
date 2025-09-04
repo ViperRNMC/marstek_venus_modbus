@@ -53,7 +53,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         # Scaling factors for sensors, if applicable
         self._scales: dict[str, float] = {} 
-        
+
+        # Combine all sensor definitions for polling
+        self._all_definitions = (
+            SENSOR_DEFINITIONS
+            + BINARY_SENSOR_DEFINITIONS
+            + SELECT_DEFINITIONS
+            + NUMBER_DEFINITIONS
+            + SWITCH_DEFINITIONS
+        )
+
         # Initialize Modbus client for communication
         self.client = MarstekModbusClient(
             self.host,
@@ -108,6 +117,66 @@ class MarstekCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Failed to connect to Modbus device at %s:%d", self.host, self.port)
         return connected
 
+    async def async_read_value(self, sensor: dict, key: str):
+        """Helper to read a single sensor value from Modbus with logging and type checking."""
+        entity_type = self._entity_types.get(key, get_entity_type(sensor))
+        try:
+            value = await self.client.async_read_register(
+                register=sensor["register"],
+                data_type=sensor.get("data_type", "uint16"),
+                count=sensor.get("count", 1),
+                sensor_key=key,
+            )
+
+            if isinstance(value, (int, float, bool, str)):
+                _LOGGER.debug(
+                    "Updated %s '%s': register=%d, value=%s",
+                    entity_type, key, sensor["register"], value,
+                )
+                return value
+            else:
+                _LOGGER.warning(
+                    "Invalid value for %s '%s': %r (type %s)",
+                    entity_type, key, value, type(value).__name__,
+                )
+                return None
+
+        except Exception as e:
+            _LOGGER.error(
+                "Error reading %s '%s' at register %d: %s",
+                entity_type, key, sensor["register"], e,
+            )
+            return None
+
+    async def async_write_value(
+        self,
+        register: int,
+        value: int,
+        key: str,
+        scale=None,
+        unit=None,
+        entity_type="unknown",
+    ):
+        """Write a value to a Modbus register asynchronously and log the operation."""
+        try:
+            await self.client.async_write_register(register=register, value=value)
+            _LOGGER.debug(
+                "Wrote to %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
+                entity_type,
+                key,
+                register,
+                register,
+                value,
+                scale if scale is not None else 1,
+                unit if unit is not None else "N/A",
+            )
+            return True
+        except Exception as e:
+            _LOGGER.error(
+                "Failed to write value %s to register 0x%X: %s", value, register, e
+            )
+            return False
+
     async def _async_update_data(self):
         """Update all sensors asynchronously with per-sensor interval skipping.
 
@@ -121,17 +190,6 @@ class MarstekCoordinator(DataUpdateCoordinator):
         updated_data = {}
 
         _LOGGER.debug("Coordinator poll tick at %s", now.isoformat())
-
-        # Combine all definitions for iteration
-        if not hasattr(self, "_all_definitions"):
-            self._all_definitions = (
-                SENSOR_DEFINITIONS
-                + BINARY_SENSOR_DEFINITIONS
-                + SELECT_DEFINITIONS
-                + NUMBER_DEFINITIONS
-                + SWITCH_DEFINITIONS
-            )
-        all_definitions = self._all_definitions
 
         # Get the entity registry to check for disabled entities
         entity_registry = er.async_get(self.hass)
@@ -147,7 +205,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Dependency key '%s'", dep_key)
 
         # Iterate over each sensor definition to poll if due
-        for sensor in all_definitions:
+        for sensor in self._all_definitions:
             key = sensor["key"]
             entity_type = self._entity_types.get(key, get_entity_type(sensor))
             unique_id = f"{self.config_entry.entry_id}_{sensor['key']}"
@@ -159,22 +217,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
             if entry:
                 is_disabled = entry.disabled or entry.disabled_by is not None
 
-###test
             # Check if this key is a dependency key for any sensor
-            # dependency_keys_set = set()
-            # for defn in SENSOR_DEFINITIONS:
-            #     for dep_key in defn.get("dependency_keys", {}).values():
-            #         dependency_keys_set.add(dep_key)
-
-            # Controleer per sensor in de update loop
             is_dependency = key in dependency_keys_set
-
-            # Logging om te debuggen
-            # _LOGGER.debug(
-            #     "Checking key '%s': is_disabled=%s, is_dependency=%s", 
-            #     key, is_disabled, is_dependency
-            # )
-###
 
             # Skip polling if entity is disabled unless it is a dependency key
             if is_disabled:
@@ -210,34 +254,12 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 )
                 continue
 
-            # Attempt to read the sensor value from Modbus
-            try:
-                # Read value from Modbus register asynchronously
-                value = await self.client.async_read_register(
-                    register=sensor["register"],
-                    data_type=sensor.get("data_type", "uint16"),
-                    count=sensor.get("count", 1),
-                    sensor_key=key,
-                )
+            # Attempt to read the sensor value from Modbus using helper function
+            value = await self.async_read_value(sensor, key)
 
-                if isinstance(value, (int, float, bool, str)):
-                    updated_data[key] = value
-                    self._last_update_times[key] = now
-                    _LOGGER.debug(
-                        "Updated %s '%s': register=%d, value=%s",
-                        entity_type, key, sensor["register"], value,
-                    )
-                else:
-                    _LOGGER.warning(
-                        "Invalid value for %s '%s': %r (type %s)",
-                        entity_type, key, value, type(value).__name__,
-                    )
-
-            except Exception as e:
-                _LOGGER.error(
-                    "Error reading %s '%s' at register %d: %s",
-                    entity_type, key, sensor["register"], e,
-                )
+            if value is not None:
+                updated_data[key] = value
+                self._last_update_times[key] = now
 
         # Defensive check
         if self.data is None:
@@ -246,53 +268,4 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Update the coordinator's data
         self.data.update(updated_data)
         return self.data
-
-    async def async_update_value(
-        self, key: str, value, *, register=None, scale=None, unit=None, entity_type="unknown"
-    ):
-        """Update a single sensor value and log the update."""
-        self.data[key] = value
-        if register is not None:
-            _LOGGER.debug(
-                "Updated %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
-                entity_type,
-                key,
-                register,
-                register,
-                value,
-                scale if scale is not None else 1,
-                unit if unit is not None else "N/A",
-            )
-        else:
-            _LOGGER.debug("Updated %s '%s' with value %s", entity_type, key, value)
-
-    async def async_write_value(
-        self,
-        *,
-        register: int,
-        value: int,
-        data_type: str,
-        key: str,
-        scale=None,
-        unit=None,
-        entity_type="unknown",
-    ):
-        """Write a value to a Modbus register asynchronously and log the operation."""
-        try:
-            await self.client.async_write_register(register=register, value=value)
-            _LOGGER.debug(
-                "Wrote to %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
-                entity_type,
-                key,
-                register,
-                register,
-                value,
-                scale if scale is not None else 1,
-                unit if unit is not None else "N/A",
-            )
-            return True
-        except Exception as e:
-            _LOGGER.error(
-                "Failed to write value %s to register 0x%X: %s", value, register, e
-            )
-            return False
+    
