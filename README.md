@@ -34,6 +34,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 - Fully local, no cloud required
 
 
+
 ## 🚀 Installation
 
 1. Add this repository to HACS **Integrations → Custom repositories**
@@ -45,6 +46,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 5. Enter the IP and port of your EW11 gateway (default: port 502)
 
 
+
 ## ✅ Tested Devices for Modbus TCP
 
 The Marstek Venus Modbus integration has been tested with the following hardware:
@@ -52,7 +54,9 @@ The Marstek Venus Modbus integration has been tested with the following hardware
 - PUSR DR134 Modbus Gateway
 - Waveshare RS485 to RJ45 Ethernet Converter
 - M5Stack RS485 + Atom S3 Lite
-For more details and updates, see GitHub issue [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25).
+
+_For more details and updates, see GitHub issue [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25).
+
 
 
 ## ⚠️ Known Issues / Bugs
@@ -61,6 +65,7 @@ For more details and updates, see GitHub issue [#25](https://github.com/ViperRNM
   Setting `User Work Mode` to `2 (Trade Mode)` in Home Assistant may not correctly show the updated state.  
   The Marstek app shows the correct mode, but Home Assistant may continue to display the previous state due to a discrepancy in the Modbus register response.  
   This is a known issue with the current Modbus firmware and integration handling.
+
 
 
 ## 📘 Modbus Registers Used
