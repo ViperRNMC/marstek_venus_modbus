@@ -120,6 +120,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
     async def async_read_value(self, sensor: dict, key: str):
         """Helper to read a single sensor value from Modbus with logging and type checking."""
         entity_type = self._entity_types.get(key, get_entity_type(sensor))
+
+         # Determine scale and unit
+        scale = self._scales.get(key, sensor.get("scale", 1))
+        unit = sensor.get("unit", "N/A")
+
         try:
             value = await self.client.async_read_register(
                 register=sensor["register"],
@@ -130,9 +135,14 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
             if isinstance(value, (int, float, bool, str)):
                 _LOGGER.debug(
-                    "Updated %s '%s': register=%d, value=%s",
-                    entity_type, key, sensor["register"], value,
-                )
+                     "Updated %s '%s': register=%d, value=%s, scale=%s, unit=%s",
+                    entity_type,
+                    key,
+                    sensor["register"],
+                    value,
+                    scale,
+                    unit,
+            )   
                 return value
             else:
                 _LOGGER.warning(

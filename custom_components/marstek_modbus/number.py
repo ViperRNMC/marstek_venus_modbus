@@ -120,7 +120,8 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         data = self.coordinator.data
         if data is None:
             return None
-        return data.get(self._key)
+        raw_value = data.get(self._key)
+        return raw_value * self._scale if raw_value is not None else None
 
     async def async_set_native_value(self, value: float) -> None:
         """
@@ -128,16 +129,16 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         This updates the number entity in Home Assistant.
         """
         # Convert the float value to an integer for Modbus
-        value = int(value)  
+        raw_value = int(value / self._scale)
         
         # Optimistically update the coordinator data so HA shows the new state immediately
-        self.coordinator.data[self._key] = value
+        self.coordinator.data[self._key] = raw_value
         self.async_write_ha_state()
 
         # Write the value using the coordinator's async_write_value method
         await self.coordinator.async_write_value(
             register=self._register,
-            value=value,
+            value=raw_value,
             key=self._key,
             scale=self._scale,
             unit=self._unit,
