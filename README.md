@@ -2,16 +2,15 @@
 
 [![GitHub Release](https://img.shields.io/github/v/release/ViperRNMC/marstek_venus_modbus)](https://github.com/ViperRNMC/marstek_venus_modbus/releases)
 [![GitHub Issues](https://img.shields.io/github/issues/ViperRNMC/marstek_venus_modbus)](https://github.com/ViperRNMC/marstek_venus_modbus/issues)
+[![Downloads](https://img.shields.io/github/downloads/ViperRNMC/marstek_venus_modbus/total)](https://github.com/ViperRNMC/marstek_venus_modbus/releases)
 
-🇬🇧 **English**
-
-This is a custom HACS-compatible integration for the Marstek Venus E home battery system, using **Modbus TCP** via an **EW11 RS485-to-WiFi gateway**. No YAML required. The integration provides sensors, switches and number controls to monitor and manage the battery directly from Home Assistant.
+This is a custom HACS-compatible integration for the Marstek Venus E home battery system, using **Modbus TCP** via an **RS485-to-WiFi gateway**. No YAML required. The integration provides sensors, switches and number controls to monitor and manage the battery directly from Home Assistant.
 
 ### 🧩 Requirements
 
-- A configured **EW11 (Modbus RTU to Modbus TCP bridge)** connected to the battery's RS485 port
-- The IP address and port of the EW11 (usually port 502)
-- Home Assistant Core 2025.6 or later
+- A configured **Modbus RTU to Modbus TCP bridge** connected to the battery's RS485 port
+- The IP address and port of the Modbus TCP (usually port 502)
+- Home Assistant Core 2025.9 or later
 - HACS installed
 
 ### 🔧 Features
@@ -34,40 +33,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 - UI-based configuration (Config Flow)
 - Fully local, no cloud required
 
----
 
-🇳🇱 **Nederlands**
-
-Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via **Modbus TCP**, mogelijk gemaakt door een **EW11 RS485–WiFi gateway**. Geen YAML nodig. De integratie biedt sensoren, schakelaars en instelbare vermogens om de batterij volledig vanuit Home Assistant te bedienen.
-
-### 🧩 Vereisten
-
-- Een correct ingestelde **EW11 (Modbus RTU naar Modbus TCP converter)** aangesloten op de RS485-poort van de batterij
-- Het IP-adres en poortnummer van de EW11 (meestal poort 502)
-- Home Assistant Core 2025.6 of nieuwer
-- HACS geïnstalleerd
-
-### 🔧 Functies
-
-- Native Modbus TCP polling via `pymodbus`
-- Polling wordt nu centraal afgehandeld via de DataUpdateCoordinator met dynamische pollingintervallen
-- Dynamische pollingintervallen per entiteitstype
-- Afhankelijke entiteiten worden altijd opgehaald, zelfs als de bijbehorende entiteit is uitgeschakeld
-- Volledig asynchrone werking voor optimale performance en responsiveness
-- Sensoren voor spanning, stroom, SOC, vermogen, energie en fout-/alarmstatus (gecombineerde bits)
-- Schakelaars voor geforceerd laden/ontladen
-- Instelbaar laad-/ontlaadvermogen (0–2500W)
-- Entiteiten gegroepeerd onder één apparaat in Home Assistant
-- Ondersteuning voor select-entiteiten voor meervoudige bedieningsstanden (bijv. force mode)
-- Select-entiteiten voor bedieningsmodi (bijv. force mode, netstandaard)
-- Back-up modus besturing en laden/ontladen tot SOC inbegrepen
-- Inclusief berekende sensoren: round-trip rendement (totaal/maandelijks) en opgeslagen energie
-- Resetknop om handmatig het batterijbeheersysteem te resetten via Home Assistant
-- Sommige geavanceerde sensoren standaard uitgeschakeld voor een schone gebruikersinterface
-- Configuratie via UI (Config Flow)
-- Volledig lokaal, geen cloud nodig
-
----
 
 ## 🚀 Installation
 
@@ -79,7 +45,18 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
 [![Open your Home Assistant instance and show the integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=marstek_modbus)  
 5. Enter the IP and port of your EW11 gateway (default: port 502)
 
----
+
+
+## ✅ Tested Devices for Modbus TCP
+
+The Marstek Venus Modbus integration has been tested with the following hardware:
+- Elfin EW11 WiFi to RS485 Converter
+- PUSR DR134 Modbus Gateway
+- Waveshare RS485 to RJ45 Ethernet Converter
+- M5Stack RS485 + Atom S3 Lite
+For more details and updates, see GitHub issue [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25).
+
+
 
 ## ⚠️ Known Issues / Bugs
 
@@ -88,7 +65,7 @@ Dit is een aangepaste HACS-integratie voor de Marstek Venus E thuisbatterij via 
   The Marstek app shows the correct mode, but Home Assistant may continue to display the previous state due to a discrepancy in the Modbus register response.  
   This is a known issue with the current Modbus firmware and integration handling.
 
----
+
 
 ## 📘 Modbus Registers Used
 
