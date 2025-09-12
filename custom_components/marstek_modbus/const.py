@@ -411,7 +411,7 @@ SENSOR_DEFINITIONS = [
         "key": "max_cell_voltage",
         "enabled_by_default": False,
         "data_type": "int16",
-        "precision": 2,
+        "precision": 3,
         "scan_interval": "medium"
     },
     {
@@ -425,7 +425,7 @@ SENSOR_DEFINITIONS = [
         "key": "min_cell_voltage",
         "enabled_by_default": False,
         "data_type": "int16",
-        "precision": 2,
+        "precision": 3,
         "scan_interval": "medium"
     },
     {
@@ -848,7 +848,18 @@ BUTTON_DEFINITIONS = [
         "key": "reset_device",
         "enabled_by_default": False,
         "data_type": "uint16"
-    }
+    },
+    {
+        # Factory reset device via Modbus command
+        "name": "Factory reset",
+        "register": 41001,
+        "command": 21930,  # 0x55AA
+        "icon": "mdi:factory",
+        "category": "diagnostic",
+        "key": "factory_reset",
+        "enabled_by_default": False,
+        "data_type": "uint16"
+    }    
 ]
 
 # Definitions for efficiency sensors
