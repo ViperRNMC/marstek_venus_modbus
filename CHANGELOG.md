@@ -1,5 +1,16 @@
 # Changelog
 
+## [2025.9.3] - 2025-09-16
+
+### Added
+- New `Actual Conversion Efficiency` calculated sensor to display the real-time charging/discharging efficiency as a percentage.  
+
+### Fixed
+- Fixed proper closing of Modbus connections when disabling and enabling entities, preventing multiple open sessions.
+- Corrected state class for stored energy sensors to match energy device class requirements.
+
+# Changelog
+
 ## [2025.9.2] - 2025-09-07
 
 ### Fixed
