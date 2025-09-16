@@ -870,6 +870,7 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
         "unit": "%",
         "device_class": "battery",
         "state_class": "measurement",
+        "mode": "round_trip",
         "dependency_keys": {
             "charge": "total_charging_energy",            
             "discharge": "total_discharging_energy" 
@@ -881,11 +882,25 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
         "unit": "%",
         "device_class": "battery",
         "state_class": "measurement",
+        "mode": "round_trip",
         "dependency_keys": {
             "charge": "total_monthly_charging_energy",            
             "discharge": "total_monthly_discharging_energy" 
         },                 
+    },
+    {
+        "name": "Conversion Efficiency",
+        "key": "conversion_efficiency",
+        "unit": "%",
+        "device_class": "battery",
+        "state_class": "measurement",
+        "mode": "conversion",
+        "dependency_keys": {
+            "battery_power": "battery_power",
+            "ac_power": "ac_power"
+        },
     }
+
 ]
 
 # Definitions for stored energy sensors
@@ -899,6 +914,6 @@ STORED_ENERGY_SENSOR_DEFINITIONS = [
         "dependency_keys": {
             "soc": "battery_soc",            
             "capacity": "battery_total_energy" 
-        },       
-    }
+        },   
+    },
 ]
