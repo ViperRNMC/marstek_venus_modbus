@@ -1,12 +1,12 @@
 {
-  "name": "Marstek Venus Modbus",
+  "name": "Marstek Jupiter Modbus",
   "config_flow": true,
   "domains": ["marstek_modbus"],
   "homeassistant": "2025.9.0",
-  "country": "NL",
+  "country": "GER",
   "render_readme": true,
   "render_hacs": true,
-  "issue_tracker": "https://github.com/viperrnmd/marstek_modbus_modbus/issues",
+  "issue_tracker": "https://github.com/joklee",
   "loggers": ["custom_components.apsystems_ecu_reader"],
-  "codeowners": ["@ViperRNMC"]
+  "codeowners": ["@joklee"]
 }
