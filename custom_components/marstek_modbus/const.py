@@ -3,7 +3,7 @@ DOMAIN = "marstek_modbus"
 
 # Manufacturer and model information for the Marstek Venus battery
 MANUFACTURER = "Marstek"
-MODEL = "Venus E"
+MODEL = "Jupiter C"
 
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
@@ -23,16 +23,67 @@ SCAN_INTERVAL = {
 # The "scan_interval" refers to keys inside SCAN_INTERVALS by default.
 SENSOR_DEFINITIONS = [
     {
-        # Device name, stored as a string in multiple registers
-        "name": "Device Name",
-        "register": 31000,
+        "name": "Device ID",
+        "register": 0x001B,
         "count": 10,  # 20 bytes = 10 registers
         "data_type": "char",
         "unit": None,
-        "key": "device_name",
+        "key": "device_id",
         "enabled_by_default": True,
         "scan_interval": "very_low",
         "precision": 0
+    },
+    {
+        # EMS version, stored as a 16-bit unsigned integer
+        "name": "EMS Version",
+        "register": 0x001C,
+        "unit": None,
+        "category": "diagnostic",
+        "icon": "mdi:ticket-confirmation-outline",
+        "key": "ems_version",
+        "enabled_by_default": True,
+        "data_type": "uint16",
+        "precision": 0,
+        "scan_interval": "very_low"
+    },
+    {
+        # INV version, stored as a 16-bit unsigned integer
+        "name": "INV Version",
+        "register": 0x001D,
+        "unit": None,
+        "category": "diagnostic",
+        "icon": "mdi:ticket-confirmation-outline",
+        "key": "ems_version",
+        "enabled_by_default": True,
+        "data_type": "uint16",
+        "precision": 0,
+        "scan_interval": "very_low"
+    },
+    {
+        # MPPT version, stored as a 16-bit unsigned integer
+        "name": "MPPT Version",
+        "register": 0x001E,
+        "unit": None,
+        "category": "diagnostic",
+        "icon": "mdi:ticket-confirmation-outline",
+        "key": "ems_version",
+        "enabled_by_default": True,
+        "data_type": "uint16",
+        "precision": 0,
+        "scan_interval": "very_low"
+    },
+    {
+        # BMS version, stored as a 16-bit unsigned integer
+        "name": "BMS Version",
+        "register": 0x001F,
+        "unit": None,
+        "icon": "mdi:battery-check-outline",
+        "category": "diagnostic",
+        "key": "bms_version",
+        "enabled_by_default": True,
+        "data_type": "uint16",
+        "precision": 0,
+        "scan_interval": "very_low"
     },
     {
         # SN code, stored as a string in multiple registers
@@ -58,32 +109,6 @@ SENSOR_DEFINITIONS = [
         "enabled_by_default": True,
         "data_type": "uint16",
         "precision": 2,
-        "scan_interval": "very_low"
-    },
-    {
-        # BMS version, stored as a 16-bit unsigned integer
-        "name": "BMS Version",
-        "register": 31102,
-        "unit": None,
-        "icon": "mdi:battery-check-outline",
-        "category": "diagnostic",
-        "key": "bms_version",
-        "enabled_by_default": True,
-        "data_type": "uint16",
-        "precision": 0,
-        "scan_interval": "very_low"
-    },
-    {
-        # EMS version, stored as a 16-bit unsigned integer
-        "name": "EMS Version",
-        "register": 31101,
-        "unit": None,
-        "category": "diagnostic",
-        "icon": "mdi:ticket-confirmation-outline",
-        "key": "ems_version",
-        "enabled_by_default": True,
-        "data_type": "uint16",
-        "precision": 0,
         "scan_interval": "very_low"
     },
     {
