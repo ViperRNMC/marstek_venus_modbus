@@ -1,4 +1,4 @@
-# Marstek Venus Battery - Home Assistant Integration
+# Marstek Jupiter Battery - Home Assistant Integration
 
 [![GitHub Release](https://img.shields.io/github/v/release/ViperRNMC/marstek_venus_modbus)](https://github.com/ViperRNMC/marstek_venus_modbus/releases)
 [![GitHub Issues](https://img.shields.io/github/issues/ViperRNMC/marstek_venus_modbus)](https://github.com/ViperRNMC/marstek_venus_modbus/issues)
@@ -39,7 +39,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 
 1. Add this repository to HACS **Integrations → Custom repositories**
 [![Add repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ViperRNMC&repository=marstek_venus_modbus)
-2. Install the “Marstek Venus Modbus” integration
+2. Install the “Marstek Jupiter Modbus” integration
 3. Restart Home Assistant
 4. Add the integration via **Settings → Devices & Services**
 [![Open your Home Assistant instance and show the integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=marstek_modbus)  
@@ -49,13 +49,8 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 
 ## ✅ Tested Devices for Modbus TCP
 
-The Marstek Venus Modbus integration has been tested with the following hardware:
-- Elfin EW11 WiFi to RS485 Converter
+The Marstek Jupiter Modbus integration has been tested with the following hardware:
 - PUSR DR134 Modbus Gateway
-- Waveshare RS485 to RJ45 Ethernet Converter
-- M5Stack RS485 + Atom S3 Lite
-For more details and updates, see GitHub issue [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25).
-
 
 
 ## ⚠️ Known Issues / Bugs
