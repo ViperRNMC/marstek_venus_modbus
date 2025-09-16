@@ -279,3 +279,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.data.update(updated_data)
         return self.data
     
+
+    async def async_close(self):
+        """Close the Modbus client connection cleanly."""
+        try:
+            await self.client.async_close()
+            _LOGGER.debug("Closed Modbus connection to %s:%d", self.host, self.port)
+        except Exception as e:
+            _LOGGER.warning("Error closing Modbus client: %s", e)
