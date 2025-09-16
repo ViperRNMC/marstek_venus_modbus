@@ -895,7 +895,7 @@ STORED_ENERGY_SENSOR_DEFINITIONS = [
         "key": "stored_energy",
         "unit": "kWh",
         "device_class": "energy",
-        "state_class": "measurement",
+        "state_class": "total",
         "dependency_keys": {
             "soc": "battery_soc",            
             "capacity": "battery_total_energy" 
