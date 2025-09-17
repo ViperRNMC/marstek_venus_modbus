@@ -310,7 +310,12 @@ class MarstekEfficiencySensor(MarstekCalculatedSensor):
             # Actual Conversion Efficiency
             battery_power = dep_values.get("battery_power")
             ac_power = dep_values.get("ac_power")
-            efficiency = abs(battery_power) / abs(ac_power) * 100
+            if battery_power > 0:
+                # Charging: how much battery gets stored per AC input
+                efficiency = abs(battery_power) / abs(ac_power) * 100
+            else:
+                # Discharging: how much AC you get out per battery discharge
+                efficiency = abs(ac_power) / abs(battery_power) * 100
         else:
             _LOGGER.warning(
                 "%s unknown efficiency mode '%s'", self._attr_name, mode
