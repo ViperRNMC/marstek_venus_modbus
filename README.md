@@ -6,6 +6,7 @@
 
 This is a custom HACS-compatible integration for the Marstek Venus E home battery system, using **Modbus TCP** via an **RS485-to-WiFi gateway**. No YAML required. The integration provides sensors, switches and number controls to monitor and manage the battery directly from Home Assistant.
 
+
 ### 🧩 Requirements
 
 - A configured **Modbus RTU to Modbus TCP bridge** connected to the battery's RS485 port
@@ -13,11 +14,12 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 - Home Assistant Core 2025.9 or later
 - HACS installed
 
+
 ### 🔧 Features
 
 - Native Modbus TCP polling via `pymodbus`
-- Polling is now handled centrally via the DataUpdateCoordinator with dynamic polling intervals
-- Dynamic polling intervals per entity type
+- Polling is handled centrally via the DataUpdateCoordinator with dynamic intervals per entity type
+- Configurable scan intervals via the integration options UI
 - Dependency entities are always polled, even if the related entity is disabled
 - Fully asynchronous operation for optimal performance and responsiveness
 - Sensors for voltage, current, SOC, power, energy, and fault/alarm status (combined bits)
@@ -34,7 +36,6 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 - Fully local, no cloud required
 
 
-
 ## 🚀 Installation
 
 1. Add this repository to HACS **Integrations → Custom repositories**
@@ -44,7 +45,6 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 4. Add the integration via **Settings → Devices & Services**
 [![Open your Home Assistant instance and show the integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=marstek_modbus)  
 5. Enter the IP and port of your EW11 gateway (default: port 502)
-
 
 
 ## ✅ Tested Devices for Modbus TCP
@@ -57,14 +57,12 @@ The Marstek Venus Modbus integration has been tested with the following hardware
 For more details and updates, see GitHub issue [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25).
 
 
-
 ## ⚠️ Known Issues / Bugs
 
 - **User Work Mode (AI Optimized) not reflected correctly**  
   Setting `User Work Mode` to `2 (Trade Mode)` in Home Assistant may not correctly show the updated state.  
   The Marstek app shows the correct mode, but Home Assistant may continue to display the previous state due to a discrepancy in the Modbus register response.  
   This is a known issue with the current Modbus firmware and integration handling.
-
 
 
 ## 📘 Modbus Registers Used
@@ -127,6 +125,7 @@ The following Modbus registers are used by this integration:
 | 44100  | Grid Standard              | uint16   | 2     | -     |  -   | select                | Grid standards (Auto=0, EN50549=1, Netherlands=2, Germany=3, Austria=4, UK=5, Spain=6, Poland=7, Italy=8, China=9) |
 |    —   | Round-Trip Efficiency Total |   -     |  -    | -     |  %   | efficiency sensor     | Efficiency from total charging/discharging and SOC           |
 |    —   | Round-Trip Efficiency Monthly |   -   |  -    | -     |  %   | efficiency sensor     | Efficiency from monthly charging/discharging and SOC         |
+|    —   | Conversion Efficiency        |   -     |  -    | -     |  %   | efficiency sensor     | Actual charging/discharging conversion efficiency              |
 |    —   | Stored Energy                |   -     |  -    | -     |  kwh  | stored energy sensor  | Calculated stored energy from SOC and battery capacity       |
 
 _Note: For access to registers in the 42000–42999 range, the battery must be set to RS485 control mode._
