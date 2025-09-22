@@ -72,7 +72,8 @@ class MarstekModbusClient:
 
     async def async_close(self) -> None:
         """
-        Close the Modbus TCP connection safely (sync or async).
+        Close the Modbus TCP connection safely (sync or async) 
+        and reset client reference.
         """
         if not self.client:
             return
@@ -81,8 +82,11 @@ class MarstekModbusClient:
             result = self.client.close()
             if asyncio.iscoroutine(result):
                 await result
+            _LOGGER.debug("Modbus client closed successfully")
         except Exception as e:
             _LOGGER.warning("Error closing Modbus client: %s", e)
+        finally:
+            self.client = None
 
     async def async_read_register(
         self,
