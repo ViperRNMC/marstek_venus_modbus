@@ -1,4 +1,19 @@
+
 # Changelog
+
+## [2025.9.4] - 2025-09-22
+
+### Added
+- Configurable scan intervals (high, medium, low, very_low) through integration options.
+- Options flow with translated titles and descriptions.
+
+### Changed
+- Coordinator now dynamically adjusts polling interval based on the lowest configured scan interval.
+
+### Fixed
+- Corrected calculation of Actual Conversion Efficiency to properly handle charging vs discharging, avoiding efficiencies above 100%.
+- Properly handle Modbus client closing when disabling the integration.
+- Correctly apply updated polling intervals after options are changed.
 
 ## [2025.9.3] - 2025-09-16
 
@@ -8,6 +23,7 @@
 ### Fixed
 - Fixed proper closing of Modbus connections when disabling and enabling entities, preventing multiple open sessions.
 - Corrected state class for stored energy sensors to match energy device class requirements.
+- Corrected calculation of Actual Conversion Efficiency to properly handle charging vs discharging, avoiding efficiencies above 100%.
 
 # Changelog
 
