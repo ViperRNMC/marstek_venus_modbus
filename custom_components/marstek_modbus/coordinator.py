@@ -19,8 +19,9 @@ from .const import (
     SWITCH_DEFINITIONS,
     EFFICIENCY_SENSOR_DEFINITIONS,
     STORED_ENERGY_SENSOR_DEFINITIONS,
-    SCAN_INTERVAL,    
+    DEFAULT_SCAN_INTERVALS,
 )
+
 from .helpers.modbus_client import MarstekModbusClient
 
 _LOGGER = logging.getLogger(__name__)
@@ -75,19 +76,55 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.data: dict = {}
         self._last_update_times: dict = {}
 
-        # Determine the minimum scan interval among all sensors, default to 30 seconds
-        min_interval = min(SCAN_INTERVAL.values()) if SCAN_INTERVAL else 30
-        update_interval = timedelta(seconds=min_interval)
+        # Prepare scan intervals (from config_entry.options or default)
+        options = entry.options or {}
+        self._update_scan_intervals(options)
 
         # Initialize the base DataUpdateCoordinator with the calculated interval
         super().__init__(
             hass,
             _LOGGER,
             name="MarstekCoordinator",
-            update_interval=update_interval,
+            update_interval=self.update_interval,
         )
          
-        _LOGGER.debug("Coordinator initialized with update_interval: %s", update_interval)
+        _LOGGER.debug("Coordinator initialized with update_interval: %s", self.update_interval)
+
+    def _update_scan_intervals(self, options: dict):
+        """Update scan intervals from config options and compute update_interval (lowest interval always used)."""
+        old_intervals = getattr(self, "scan_intervals", {}).copy() if hasattr(self, "scan_intervals") else {}
+        self.scan_intervals = DEFAULT_SCAN_INTERVALS.copy()
+
+        for key in DEFAULT_SCAN_INTERVALS:
+            if key in options:
+                try:
+                    self.scan_intervals[key] = int(options[key])
+                except Exception:
+                    _LOGGER.warning("Invalid scan interval for %s: %s", key, options[key])
+
+        # Compute minimum interval for coordinator
+        min_interval = min(self.scan_intervals.values()) if self.scan_intervals else 30
+        self.update_interval = timedelta(seconds=min_interval)
+
+        # Update DataUpdateCoordinator's update_interval if coordinator is already initialized
+        if hasattr(self, "_listeners") and self._listeners is not None:
+            # update_interval is a property in DataUpdateCoordinator
+            try:
+                super(MarstekCoordinator, self.__class__).update_interval.fset(self, self.update_interval)
+                _LOGGER.debug(
+                    "Coordinator update_interval changed dynamically to %s due to options change",
+                    self.update_interval,
+                )
+            except Exception as e:
+                _LOGGER.warning("Failed to update coordinator update_interval: %s", e)
+
+        _LOGGER.debug(
+            "Scan intervals updated. Old: %s, New: %s, Coordinator update_interval: %s",
+            old_intervals,
+            self.scan_intervals,
+            self.update_interval,
+        )
+
 
     def register_entity_type(self, key: str, entity_type: str):
         """Register the entity type for a given sensor key.
@@ -238,9 +275,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     _LOGGER.debug("Skipping disabled entity '%s'", sensor.get("name", key))
                     continue
 
-            # Determine polling interval for this sensor
+            # Determine polling interval for this sensor, using self.scan_intervals
             interval_name = sensor.get("scan_interval")
-            interval = SCAN_INTERVAL.get(interval_name)
+            interval = None
+            if interval_name:
+                interval = self.scan_intervals.get(interval_name)
 
             if interval is None:
                 _LOGGER.warning(

@@ -10,7 +10,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.translation import async_get_translations
 from pymodbus.client import ModbusTcpClient
 
-from .const import DOMAIN, DEFAULT_PORT
+from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVALS
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -70,54 +70,11 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                     if entry.data.get(CONF_HOST) == host:
                         return self.async_abort(reason="already_configured")
 
-                # Log connection attempt at debug level
-                _LOGGER.debug("Attempting to connect to Modbus server at %s:%d", host, port)
-
-                # Create client with timeout (if supported by pymodbus version)
-                client = ModbusTcpClient(host=host, port=port, timeout=3)
-
-                try:
-                    if not client.connect():
-                        raise ConnectionError("Unable to connect")
-                except OSError as err:
-                    err_msg = str(err).lower()
-                    if "permission denied" in err_msg:
-                        errors["base"] = "permission_denied"
-                    elif "connection refused" in err_msg:
-                        errors["base"] = "connection_refused"
-                    elif "timed out" in err_msg:
-                        errors["base"] = "timed_out"
-                    else:
-                        errors["base"] = "cannot_connect"
-                    _LOGGER.debug("Connection error during Modbus client connect: %s", err_msg)
-                    return self.async_show_form(
-                        step_id="user",
-                        data_schema=vol.Schema(
-                            {
-                                vol.Required(CONF_HOST): str,
-                                vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-                            }
-                        ),
-                        errors=errors,
-                    )
-                except Exception as exc:
-                    _LOGGER.error("Unexpected error connecting to Modbus server: %s", exc)
-                    errors["base"] = "cannot_connect"
-                    return self.async_show_form(
-                        step_id="user",
-                        data_schema=vol.Schema(
-                            {
-                                vol.Required(CONF_HOST): str,
-                                vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-                            }
-                        ),
-                        errors=errors,
-                    )
-                finally:
-                    client.close()
+                # Test the Modbus connection using the helper function
+                errors["base"] = await async_test_modbus_connection(host, port)
 
                 # If no errors, create the configuration entry
-                if not errors:
+                if not errors["base"]:
                     title = translations.get("config.step.user.title", "Marstek Venus Modbus")
                     return self.async_create_entry(title=title, data=user_input)
 
@@ -132,3 +89,101 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             ),
             errors=errors,
         )
+    
+    @staticmethod
+    # @callback
+    def async_get_options_flow(config_entry):
+        """Get the options flow for this handler."""
+        return MarstekOptionsFlow(config_entry)
+
+
+class MarstekOptionsFlow(config_entries.OptionsFlow):
+    """Handle Marstek Venus Modbus options flow."""
+
+    def __init__(self, config_entry):
+        """Initialize options flow."""
+        self.config_entry = config_entry
+
+    async def async_step_init(self, user_input=None):
+        """Manage the options."""
+        errors = {}
+
+        # Get language and translations for config flow
+        language = self.hass.config.language
+        translations = await async_get_translations(
+            self.hass,
+            language,
+            category='config',
+            integrations=DOMAIN
+        )
+
+        config = self.config_entry
+
+        # Defaults: use options, then data, then DEFAULT_SCAN_INTERVALS
+        defaults = {
+            key: config.options.get(key, config.data.get(key, DEFAULT_SCAN_INTERVALS[key]))
+            for key in ("high", "medium", "low", "very_low")
+        }
+
+        # Calculate the lowest scan interval for description placeholder
+        lowest = min((user_input or defaults).values())
+
+        if user_input is not None:
+            # Update coordinator scan intervals if exists
+            coordinator = self.hass.data.get(DOMAIN, {}).get(config.entry_id)
+            if coordinator:
+                coordinator._update_scan_intervals(user_input)
+
+            # Do not set a custom title; let HA handle with translations
+            return self.async_create_entry(data=user_input)
+
+        # Schema for the form
+        schema = vol.Schema(
+            {
+                vol.Required("high", default=defaults["high"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
+                vol.Required("medium", default=defaults["medium"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
+                vol.Required("low", default=defaults["low"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
+                vol.Required("very_low", default=defaults["very_low"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
+            }
+        )
+
+        # Use translations for form title and description, with placeholders
+        return self.async_show_form(
+            step_id="init",
+            data_schema=schema,
+            errors=errors,
+            description_placeholders={"lowest": str(lowest)},
+        )
+
+
+async def async_test_modbus_connection(host: str, port: int):
+    """
+    Attempt to connect to the Modbus server at the given host and port.
+    Returns a string error key for the config flow errors dict, or None if successful.
+    """
+    import logging
+    _LOGGER = logging.getLogger(__name__)
+    # Log connection attempt at debug level
+    _LOGGER.debug("Attempting to connect to Modbus server at %s:%d", host, port)
+
+    client = ModbusTcpClient(host=host, port=port, timeout=3)
+    try:
+        if not client.connect():
+            raise ConnectionError("Unable to connect")
+    except OSError as err:
+        err_msg = str(err).lower()
+        if "permission denied" in err_msg:
+            return "permission_denied"
+        elif "connection refused" in err_msg:
+            return "connection_refused"
+        elif "timed out" in err_msg:
+            return "timed_out"
+        else:
+            _LOGGER.debug("Connection error during Modbus client connect: %s", err_msg)
+            return "cannot_connect"
+    except Exception as exc:
+        _LOGGER.error("Unexpected error connecting to Modbus server: %s", exc)
+        return "cannot_connect"
+    finally:
+        client.close()
+    return None

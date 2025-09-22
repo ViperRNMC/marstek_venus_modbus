@@ -11,7 +11,7 @@ DEFAULT_MESSAGE_WAIT_MS = 80  # Default wait time for Modbus messages in millise
 DEFAULT_UNIT_ID = 1  # Default Modbus Unit ID (unit ID)
 
 # General scan intervals (in seconds)
-SCAN_INTERVAL = {
+DEFAULT_SCAN_INTERVALS = {
     "high": 10,       # fast-changing sensors, e.g., power, alarms
     "medium": 30,     # moderately changing sensors, e.g., voltage, current
     "low": 60,        # slow-changing sensors, e.g., cumulative energy counters

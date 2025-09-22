@@ -11,14 +11,22 @@
       }
     },
     "error": {
-      "permission_denied": "Permission denied ",
+      "permission_denied": "Permission denied",
       "connection_refused": "Connection refused",
       "timed_out": "Connection timed out",
       "invalid_host": "Invalid host or IP address",
-      "cannot_connect": "Cannot connect to the device"     
+      "cannot_connect": "Cannot connect to the device"
     },
     "abort": {
       "already_configured": "This device is already configured"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configure sensor scan intervals",
+        "description": "Adjust polling frequency per category"
+      }
     }
   }
 }

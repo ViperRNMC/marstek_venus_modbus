@@ -20,5 +20,13 @@
     "abort": {
       "already_configured": "Dit apparaat is al geconfigureerd"
     }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Configureer sensor scan-intervallen",
+        "description": "Pas de pollingfrequentie per categorie aan"
+      }
+    }
   }
 }
