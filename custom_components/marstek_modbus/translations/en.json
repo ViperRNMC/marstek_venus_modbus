@@ -6,7 +6,8 @@
         "description": "Enter the Modbus TCP connection details",
         "data": {
           "host": "IP Address",
-          "port": "Port"
+          "port": "Port",
+          "device_version": "Device version"
         }
       }
     },

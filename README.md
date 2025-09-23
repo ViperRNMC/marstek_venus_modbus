@@ -50,7 +50,6 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 ## ✅ Tested Devices for Modbus TCP
 
 The Marstek Venus Modbus integration has been tested with the following hardware:
-- Tested with **Marstek battery v2** 
 - Elfin EW11 WiFi to RS485 Converter
 - PUSR DR134 Modbus Gateway
 - Waveshare RS485 to RJ45 Ethernet Converter

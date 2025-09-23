@@ -49,6 +49,21 @@ class MarstekModbusClient:
         Returns:
             bool: True if connection succeeded, False otherwise.
         """
+        # If client was closed previously, recreate the AsyncModbusTcpClient
+        if self.client is None:
+            self.client = AsyncModbusTcpClient(
+                host=self.host,
+                port=self.port,
+                timeout=self.timeout,
+            )
+            # restore configured properties
+            try:
+                self.client.message_wait_milliseconds = self.message_wait_ms
+            except Exception:
+                # some client implementations may not expose this attribute
+                pass
+            self.unit_id = 1
+
         connected = await self.client.connect()
 
         if connected:
@@ -134,7 +149,14 @@ class MarstekModbusClient:
 
         attempt = 0
         while attempt < max_retries:
-            if not self.client.connected:
+            # Guard against client being None (closed during unload)
+            client_connected = False
+            try:
+                client_connected = bool(self.client and getattr(self.client, "connected", False))
+            except Exception:
+                client_connected = False
+
+            if not client_connected:
                 _LOGGER.warning(
                     "Modbus client not connected, attempting reconnect before register %d (0x%04X)",
                     register,
@@ -227,8 +249,23 @@ class MarstekModbusClient:
                     else:
                         raise ValueError(f"Unsupported data_type: {data_type}")
 
+            except asyncio.CancelledError:
+                # Allow cancellation to propagate during Home Assistant shutdown
+                raise
             except Exception as e:
-                _LOGGER.exception("Exception during Modbus read at register %d (0x%04X) on attempt %d: %s", register, register, attempt + 1, e)
+                # If the underlying cause is a CancelledError (pymodbus wraps it),
+                # propagate it so shutdown is not logged as an error.
+                cause = getattr(e, "__cause__", None)
+                if isinstance(cause, asyncio.CancelledError):
+                    raise cause
+
+                _LOGGER.exception(
+                    "Exception during Modbus read at register %d (0x%04X) on attempt %d: %s",
+                    register,
+                    register,
+                    attempt + 1,
+                    e,
+                )
 
             attempt += 1
             if attempt < max_retries:
