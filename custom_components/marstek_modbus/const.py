@@ -18,7 +18,7 @@ DEFAULT_SCAN_INTERVALS = {
     "very_low": 180   # rarely changing info, e.g., device info, firmware versions
 }
 
-# Supported device versions and a loader
+# Supported device versions
 SUPPORTED_VERSIONS = ["v1/v2", "v3"]
 
 # Note: register loading logic (get_registers_for_version) was moved to
