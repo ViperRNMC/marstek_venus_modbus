@@ -6,7 +6,8 @@
         "description": "Voer de Modbus TCP-verbindingsgegevens in",
         "data": {
           "host": "IP-adres",
-          "port": "Poort"
+          "port": "Poort",
+          "device_version": "Apparaatversie"
         }
       }
     },

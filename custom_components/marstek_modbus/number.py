@@ -14,7 +14,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import MarstekCoordinator
-from .const import DOMAIN, MANUFACTURER, MODEL, NUMBER_DEFINITIONS
+from .const import DOMAIN, MANUFACTURER, MODEL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +38,7 @@ async def async_setup_entry(
     """
     # Retrieve the coordinator instance from hass data and add entities
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = [MarstekNumber(coordinator, definition) for definition in NUMBER_DEFINITIONS]
+    entities = [MarstekNumber(coordinator, definition) for definition in coordinator.NUMBER_DEFINITIONS]
     async_add_entities(entities)   
 
 

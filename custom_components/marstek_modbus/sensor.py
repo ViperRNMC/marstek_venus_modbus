@@ -15,15 +15,7 @@ from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
 from .coordinator import MarstekCoordinator
-from .const import (
-    DOMAIN,
-    MANUFACTURER,
-    MODEL,
-    SENSOR_DEFINITIONS,
-    BINARY_SENSOR_DEFINITIONS,
-    EFFICIENCY_SENSOR_DEFINITIONS,
-    STORED_ENERGY_SENSOR_DEFINITIONS,
-)
+from .const import DOMAIN, MANUFACTURER, MODEL
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -36,13 +28,13 @@ async def async_setup_entry(
     """Set up all Marstek sensors from definitions."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
 
-    # Create sensor entities from definitions
-    entities = [MarstekSensor(coordinator, d) for d in SENSOR_DEFINITIONS]
+    # Create sensor entities from coordinator-provided definitions
+    entities = [MarstekSensor(coordinator, d) for d in coordinator.SENSOR_DEFINITIONS]
     entities.extend(
-        MarstekEfficiencySensor(coordinator, d) for d in EFFICIENCY_SENSOR_DEFINITIONS
+        MarstekEfficiencySensor(coordinator, d) for d in coordinator.EFFICIENCY_SENSOR_DEFINITIONS
     )
     entities.extend(
-        MarstekStoredEnergySensor(coordinator, d) for d in STORED_ENERGY_SENSOR_DEFINITIONS
+        MarstekStoredEnergySensor(coordinator, d) for d in coordinator.STORED_ENERGY_SENSOR_DEFINITIONS
     )
 
     # Add all entities to Home Assistant
@@ -172,11 +164,10 @@ class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):
 
             self.coordinator._entity_types[dep_key] = "sensor"
 
-            # Combine all definitions for iteration
+            # Combine all definitions for iteration using coordinator-provided lists
             if not hasattr(self, "_all_definitions"):
                 self._all_definitions = (
-                    SENSOR_DEFINITIONS
-                    + BINARY_SENSOR_DEFINITIONS
+                    self.coordinator.SENSOR_DEFINITIONS + self.coordinator.BINARY_SENSOR_DEFINITIONS
                 )
             all_definitions = self._all_definitions
 

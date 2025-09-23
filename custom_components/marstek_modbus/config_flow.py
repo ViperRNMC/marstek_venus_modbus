@@ -10,7 +10,10 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.translation import async_get_translations
 from pymodbus.client import ModbusTcpClient
 
-from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVALS
+from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS
+
+CONF_CONF_VERSION = "conf_version"
+CONF_DEVICE_VERSION = "device_version"
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -44,7 +47,8 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             host = user_input.get(CONF_HOST)
             port = user_input.get(CONF_PORT, DEFAULT_PORT)
-
+            device_version = user_input.get(CONF_DEVICE_VERSION, SUPPORTED_VERSIONS[0])
+            
             # Validate port range
             if not (1 <= port <= 65535):
                 errors["base"] = "invalid_port"
@@ -75,19 +79,36 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
                 # If no errors, create the configuration entry
                 if not errors["base"]:
-                    title = translations.get("config.step.user.title", "Marstek Venus Modbus")
-                    return self.async_create_entry(title=title, data=user_input)
+                        title = translations.get("config.step.user.title", "Marstek Venus Modbus")
+                        # Ensure device_version is saved in the config entry data
+                        data = {
+                            CONF_HOST: host,
+                            CONF_PORT: port,
+                            CONF_DEVICE_VERSION: device_version,
+                        }
+                        return self.async_create_entry(title=title, data=data)
 
-        # Show the form for user input (host and port) with any errors
+        # Show the form for user input (host, port and device version) with any errors
+        # Version options are taken from SUPPORTED_VERSIONS and presented as a select
+        # Provide friendly labels as description placeholders in case
+        # translations are not yet loaded in the dev environment.
+        description_placeholders = {
+            "device_version_choices": ", ".join(
+                [f"{v}: {translations.get(f'config.step.user.data.device_version|{v}', v)}" for v in SUPPORTED_VERSIONS]
+            )
+        }
+
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
                     vol.Required(CONF_HOST): str,
                     vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                    vol.Required(CONF_DEVICE_VERSION, default=SUPPORTED_VERSIONS[0]): vol.In(SUPPORTED_VERSIONS),
                 }
             ),
             errors=errors,
+            description_placeholders=description_placeholders,
         )
     
     @staticmethod
