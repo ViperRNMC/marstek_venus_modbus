@@ -11,16 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import (
-    BINARY_SENSOR_DEFINITIONS,
-    NUMBER_DEFINITIONS,
-    SENSOR_DEFINITIONS,
-    SELECT_DEFINITIONS,
-    SWITCH_DEFINITIONS,
-    EFFICIENCY_SENSOR_DEFINITIONS,
-    STORED_ENERGY_SENSOR_DEFINITIONS,
-    DEFAULT_SCAN_INTERVALS,
-)
+from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS
 
 from .helpers.modbus_client import MarstekModbusClient
 
@@ -55,13 +46,24 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Scaling factors for sensors, if applicable
         self._scales: dict[str, float] = {} 
 
+        # Load register/entity definitions for the device version selected in the config entry
+        registers = get_registers(entry.data.get("device_version"))
+        self.SENSOR_DEFINITIONS = registers.get("SENSOR_DEFINITIONS", [])
+        self.BINARY_SENSOR_DEFINITIONS = registers.get("BINARY_SENSOR_DEFINITIONS", [])
+        self.SELECT_DEFINITIONS = registers.get("SELECT_DEFINITIONS", [])
+        self.SWITCH_DEFINITIONS = registers.get("SWITCH_DEFINITIONS", [])
+        self.NUMBER_DEFINITIONS = registers.get("NUMBER_DEFINITIONS", [])
+        self.BUTTON_DEFINITIONS = registers.get("BUTTON_DEFINITIONS", [])
+        self.EFFICIENCY_SENSOR_DEFINITIONS = registers.get("EFFICIENCY_SENSOR_DEFINITIONS", [])
+        self.STORED_ENERGY_SENSOR_DEFINITIONS = registers.get("STORED_ENERGY_SENSOR_DEFINITIONS", [])
+
         # Combine all sensor definitions for polling
         self._all_definitions = (
-            SENSOR_DEFINITIONS
-            + BINARY_SENSOR_DEFINITIONS
-            + SELECT_DEFINITIONS
-            + NUMBER_DEFINITIONS
-            + SWITCH_DEFINITIONS
+            self.SENSOR_DEFINITIONS
+            + self.BINARY_SENSOR_DEFINITIONS
+            + self.SELECT_DEFINITIONS
+            + self.NUMBER_DEFINITIONS
+            + self.SWITCH_DEFINITIONS
         )
 
         # Initialize Modbus client for communication
@@ -133,7 +135,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self._entity_types[key] = entity_type
 
         # Register all dependency keys with entity type and scale
-        definition = next((d for d in SENSOR_DEFINITIONS if d["key"] == key), None)
+        definition = next((d for d in self.SENSOR_DEFINITIONS if d.get("key") == key), None)
         if definition and "dependency_keys" in definition:
             for dep_alias, dep_key in definition["dependency_keys"].items():
                 if dep_key not in self._entity_types:
@@ -141,7 +143,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     self._entity_types[dep_key] = entity_type
 
                 # Retrieve scale from the dependency sensor definition
-                dep_def = next((d for d in SENSOR_DEFINITIONS if d["key"] == dep_key), None)
+                dep_def = next((d for d in self.SENSOR_DEFINITIONS if d.get("key") == dep_key), None)
                 if dep_def:
                     scale = dep_def.get("scale")
                     if scale is not None:
@@ -161,6 +163,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
          # Determine scale and unit
         scale = self._scales.get(key, sensor.get("scale", 1))
         unit = sensor.get("unit", "N/A")
+
+        # Guard: ensure client exists
+        if not hasattr(self, "client") or self.client is None:
+            _LOGGER.error("Modbus client is not available when reading %s '%s'", entity_type, key)
+            return None
 
         try:
             value = await self.client.async_read_register(
@@ -205,6 +212,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
         entity_type="unknown",
     ):
         """Write a value to a Modbus register asynchronously and log the operation."""
+        # Guard: ensure client exists before attempting write
+        if not hasattr(self, "client") or self.client is None:
+            _LOGGER.error("Modbus client is not available when writing %s '%s'", entity_type, key)
+            return False
+
         try:
             await self.client.async_write_register(register=register, value=value)
             _LOGGER.debug(
@@ -242,10 +254,13 @@ class MarstekCoordinator(DataUpdateCoordinator):
         entity_registry = er.async_get(self.hass)
 
         # Collect all dependency keys from all definitions
-        all_definitions_for_deps = EFFICIENCY_SENSOR_DEFINITIONS + STORED_ENERGY_SENSOR_DEFINITIONS
-        dependency_keys_set = {dep_key for defn in all_definitions_for_deps
-                            for dep_key in defn.get("dependency_keys", {}).values()
-                            if dep_key}
+        all_definitions_for_deps = self.EFFICIENCY_SENSOR_DEFINITIONS + self.STORED_ENERGY_SENSOR_DEFINITIONS
+        dependency_keys_set = {
+            dep_key
+            for defn in all_definitions_for_deps
+            for dep_key in defn.get("dependency_keys", {}).values()
+            if dep_key
+        }
 
         # Debug logging
         for dep_key in dependency_keys_set:
@@ -326,3 +341,54 @@ class MarstekCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("Closed Modbus connection to %s:%d", self.host, self.port)
         except Exception as e:
             _LOGGER.warning("Error closing Modbus client: %s", e)
+
+
+def get_registers(version: str):
+    """
+    Return a dict with entity/register definitions for the given device version.
+
+    The returned dict contains the keys:
+      - SENSOR_DEFINITIONS
+      - BINARY_SENSOR_DEFINITIONS
+      - SELECT_DEFINITIONS
+      - SWITCH_DEFINITIONS
+      - NUMBER_DEFINITIONS
+      - BUTTON_DEFINITIONS
+      - EFFICIENCY_SENSOR_DEFINITIONS
+      - STORED_ENERGY_SENSOR_DEFINITIONS
+
+    If an unknown version is requested, the function falls back to the v1/v2
+    register set (because v1 and v2 share the same registers in this integration).
+    """
+    # Normalize and validate the requested version. We consider a missing or
+    # unknown version to be an error — callers/config flow must provide a
+    # supported device version explicitly.
+    version = (version or "").lower()
+
+    # Use the literal tokens from SUPPORTED_VERSIONS (for example "v1/v2",
+    # or "v3"). Do not split on '/' here; the config entry is expected to
+    # contain one of the supported tokens exactly as presented to the user.
+    allowed = {str(item).lower() for item in SUPPORTED_VERSIONS}
+
+    if version not in allowed:
+        raise ValueError(
+            "Unsupported or missing device version %r. Supported versions: %s"
+            % (version, ", ".join(sorted(allowed)))
+        )
+
+    # Map the validated version token to the correct registers module
+    if version == "v1/v2":
+        from . import registers_v12 as registers
+    elif version == "v3":
+        from . import registers_v3 as registers
+
+    return {
+        "SENSOR_DEFINITIONS": getattr(registers, "SENSOR_DEFINITIONS", []),
+        "BINARY_SENSOR_DEFINITIONS": getattr(registers, "BINARY_SENSOR_DEFINITIONS", []),
+        "SELECT_DEFINITIONS": getattr(registers, "SELECT_DEFINITIONS", []),
+        "SWITCH_DEFINITIONS": getattr(registers, "SWITCH_DEFINITIONS", []),
+        "NUMBER_DEFINITIONS": getattr(registers, "NUMBER_DEFINITIONS", []),
+        "BUTTON_DEFINITIONS": getattr(registers, "BUTTON_DEFINITIONS", []),
+        "EFFICIENCY_SENSOR_DEFINITIONS": getattr(registers, "EFFICIENCY_SENSOR_DEFINITIONS", []),
+        "STORED_ENERGY_SENSOR_DEFINITIONS": getattr(registers, "STORED_ENERGY_SENSOR_DEFINITIONS", []),
+    }
