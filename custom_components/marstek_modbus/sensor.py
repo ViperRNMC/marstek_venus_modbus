@@ -286,7 +286,7 @@ class MarstekEfficiencySensor(MarstekCalculatedSensor):
     Calculate either Round Trip Efficiency (RTE) or Actual Conversion Efficiency.
 
     Mode is determined by 'mode' in the sensor definition:
-    - "round_trip": uses charge/discharge energy
+    - "round_trip": uses charge / discharge energy
     - "conversion": uses battery_power / ac_power
     """
     def calculate_value(self, dep_values: dict):
