@@ -111,7 +111,7 @@ SENSOR_DEFINITIONS = [
         "scale": 0.001,
         "unit": "kWh",
         "device_class": "energy",
-        "state_class": "measurement",
+        "state_class": "total",
         "key": "battery_total_energy",
         "enabled_by_default": True,
         "data_type": "uint16",

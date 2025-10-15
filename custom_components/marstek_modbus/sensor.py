@@ -286,32 +286,34 @@ class MarstekEfficiencySensor(MarstekCalculatedSensor):
     Calculate either Round Trip Efficiency (RTE) or Actual Conversion Efficiency.
 
     Mode is determined by 'mode' in the sensor definition:
-    - "round_trip": uses charge/discharge energy
+    - "round_trip": uses charge / discharge energy
     - "conversion": uses battery_power / ac_power
     """
     def calculate_value(self, dep_values: dict):
         mode = self.definition.get("mode", "round_trip")
-
         if mode == "round_trip":
-            # Round Trip Efficiency
             charge = dep_values.get("charge")
             discharge = dep_values.get("discharge")
+            if charge in (None, 0):
+                return None
             efficiency = (discharge / charge) * 100
+
         elif mode == "conversion":
-            # Actual Conversion Efficiency
             battery_power = dep_values.get("battery_power")
             ac_power = dep_values.get("ac_power")
+            if battery_power is None or ac_power is None:
+                return None
             if battery_power > 0:
-                # Charging: how much battery gets stored per AC input
+                if ac_power == 0:
+                    return None
                 efficiency = abs(battery_power) / abs(ac_power) * 100
             else:
-                # Discharging: how much AC you get out per battery discharge
+                if battery_power == 0:
+                    return None
                 efficiency = abs(ac_power) / abs(battery_power) * 100
+
         else:
-            _LOGGER.warning(
-                "%s unknown efficiency mode '%s'", self._attr_name, mode
-            )
-            self._attr_native_value = None
+            _LOGGER.warning("%s unknown efficiency mode '%s'", self._attr_name, mode)
             return None
 
         efficiency_rounded = round(min(efficiency, 100.0), 1)

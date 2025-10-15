@@ -1,5 +1,20 @@
-
 # Changelog
+
+## [2025.9.5.b1] - 2025-09-23
+
+### Added
+- Config flow now asks for device version (v1/v2 or v3) during setup so the integration can load the correct register map at runtime.
+- Per-version register modules: `registers_v12.py` (v1/v2) and `registers_v3.py` (v3). The integration selects the right definitions based on the chosen version.
+
+### Changed
+- General integration constants remain in `const.py`; large per-version register/entity definitions were moved to separate files for maintainability.
+
+### Security / Stability
+- Modbus client handling: added defensive checks and client recreation to avoid NoneType errors during unload/reconnect and to prevent request cancellations from leaving the coordinator in a bad state.
+
+### Notes
+- `registers_v3.py` was generated from a CSV mapping but the registers are UNTESTED for v3 devices. Manual verification on actual hardware is REQUIRED before using v3 definitions in production.
+- Efficiency sensor calculations: added guards to skip calculations when denominators are zero or required inputs are missing (prevents division-by-zero errors and noisy tracebacks during shutdown or transient zero-values).
 
 ## [2025.9.4] - 2025-09-22
 
@@ -24,8 +39,6 @@
 - Fixed proper closing of Modbus connections when disabling and enabling entities, preventing multiple open sessions.
 - Corrected state class for stored energy sensors to match energy device class requirements.
 - Corrected calculation of Actual Conversion Efficiency to properly handle charging vs discharging, avoiding efficiencies above 100%.
-
-# Changelog
 
 ## [2025.9.2] - 2025-09-07
 
