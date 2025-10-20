@@ -47,7 +47,31 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self._scales: dict[str, float] = {} 
 
         # Load register/entity definitions for the device version selected in the config entry
-        registers = get_registers(entry.data.get("device_version"))
+        # If device_version is missing (older installs), schedule a reauth flow so the user
+        # can pick the correct device version via a popup in the UI. Use a safe default
+        # to initialize the coordinator so the integration does not crash while waiting
+        # for the user to respond.
+        raw_device_version = entry.data.get("device_version", "") or ""
+        if not str(raw_device_version).strip():
+            # Start a reauth flow so Home Assistant prompts the user to provide the missing value
+            try:
+                _LOGGER.info(
+                    "Config entry %s missing device_version; starting reauth flow",
+                    entry.entry_id,
+                )
+                # Use async_create_task to avoid awaiting in __init__
+                self.hass.async_create_task(
+                    self.hass.config_entries.async_start_reauth(entry.entry_id)
+                )
+            except Exception:
+                _LOGGER.debug("Failed to start reauth for entry %s", entry.entry_id)
+
+            # Fallback to the first supported version to allow initialization to proceed
+            used_version = SUPPORTED_VERSIONS[0]
+        else:
+            used_version = raw_device_version
+
+        registers = get_registers(used_version)
         self.SENSOR_DEFINITIONS = registers.get("SENSOR_DEFINITIONS", [])
         self.BINARY_SENSOR_DEFINITIONS = registers.get("BINARY_SENSOR_DEFINITIONS", [])
         self.SELECT_DEFINITIONS = registers.get("SELECT_DEFINITIONS", [])

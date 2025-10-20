@@ -111,6 +111,50 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             description_placeholders=description_placeholders,
         )
     
+    async def async_step_reauth(self, data=None):
+        """
+        Re-authentication step triggered when a config entry is missing required
+        information (like device_version). This shows a popup asking the user to
+        select the correct device version.
+        """
+        errors = {}
+
+        # Load translations for the current language to present friendly labels
+        language = self.context.get("language", self.hass.config.language)
+        translations = await async_get_translations(
+            self.hass, language, category="config", integrations=DOMAIN
+        )
+
+        if data is not None:
+            # Persist the chosen device version into the existing config entry
+            entry = self._async_current_entries()[0] if self._async_current_entries() else None
+            if entry:
+                try:
+                    new_data = dict(entry.data)
+                    new_data[CONF_DEVICE_VERSION] = data.get(CONF_DEVICE_VERSION)
+                    await self.hass.config_entries.async_update_entry(entry, data=new_data)
+                    return self.async_create_entry(title=entry.title or DOMAIN, data={})
+                except Exception as exc:
+                    _LOGGER.error("Failed to update config entry during reauth: %s", exc)
+                    errors["base"] = "unknown"
+
+        description_placeholders = {
+            "device_version_choices": ", ".join(
+                [f"{v}: {translations.get(f'config.step.user.data.device_version|{v}', v)}" for v in SUPPORTED_VERSIONS]
+            )
+        }
+
+        return self.async_show_form(
+            step_id="reauth",
+            data_schema=vol.Schema(
+                {
+                    vol.Required(CONF_DEVICE_VERSION, default=SUPPORTED_VERSIONS[0]): vol.In(SUPPORTED_VERSIONS)
+                }
+            ),
+            errors=errors,
+            description_placeholders=description_placeholders,
+        )
+    
     @staticmethod
     # @callback
     def async_get_options_flow(config_entry):

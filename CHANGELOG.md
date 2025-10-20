@@ -2,29 +2,35 @@
 
 ## [2025.10.1] - 2025-10-15
 
-### Added
+### Added 
+
 - Config flow now asks for device version (v1/v2 or v3) during setup so the integration can load the correct register map at runtime.
 - Per-version register modules: `registers_v12.py` (v1/v2) and `registers_v3.py` (v3). The integration selects the right definitions based on the chosen version.
 
 ### Fixed
+
 - Options flow: removed deprecated explicit `config_entry` assignment (compatibility with HA 2025.12).
 - Modbus client: properly handle CancelledError during shutdown; guard reconnection and client recreation to avoid NoneType errors and noisy ERROR logs on stop/reload.
 - Efficiency sensors: skip calculations when denominators are zero or required inputs are missing to avoid division-by-zero errors.
 - Energy sensors: ensure `state_class` is set to `total` or `total_increasing` for sensors with `device_class: energy`.
 
 ### Notes
-- `registers_v3.py` was generated from a CSV mapping but the registers are UNTESTED for v3 devices. Manual verification on actual hardware is REQUIRED before using v3 definitions in production.
+
+- `registers_v3.py` is generated from CSV mapping; entries are untested and require manual verification on v3 hardware before production use.
 
 ## [2025.9.4] - 2025-09-22
 
 ### Added
+
 - Configurable scan intervals (high, medium, low, very_low) through integration options.
 - Options flow with translated titles and descriptions.
 
 ### Changed
+
 - Coordinator now dynamically adjusts polling interval based on the lowest configured scan interval.
 
 ### Fixed
+
 - Corrected calculation of Actual Conversion Efficiency to properly handle charging vs discharging, avoiding efficiencies above 100%.
 - Properly handle Modbus client closing when disabling the integration.
 - Correctly apply updated polling intervals after options are changed.
@@ -32,9 +38,11 @@
 ## [2025.9.3] - 2025-09-16
 
 ### Added
+
 - New `Actual Conversion Efficiency` calculated sensor to display the real-time charging/discharging efficiency as a percentage.  
 
 ### Fixed
+
 - Fixed proper closing of Modbus connections when disabling and enabling entities, preventing multiple open sessions.
 - Corrected state class for stored energy sensors to match energy device class requirements.
 - Corrected calculation of Actual Conversion Efficiency to properly handle charging vs discharging, avoiding efficiencies above 100%.
@@ -42,23 +50,27 @@
 ## [2025.9.2] - 2025-09-07
 
 ### Fixed
+
 - Corrected scaling for `Number` entities, ensuring `min`, `max`, and current values reflect the defined scale.
 - Updated logging to include scale and unit when values are updated in Home Assistant.
 
 ## [2025.9.1] - 2025-09-05
 
 ### Fixed
+
 - Switch writing fixed and now implemented with optimistic mode to handle delayed device response.
 - Fixed PyModbus 3.x / Python 3.9 compatibility: replaced slave with device_id.
 
 ## [2025.9.0] - 2025-09-03
 
 ### Added
+
 - Dependency keys registration so required values are always fetched even if disabled in Home Assistant.
 - Polling now handled centrally via the DataUpdateCoordinator.
 - Dynamic polling intervals based on sensor definitions and dependencies.
 
 ### Changed
+
 - Calculated sensors (Round-Trip Efficiency Total, Round-Trip Efficiency Monthly, Stored Energy) with dependency handling
 - Improved logging for dependency mapping, calculation, and skipping disabled entities.
 - Cleaned up and refactored sensor calculation logic to be reusable and PEP8 compliant.
@@ -66,16 +78,19 @@
 ## [2025.8.1] - 2025-08-12
 
 ### Added
+
 - New Min Cell Voltage sensor (register 35043) to monitor minimum battery cell voltage
 - New Max Cell Voltage sensor (register 36943) to monitor maximum battery cell voltage
 - New Reset Device button (register 41000) to allow resetting the battery management system via Home Assistant
 
 ### Changed
+
 - Clean up code and improve overall code quality
 
 ## [2025.8.0] - 2025-08-09
 
 ### Fixed
+
 - WiFi strength sensor now reports correct negative dBm values
 - Corrected cell temperature reading after BMS firmware version 213
 
