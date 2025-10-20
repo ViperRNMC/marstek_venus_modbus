@@ -1,20 +1,19 @@
 # Changelog
 
-## [2025.9.5.b1] - 2025-09-23
+## [2025.10.1] - 2025-10-15
 
 ### Added
 - Config flow now asks for device version (v1/v2 or v3) during setup so the integration can load the correct register map at runtime.
 - Per-version register modules: `registers_v12.py` (v1/v2) and `registers_v3.py` (v3). The integration selects the right definitions based on the chosen version.
 
-### Changed
-- General integration constants remain in `const.py`; large per-version register/entity definitions were moved to separate files for maintainability.
-
-### Security / Stability
-- Modbus client handling: added defensive checks and client recreation to avoid NoneType errors during unload/reconnect and to prevent request cancellations from leaving the coordinator in a bad state.
+### Fixed
+- Options flow: removed deprecated explicit `config_entry` assignment (compatibility with HA 2025.12).
+- Modbus client: properly handle CancelledError during shutdown; guard reconnection and client recreation to avoid NoneType errors and noisy ERROR logs on stop/reload.
+- Efficiency sensors: skip calculations when denominators are zero or required inputs are missing to avoid division-by-zero errors.
+- Energy sensors: ensure `state_class` is set to `total` or `total_increasing` for sensors with `device_class: energy`.
 
 ### Notes
 - `registers_v3.py` was generated from a CSV mapping but the registers are UNTESTED for v3 devices. Manual verification on actual hardware is REQUIRED before using v3 definitions in production.
-- Efficiency sensor calculations: added guards to skip calculations when denominators are zero or required inputs are missing (prevents division-by-zero errors and noisy tracebacks during shutdown or transient zero-values).
 
 ## [2025.9.4] - 2025-09-22
 
