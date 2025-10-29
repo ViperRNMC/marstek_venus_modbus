@@ -18,6 +18,7 @@ provide a corrected CSV and re-run the generator.
 
 missing:
     sensor:
+    - ac_offgrid_power
     - sn_code
     - software_version
     - bms_version
@@ -27,6 +28,9 @@ missing:
 
     binary:
     - discharge_limit_mode
+
+    select:
+    - grid_standard
 
     number:
     - charging_cutoff_capacity
@@ -251,7 +255,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "AC Power",
-        "register": 37004, # 32202 in v12
+        "register": 32202, # 37004 in v3 list
         "count": 2,
         "scale": 1,
         "unit": "W",
@@ -539,20 +543,20 @@ SENSOR_DEFINITIONS = [
         "precision": 1,
         "scan_interval": "medium",
     },
-    {
-        "name": "AC Offgrid Power",
-        "register": 32302,
-        "count": 2,
-        "scale": 1,
-        "unit": "W",
-        "device_class": "power",
-        "state_class": "measurement",
-        "key": "ac_offgrid_power",
-        "enabled_by_default": False,
-        "data_type": "int32",
-        "precision": 0,
-        "scan_interval": "high",
-    },
+    # {
+    #     "name": "AC Offgrid Power",
+    #     "register": 32302,
+    #     "count": 2,
+    #     "scale": 1,
+    #     "unit": "W",
+    #     "device_class": "power",
+    #     "state_class": "measurement",
+    #     "key": "ac_offgrid_power",
+    #     "enabled_by_default": False,
+    #     "data_type": "int32",
+    #     "precision": 0,
+    #     "scan_interval": "high",
+    # },
     {
         "name": "WiFi Signal Strength",
         "register": 30303,
@@ -625,25 +629,25 @@ SELECT_DEFINITIONS = [
         "scan_interval": "high",
         "options": {"None": 0, "Charge": 1, "Discharge": 2},
     },
-    {
-        "name": "Grid Standard",
-        "register": 44100,
-        "key": "grid_standard",
-        "enabled_by_default": True,
-        "scan_interval": "high",
-        "options": {
-            "Auto": 0,
-            "EN50549": 1,
-            "Netherlands": 2,
-            "Germany": 3,
-            "Austria": 4,
-            "United Kingdom": 5,
-            "Spain": 6,
-            "Poland": 7,
-            "Italy": 8,
-            "China": 9,
-        },
-    },
+    # {
+    #     "name": "Grid Standard",
+    #     "register": 44100,
+    #     "key": "grid_standard",
+    #     "enabled_by_default": True,
+    #     "scan_interval": "high",
+    #     "options": {
+    #         "Auto": 0,
+    #         "EN50549": 1,
+    #         "Netherlands": 2,
+    #         "Germany": 3,
+    #         "Austria": 4,
+    #         "United Kingdom": 5,
+    #         "Spain": 6,
+    #         "Poland": 7,
+    #         "Italy": 8,
+    #         "China": 9,
+    #     },
+    # },
 ]
 
 # SWITCH_DEFINITIONS
