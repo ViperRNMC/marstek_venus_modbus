@@ -627,7 +627,7 @@ SELECT_DEFINITIONS = [
         "key": "force_mode",
         "enabled_by_default": False,
         "scan_interval": "high",
-        "options": {"None": 0, "Charge": 1, "Discharge": 2},
+        "options": {"Standby": 0, "None": 0, "Charge": 1, "Discharge": 2},
     },
     # {
     #     "name": "Grid Standard",
