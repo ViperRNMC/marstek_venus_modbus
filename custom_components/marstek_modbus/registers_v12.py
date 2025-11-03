@@ -5,6 +5,11 @@ This file contains the SENSOR_DEFINITIONS, BINARY_SENSOR_DEFINITIONS,
 SELECT_DEFINITIONS, SWITCH_DEFINITIONS, NUMBER_DEFINITIONS, BUTTON_DEFINITIONS,
 EFFICIENCY_SENSOR_DEFINITIONS and STORED_ENERGY_SENSOR_DEFINITIONS that were
 previously in `const.py` and correspond to v1/v2 devices.
+
+missing:
+    sensor:
+    - vms_version
+    - cell_xx_voltage 1tm16
 """
 
 # Definitions for sensors to be read from the Modbus device
@@ -597,7 +602,7 @@ SELECT_DEFINITIONS = [
         "key": "force_mode",
         "enabled_by_default": False,
         "scan_interval": "high",
-        "options": {"None": 0, "Charge": 1, "Discharge": 2},
+        "options": {"Standby": 0, "Charge": 1, "Discharge": 2},
     },
     {
         "name": "Grid Standard",
