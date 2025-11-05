@@ -29,7 +29,7 @@ missing:
     - ac_current
     - ac_offgrid_current
     - battery_current
-    - battery_power
+    + battery_power
 
     binary:
     - discharge_limit_mode
@@ -193,15 +193,15 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Battery Power",
-        "register": 30001, #32102 in v12
-        "count": 2,
+        "register": 30001, 
+        "count": 1,
         "scale": 1,
         "unit": "W",
         "device_class": "power",
         "state_class": "measurement",
         "key": "battery_power",
         "enabled_by_default": True,
-        "data_type": "int32",
+        "data_type": "int16",
         "precision": 1,
         "scan_interval": "high",
     },
@@ -272,15 +272,15 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "AC Power",
-        "register": 32202, # 37004 in v3 list
-        "count": 2,
+        "register": 37004, 
+        "count": 1, 
         "scale": 1,
         "unit": "W",
         "device_class": "power",
         "state_class": "measurement",
         "key": "ac_power",
         "enabled_by_default": True,
-        "data_type": "int32",
+        "data_type": "int16",
         "precision": 0,
         "scan_interval": "high",
     },
