@@ -26,9 +26,9 @@ missing:
     + ems_version
     - fault_status
     - alarm_status
-    - ac_current
+    + ac_current
     - ac_offgrid_current
-    - battery_current
+    + battery_current
     + battery_power
 
     binary:
@@ -180,8 +180,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Battery Current",
-        "register": 32101,
-        "scale": 0.01,
+        "register": 30101, # 32101 in v12
+        "scale": 0.1, # 0.01 in v12
         "unit": "A",
         "device_class": "current",
         "state_class": "measurement",
@@ -259,8 +259,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "AC Current",
-        "register": 32201, 
-        "scale": 0.01,
+        "register": 37004, #32201 
+        "scale": 0.004, #0.01
         "unit": "A",
         "device_class": "current",
         "state_class": "measurement",
@@ -272,7 +272,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "AC Power",
-        "register": 37004, 
+        "register": 30006, # 37004
         "count": 1, 
         "scale": 1,
         "unit": "W",
