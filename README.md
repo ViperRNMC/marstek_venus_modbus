@@ -44,7 +44,11 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 3. Restart Home Assistant
 4. Add the integration via **Settings → Devices & Services**
 [![Open your Home Assistant instance and show the integration](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=marstek_modbus)  
-5. Enter the IP and port of your EW11 gateway (default: port 502)
+5. Enter the connection details:
+   - IP address of your Modbus TCP gateway
+   - Port (default: 502)
+   - Unit ID / Slave ID (default: 1, valid range: 1-247)
+   - Device version (v1/v2 or v3)
 
 
 ## ✅ Tested Devices for Modbus TCP
