@@ -8,7 +8,8 @@ MODEL = "Venus E"
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
 DEFAULT_MESSAGE_WAIT_MS = 80  # Default wait time for Modbus messages in milliseconds
-DEFAULT_UNIT_ID = 1  # Default Modbus Unit ID (unit ID)
+DEFAULT_UNIT_ID = 1  # Default Modbus Unit ID (slave ID)
+CONF_UNIT_ID = "unit_id"  # Configuration key for unit ID
 
 # General scan intervals (in seconds)
 DEFAULT_SCAN_INTERVALS = {

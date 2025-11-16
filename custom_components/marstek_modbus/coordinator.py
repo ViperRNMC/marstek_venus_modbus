@@ -31,9 +31,12 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         """Initialize the coordinator with connection parameters and update interval."""
+        from .const import DEFAULT_UNIT_ID, CONF_UNIT_ID
+        
         self.hass = hass
         self.host = entry.data["host"]
         self.port = entry.data["port"]
+        self.unit_id = entry.data.get(CONF_UNIT_ID, DEFAULT_UNIT_ID)
         self.message_wait_ms = entry.data.get("message_wait_milliseconds", 200)
         self.timeout = entry.data.get("timeout", 5)
 
@@ -94,6 +97,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.client = MarstekModbusClient(
             self.host,
             self.port,
+            unit_id=self.unit_id,
             message_wait_ms=self.message_wait_ms,
             timeout=self.timeout,
         )

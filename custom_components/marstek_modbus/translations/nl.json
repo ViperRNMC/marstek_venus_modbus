@@ -7,6 +7,7 @@
         "data": {
           "host": "IP-adres",
           "port": "Poort",
+          "unit_id": "Unit-ID (Slave-ID)",
           "device_version": "Apparaatversie"
         }
       }
@@ -16,6 +17,7 @@
       "connection_refused": "Verbinding geweigerd door het apparaat",
       "timed_out": "Verbindingstijd verstreken",
       "invalid_host": "Ongeldig IP-adres of hostnaam",
+      "invalid_unit_id": "Ongeldige unit-ID. Moet tussen 1 en 247 zijn",
       "cannot_connect": "Kan geen verbinding maken"     
     },
     "abort": {

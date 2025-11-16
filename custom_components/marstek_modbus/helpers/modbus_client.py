@@ -19,18 +19,20 @@ class MarstekModbusClient:
     for async reading/writing and interpreting common data types.
     """
 
-    def __init__(self, host: str, port: int, message_wait_ms: int = 50, timeout: int = 5):
+    def __init__(self, host: str, port: int, unit_id: int = 1, message_wait_ms: int = 50, timeout: int = 5):
         """
-        Initialize Modbus client with host, port, message wait time, and timeout.
+        Initialize Modbus client with host, port, unit ID, message wait time, and timeout.
 
         Args:
             host (str): IP address or hostname of Modbus server.
             port (int): TCP port number.
+            unit_id (int): Modbus unit (slave) ID (1-247).
             message_wait_ms (int): Delay in ms between Modbus messages.
             timeout (int): Connection timeout in seconds.
         """
         self.host = host
         self.port = port
+        self.unit_id = unit_id
 
         # Create pymodbus async TCP client instance
         self.client = AsyncModbusTcpClient(
@@ -40,7 +42,6 @@ class MarstekModbusClient:
         )
 
         self.client.message_wait_milliseconds = message_wait_ms
-        self.unit_id = 1  # Default Unit ID
 
     async def async_connect(self) -> bool:
         """
@@ -62,7 +63,6 @@ class MarstekModbusClient:
             except Exception:
                 # some client implementations may not expose this attribute
                 pass
-            self.unit_id = 1
 
         connected = await self.client.connect()
 

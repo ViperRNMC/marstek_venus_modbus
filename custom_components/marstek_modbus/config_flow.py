@@ -10,7 +10,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.translation import async_get_translations
 from pymodbus.client import ModbusTcpClient
 
-from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS
+from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS, DEFAULT_UNIT_ID, CONF_UNIT_ID
 
 CONF_CONF_VERSION = "conf_version"
 CONF_DEVICE_VERSION = "device_version"
@@ -47,6 +47,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         if user_input is not None:
             host = user_input.get(CONF_HOST)
             port = user_input.get(CONF_PORT, DEFAULT_PORT)
+            unit_id = user_input.get(CONF_UNIT_ID, DEFAULT_UNIT_ID)
             device_version = user_input.get(CONF_DEVICE_VERSION, SUPPORTED_VERSIONS[0])
             
             # Validate port range
@@ -58,6 +59,22 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         {
                             vol.Required(CONF_HOST): str,
                             vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                            vol.Optional(CONF_UNIT_ID, default=DEFAULT_UNIT_ID): int,
+                        }
+                    ),
+                    errors=errors,
+                )
+            
+            # Validate unit_id range (Modbus spec: 1-247)
+            if not (1 <= unit_id <= 247):
+                errors["base"] = "invalid_unit_id"
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(CONF_HOST): str,
+                            vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                            vol.Optional(CONF_UNIT_ID, default=DEFAULT_UNIT_ID): int,
                         }
                     ),
                     errors=errors,
@@ -75,15 +92,16 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         return self.async_abort(reason="already_configured")
 
                 # Test the Modbus connection using the helper function
-                errors["base"] = await async_test_modbus_connection(host, port)
+                errors["base"] = await async_test_modbus_connection(host, port, unit_id)
 
                 # If no errors, create the configuration entry
                 if not errors["base"]:
                         title = translations.get("config.step.user.title", "Marstek Venus Modbus")
-                        # Ensure device_version is saved in the config entry data
+                        # Ensure device_version and unit_id are saved in the config entry data
                         data = {
                             CONF_HOST: host,
                             CONF_PORT: port,
+                            CONF_UNIT_ID: unit_id,
                             CONF_DEVICE_VERSION: device_version,
                         }
                         return self.async_create_entry(title=title, data=data)
@@ -104,6 +122,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_HOST): str,
                     vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                    vol.Optional(CONF_UNIT_ID, default=DEFAULT_UNIT_ID): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=247)),
                     vol.Required(CONF_DEVICE_VERSION, default=SUPPORTED_VERSIONS[0]): vol.In(SUPPORTED_VERSIONS),
                 }
             ),
@@ -221,15 +240,15 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
         )
 
 
-async def async_test_modbus_connection(host: str, port: int):
+async def async_test_modbus_connection(host: str, port: int, unit_id: int = 1):
     """
-    Attempt to connect to the Modbus server at the given host and port.
+    Attempt to connect to the Modbus server at the given host, port, and unit ID.
     Returns a string error key for the config flow errors dict, or None if successful.
     """
     import logging
     _LOGGER = logging.getLogger(__name__)
     # Log connection attempt at debug level
-    _LOGGER.debug("Attempting to connect to Modbus server at %s:%d", host, port)
+    _LOGGER.debug("Attempting to connect to Modbus server at %s:%d with unit ID %d", host, port, unit_id)
 
     client = ModbusTcpClient(host=host, port=port, timeout=3)
     try:
