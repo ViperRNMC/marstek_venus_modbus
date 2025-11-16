@@ -5,6 +5,9 @@ DOMAIN = "marstek_modbus"
 MANUFACTURER = "Marstek"
 MODEL = "Venus E"
 
+# Configuration key for Modbus Unit ID
+CONF_UNIT_ID = "unit_id"
+
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
 DEFAULT_MESSAGE_WAIT_MS = 80  # Default wait time for Modbus messages in milliseconds

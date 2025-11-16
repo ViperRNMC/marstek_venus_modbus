@@ -10,7 +10,7 @@ from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.translation import async_get_translations
 from pymodbus.client import ModbusTcpClient
 
-from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS
+from .const import DOMAIN, DEFAULT_PORT, DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS, CONF_UNIT_ID, DEFAULT_UNIT_ID
 
 CONF_CONF_VERSION = "conf_version"
 CONF_DEVICE_VERSION = "device_version"
@@ -48,6 +48,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             host = user_input.get(CONF_HOST)
             port = user_input.get(CONF_PORT, DEFAULT_PORT)
             device_version = user_input.get(CONF_DEVICE_VERSION, SUPPORTED_VERSIONS[0])
+            unit_id = user_input.get(CONF_UNIT_ID, DEFAULT_UNIT_ID)
             
             # Validate port range
             if not (1 <= port <= 65535):
@@ -58,6 +59,22 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         {
                             vol.Required(CONF_HOST): str,
                             vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                            vol.Optional(CONF_UNIT_ID, default=DEFAULT_UNIT_ID): vol.All(vol.Coerce(int), vol.Range(min=1, max=247)),
+                        }
+                    ),
+                    errors=errors,
+                )
+            
+            # Validate unit_id range (Modbus standard is 1-247)
+            if not (1 <= unit_id <= 247):
+                errors["base"] = "invalid_unit_id"
+                return self.async_show_form(
+                    step_id="user",
+                    data_schema=vol.Schema(
+                        {
+                            vol.Required(CONF_HOST): str,
+                            vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                            vol.Optional(CONF_UNIT_ID, default=DEFAULT_UNIT_ID): vol.All(vol.Coerce(int), vol.Range(min=1, max=247)),
                         }
                     ),
                     errors=errors,
@@ -80,11 +97,12 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 # If no errors, create the configuration entry
                 if not errors["base"]:
                         title = translations.get("config.step.user.title", "Marstek Venus Modbus")
-                        # Ensure device_version is saved in the config entry data
+                        # Ensure device_version and unit_id are saved in the config entry data
                         data = {
                             CONF_HOST: host,
                             CONF_PORT: port,
                             CONF_DEVICE_VERSION: device_version,
+                            CONF_UNIT_ID: unit_id,
                         }
                         return self.async_create_entry(title=title, data=data)
 
@@ -104,6 +122,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 {
                     vol.Required(CONF_HOST): str,
                     vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
+                    vol.Optional(CONF_UNIT_ID, default=DEFAULT_UNIT_ID): vol.All(vol.Coerce(int), vol.Range(min=1, max=247)),
                     vol.Required(CONF_DEVICE_VERSION, default=SUPPORTED_VERSIONS[0]): vol.In(SUPPORTED_VERSIONS),
                 }
             ),
@@ -189,6 +208,9 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
             key: config.options.get(key, config.data.get(key, DEFAULT_SCAN_INTERVALS[key]))
             for key in ("high", "medium", "low", "very_low")
         }
+        
+        # Default for unit_id
+        default_unit_id = config.options.get(CONF_UNIT_ID, config.data.get(CONF_UNIT_ID, DEFAULT_UNIT_ID))
 
         # Calculate the lowest scan interval for description placeholder
         lowest = min((user_input or defaults).values())
@@ -198,6 +220,12 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
             coordinator = self.hass.data.get(DOMAIN, {}).get(config.entry_id)
             if coordinator:
                 coordinator._update_scan_intervals(user_input)
+                
+                # Update unit_id if it has changed
+                new_unit_id = user_input.get(CONF_UNIT_ID, default_unit_id)
+                if new_unit_id != coordinator.client.unit_id:
+                    coordinator.client.unit_id = new_unit_id
+                    _LOGGER.info("Updated Modbus Unit ID to %d", new_unit_id)
 
             # Do not set a custom title; let HA handle with translations
             return self.async_create_entry(data=user_input)
@@ -205,6 +233,7 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
         # Schema for the form
         schema = vol.Schema(
             {
+                vol.Optional(CONF_UNIT_ID, default=default_unit_id): vol.All(vol.Coerce(int), vol.Range(min=1, max=247)),
                 vol.Required("high", default=defaults["high"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
                 vol.Required("medium", default=defaults["medium"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
                 vol.Required("low", default=defaults["low"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),

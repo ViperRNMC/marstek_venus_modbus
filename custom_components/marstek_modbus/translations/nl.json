@@ -7,6 +7,7 @@
         "data": {
           "host": "IP-adres",
           "port": "Poort",
+          "unit_id": "Modbus Unit-ID (1-247)",
           "device_version": "Apparaatversie"
         }
       }
@@ -16,6 +17,7 @@
       "connection_refused": "Verbinding geweigerd door het apparaat",
       "timed_out": "Verbindingstijd verstreken",
       "invalid_host": "Ongeldig IP-adres of hostnaam",
+      "invalid_unit_id": "Ongeldige Modbus Unit-ID (moet 1-247 zijn)",
       "cannot_connect": "Kan geen verbinding maken"     
     },
     "abort": {
@@ -26,7 +28,10 @@
     "step": {
       "init": {
         "title": "Configureer sensor scan-intervallen",
-        "description": "Pas de pollingfrequentie per categorie aan"
+        "description": "Pas de pollingfrequentie per categorie aan",
+        "data": {
+          "unit_id": "Modbus Unit-ID (1-247)"
+        }
       }
     }
   }
