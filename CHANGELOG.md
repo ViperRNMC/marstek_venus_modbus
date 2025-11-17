@@ -1,4 +1,9 @@
 # Changelog
+# [2025.11.1] - 2025-11-17
+
+### Added 
+
+- Config flow: Unit ID is now a plain input field, with validation and error handling.
 
 ## [2025.10.1] - 2025-10-15
 
