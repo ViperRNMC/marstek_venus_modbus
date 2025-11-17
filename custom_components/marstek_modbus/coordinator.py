@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS
+from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS, DEFAULT_UNIT_ID
 
 from .helpers.modbus_client import MarstekModbusClient
 
@@ -36,7 +36,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.port = entry.data["port"]
         self.message_wait_ms = entry.data.get("message_wait_milliseconds")
         self.timeout = entry.data.get("timeout")
-        self.unit_id = entry.data.get("unit_id")
+        self.unit_id = entry.data.get("unit_id", DEFAULT_UNIT_ID)
 
         # Mapping from sensor key to entity type for logging and processing
         self._entity_types: dict[str, str] = {}
