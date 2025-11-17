@@ -30,12 +30,13 @@ class MarstekCoordinator(DataUpdateCoordinator):
     """Coordinator managing all Marstek Venus Modbus sensors."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
-        """Initialize the coordinator with connection parameters and update interval."""
+        """Initialize the coordinator with connection parameters and update interval."""        
         self.hass = hass
         self.host = entry.data["host"]
         self.port = entry.data["port"]
-        self.message_wait_ms = entry.data.get("message_wait_milliseconds", 200)
-        self.timeout = entry.data.get("timeout", 5)
+        self.message_wait_ms = entry.data.get("message_wait_milliseconds")
+        self.timeout = entry.data.get("timeout")
+        self.unit_id = entry.data.get("unit_id")
 
         # Mapping from sensor key to entity type for logging and processing
         self._entity_types: dict[str, str] = {}
@@ -96,6 +97,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             self.port,
             message_wait_ms=self.message_wait_ms,
             timeout=self.timeout,
+            unit_id=self.unit_id,
         )
 
         # Data storage for sensor values and timestamps of last updates
