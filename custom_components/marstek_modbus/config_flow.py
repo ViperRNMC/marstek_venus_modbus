@@ -224,7 +224,7 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
         # Schema for the form
         schema = vol.Schema(
             {
-                vol.Optional(CONF_UNIT_ID, default=default_unit_id): vol.All(vol.Coerce(int), vol.Range(min=1, max=247)),
+                vol.Optional(CONF_UNIT_ID, default=default_unit_id): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=255)),
                 vol.Required("high", default=defaults["high"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
                 vol.Required("medium", default=defaults["medium"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
                 vol.Required("low", default=defaults["low"]): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
