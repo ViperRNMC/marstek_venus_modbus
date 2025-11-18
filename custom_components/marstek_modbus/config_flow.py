@@ -58,14 +58,15 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 errors["base"] = "invalid_unit_id"
 
             if errors:
+                # Re-show the form while preserving user input so fields are not cleared
                 return self.async_show_form(
                     step_id="user",
                     data_schema=vol.Schema(
                         {
-                            vol.Required(CONF_HOST): str,
-                            vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-                            vol.Optional(CONF_UNIT_ID, default=DEFAULT_UNIT_ID): vol.Coerce(int),
-                            vol.Required(CONF_DEVICE_VERSION, default=SUPPORTED_VERSIONS[0]): vol.In(SUPPORTED_VERSIONS),
+                            vol.Required(CONF_HOST, default=host): str,
+                            vol.Optional(CONF_PORT, default=port): int,
+                            vol.Optional(CONF_UNIT_ID, default=unit_id): vol.Coerce(int),
+                            vol.Required(CONF_DEVICE_VERSION, default=device_version): vol.In(SUPPORTED_VERSIONS),
                         }
                     ),
                     errors=errors,
@@ -83,8 +84,8 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                         entry.data.get(CONF_UNIT_ID) == unit_id):
                         return self.async_abort(reason="already_configured")
 
-                # Test the Modbus connection using the helper function
-                errors["base"] = await async_test_modbus_connection(host, port)
+                # Test the Modbus connection including unit_id validation
+                errors["base"] = await async_test_modbus_connection(host, port, unit_id)
 
                 # If no errors, create the configuration entry
                 if not errors["base"]:
@@ -108,14 +109,22 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             )
         }
 
+        # Preserve any previously entered values when re-displaying the form
+        defaults = {
+            CONF_HOST: (user_input.get(CONF_HOST) if user_input else None) or "",
+            CONF_PORT: (user_input.get(CONF_PORT) if user_input else None) or DEFAULT_PORT,
+            CONF_UNIT_ID: (user_input.get(CONF_UNIT_ID) if user_input else None) or DEFAULT_UNIT_ID,
+            CONF_DEVICE_VERSION: (user_input.get(CONF_DEVICE_VERSION) if user_input else None) or SUPPORTED_VERSIONS[0],
+        }
+
         return self.async_show_form(
             step_id="user",
             data_schema=vol.Schema(
                 {
-                    vol.Required(CONF_HOST): str,
-                    vol.Optional(CONF_PORT, default=DEFAULT_PORT): int,
-                    vol.Required(CONF_UNIT_ID, default=DEFAULT_UNIT_ID): vol.Coerce(int),
-                    vol.Required(CONF_DEVICE_VERSION, default=SUPPORTED_VERSIONS[0]): vol.In(SUPPORTED_VERSIONS),
+                    vol.Required(CONF_HOST, default=defaults[CONF_HOST]): str,
+                    vol.Optional(CONF_PORT, default=defaults[CONF_PORT]): int,
+                    vol.Required(CONF_UNIT_ID, default=defaults[CONF_UNIT_ID]): vol.Coerce(int),
+                    vol.Required(CONF_DEVICE_VERSION, default=defaults[CONF_DEVICE_VERSION]): vol.In(SUPPORTED_VERSIONS),
                 }
             ),
             errors=errors,
@@ -242,27 +251,63 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
         )
 
 
-async def async_test_modbus_connection(host: str, port: int):
+async def async_test_modbus_connection(host: str, port: int, unit_id: int = 1):
     """
-    Attempt to connect to the Modbus server at the given host and port.
+    Attempt to connect to the Modbus server at the given host, port and unit_id.
+    Tests both TCP connection and actual Modbus communication with the specific unit_id.
     Returns a string error key for the config flow errors dict, or None if successful.
     """
+    import asyncio
     import logging
     _LOGGER = logging.getLogger(__name__)
     # Log connection attempt at debug level
-    _LOGGER.debug("Attempting to connect to Modbus server at %s:%d", host, port)
+    _LOGGER.debug("Attempting to connect to Modbus server at %s:%d with unit_id %d", host, port, unit_id)
 
     client = ModbusTcpClient(host=host, port=port, timeout=3)
     try:
+        # First test TCP connection
         if not client.connect():
             raise ConnectionError("Unable to connect")
+            
+        # Test actual Modbus communication with the specified unit_id
+        try:
+            # Try to read a common register (register 0) with timeout to test unit_id
+            async def _test_read():
+                return client.read_holding_registers(address=0, count=1, slave=unit_id)
+                
+            result = await asyncio.wait_for(_test_read(), timeout=5.0)
+            
+            # Check if we got any response (even an error response indicates unit_id communication)
+            if result is None:
+                return "unit_id_no_response"
+            elif hasattr(result, 'isError') and result.isError():
+                # Some Modbus errors are OK - they indicate the unit_id responds but register doesn't exist
+                error_code = getattr(result, 'exception_code', None)
+                if error_code in [1, 2, 3, 4]:  # Common Modbus exception codes for valid unit but invalid register
+                    _LOGGER.debug("Unit ID %d responds (got expected Modbus exception %s)", unit_id, error_code)
+                    return None  # This is actually success - unit_id responds
+                else:
+                    _LOGGER.debug("Unit ID %d error: %s", unit_id, result)
+                    return "unit_id_no_response"
+            else:
+                # Got valid data - unit_id is definitely correct
+                _LOGGER.debug("Unit ID %d test successful", unit_id)
+                return None
+                
+        except asyncio.TimeoutError:
+            _LOGGER.debug("Timeout testing unit_id %d - may be incorrect", unit_id)
+            return "unit_id_no_response"
+        except Exception as e:
+            _LOGGER.debug("Error testing unit_id %d: %s", unit_id, e)
+            return "unit_id_no_response"
+            
     except OSError as err:
         err_msg = str(err).lower()
         if "permission denied" in err_msg:
             return "permission_denied"
         elif "connection refused" in err_msg:
             return "connection_refused"
-        elif "timed out" in err_msg:
+        elif "timed out" in err_msg or "timeout" in err_msg:
             return "timed_out"
         else:
             _LOGGER.debug("Connection error during Modbus client connect: %s", err_msg)
@@ -271,5 +316,8 @@ async def async_test_modbus_connection(host: str, port: int):
         _LOGGER.error("Unexpected error connecting to Modbus server: %s", exc)
         return "cannot_connect"
     finally:
-        client.close()
+        try:
+            client.close()
+        except Exception:
+            pass  # Ignore errors during cleanup
     return None
