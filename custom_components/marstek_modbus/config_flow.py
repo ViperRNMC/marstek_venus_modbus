@@ -77,9 +77,10 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except (socket.gaierror, TypeError):
                 errors["base"] = "invalid_host"
             else:
-                # Prevent duplicate entries for the same host
+                # Prevent duplicate entries for the same host and unit_id combination
                 for entry in self._async_current_entries():
-                    if entry.data.get(CONF_HOST) == host:
+                    if (entry.data.get(CONF_HOST) == host and 
+                        entry.data.get(CONF_UNIT_ID) == unit_id):
                         return self.async_abort(reason="already_configured")
 
                 # Test the Modbus connection using the helper function
