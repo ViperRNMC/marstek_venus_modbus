@@ -1,0 +1,39 @@
+{
+    "config": {
+        "step": {
+            "user": {
+                "title": "Mit Marstek Venus per Modbus verbinden",
+                "description": "Modbus TCP Verbindungsdetails eingeben",
+                "data": {
+                    "host": "IP-Adresse",
+                    "port": "Port",
+                    "unit_id": "Unit-ID",
+                    "device_version": "Geräteversion"
+                }
+            }
+        },
+        "error": {
+            "permission_denied": "Zugriff verweigert",
+            "connection_refused": "Verbindung abgelehnt",
+            "timed_out": "Zeitüberschreitung der Verbindung",
+            "invalid_host": "Ungültiger Host oder IP-Adresse",
+            "invalid_unit_id": "Ungültige Modbus Unit-ID (muss 1-255 sein)",
+            "unit_id_no_response": "Keine Antwort von Unit-ID. Prüfen Sie, ob das Gerät diese Unit-ID verwendet",
+            "cannot_connect": "Verbindung zum Gerät nicht möglich"
+        },
+        "abort": {
+            "already_configured": "Dieses Gerät ist bereits konfiguriert"
+        }
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Sensor-Scanintervalle konfigurieren",
+                "description": "Abfragehäufigkeit pro Kategorie anpassen",
+                "data": {
+                    "unit_id": "Modbus Unit-ID"
+                }
+            }
+        }
+    }
+}
