@@ -35,5 +35,25 @@
                 }
             }
         }
+    },
+    "entity": {
+        "select": {
+            "user_work_mode": {
+                "name": "Modus",
+                "state": {
+                    "manual": "Manuell",
+                    "anti_feed": "Eigenverbrauch",
+                    "trade_mode": "KI-Optimierung"
+                }
+            },
+            "force_mode": {
+                "name": "Force Mode",
+                "state": {
+                    "standby": "Standby",
+                    "charge": "Laden",
+                    "discharge": "Entladen"
+                }
+            }
+        }
     }
 }
