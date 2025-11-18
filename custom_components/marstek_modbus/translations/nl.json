@@ -18,6 +18,7 @@
       "timed_out": "Verbindingstijd verstreken",
       "invalid_host": "Ongeldig IP-adres of hostnaam",
       "invalid_unit_id": "Ongeldige Modbus Unit-ID (moet 1-255 zijn)",
+      "unit_id_no_response": "Geen reactie van Unit-ID. Controleer of het apparaat deze Unit-ID gebruikt",
       "cannot_connect": "Kan geen verbinding maken"     
     },
     "abort": {

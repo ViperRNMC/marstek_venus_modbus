@@ -11,7 +11,7 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
-from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS
+from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS, DEFAULT_UNIT_ID
 
 from .helpers.modbus_client import MarstekModbusClient
 
@@ -36,7 +36,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.port = entry.data["port"]
         self.message_wait_ms = entry.data.get("message_wait_milliseconds")
         self.timeout = entry.data.get("timeout")
-        self.unit_id = entry.data.get("unit_id")
+        self.unit_id = entry.data.get("unit_id", DEFAULT_UNIT_ID)
 
         # Mapping from sensor key to entity type for logging and processing
         self._entity_types: dict[str, str] = {}
@@ -103,6 +103,12 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Data storage for sensor values and timestamps of last updates
         self.data: dict = {}
         self._last_update_times: dict = {}
+        
+        # Connection throttling to prevent endless retry attempts after repeated failures
+        self._consecutive_failures = 0
+        self._max_consecutive_failures = 5
+        self._connection_suspended = False
+        self._suspension_reset_time = None
 
         # Prepare scan intervals (from config_entry.options or default)
         options = entry.options or {}
@@ -196,11 +202,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
             return None
 
         try:
-            value = await self.client.async_read_register(
-                register=sensor["register"],
-                data_type=sensor.get("data_type", "uint16"),
-                count=sensor.get("count", 1),
-                sensor_key=key,
+            # 10 second timeout for individual reads to prevent hanging
+            import asyncio
+            value = await asyncio.wait_for(
+                self.client.async_read_register(
+                    register=sensor["register"],
+                    data_type=sensor.get("data_type", "uint16"),
+                    count=sensor.get("count", 1),
+                    sensor_key=key,
+                ),
+                timeout=10.0
             )
 
             if isinstance(value, (int, float, bool, str)):
@@ -221,6 +232,12 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 )
                 return None
 
+        except asyncio.TimeoutError:
+            _LOGGER.warning(
+                "Timeout reading %s '%s' at register %d - connection may be slow or incorrect",
+                entity_type, key, sensor["register"]
+            )
+            return None
         except Exception as e:
             _LOGGER.error(
                 "Error reading %s '%s' at register %d: %s",
@@ -273,6 +290,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         now = utcnow()
         updated_data = {}
+
+        # Connection throttling: if too many failures, temporarily stop attempting connections
+        if self._connection_suspended:
+            if self._suspension_reset_time and now > self._suspension_reset_time:
+                _LOGGER.info("Connection suspension expired - attempting reconnection")
+                self._connection_suspended = False
+                self._consecutive_failures = 0
+            else:
+                _LOGGER.debug("Connection suspended - skipping update to prevent resource exhaustion")
+                return self.data or {}
 
         _LOGGER.debug("Coordinator poll tick at %s", now.isoformat())
 
@@ -350,6 +377,26 @@ class MarstekCoordinator(DataUpdateCoordinator):
             if value is not None:
                 updated_data[key] = value
                 self._last_update_times[key] = now
+
+        # Connection retry logic: track success/failure patterns
+        if updated_data:
+            # Data successfully retrieved - reset failure counter
+            if self._consecutive_failures > 0:
+                _LOGGER.info("Connection recovered after %d failures", self._consecutive_failures)
+            self._consecutive_failures = 0
+            self._connection_suspended = False
+        else:
+            # No data retrieved - possible connection issue
+            self._consecutive_failures += 1
+            if self._consecutive_failures >= self._max_consecutive_failures:
+                # Too many failures - suspend connection attempts for 5 minutes
+                self._connection_suspended = True
+                self._suspension_reset_time = now + timedelta(minutes=5)
+                _LOGGER.warning(
+                    "Connection suspended after %d consecutive failures. "
+                    "Will retry in 5 minutes to prevent resource exhaustion.",
+                    self._consecutive_failures
+                )
 
         # Defensive check
         if self.data is None:

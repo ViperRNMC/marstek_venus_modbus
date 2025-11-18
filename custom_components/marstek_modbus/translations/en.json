@@ -18,6 +18,7 @@
       "timed_out": "Connection timed out",
       "invalid_host": "Invalid host or IP address",
       "invalid_unit_id": "Invalid Modbus Unit ID (must be 1-255)",
+      "unit_id_no_response": "No response from Unit ID. Check if the device uses this Unit ID",
       "cannot_connect": "Cannot connect to the device"
     },
     "abort": {
