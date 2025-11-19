@@ -6,15 +6,15 @@ and force mode of a Marstek Venus battery via Modbus within Home Assistant.
 import logging
 from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.components.select import SelectEntity
+from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 from homeassistant.helpers.update_coordinator import CoordinatorEntity
 
-from .coordinator import MarstekCoordinator
 from .const import DOMAIN, MANUFACTURER, MODEL
+from .coordinator import MarstekCoordinator
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -38,7 +38,10 @@ async def async_setup_entry(
     """
     # Retrieve the coordinator instance from hass data and add entities
     coordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = [MarstekSelect(coordinator, definition) for definition in coordinator.SELECT_DEFINITIONS]
+    entities = [
+        MarstekSelect(coordinator, definition)
+        for definition in coordinator.SELECT_DEFINITIONS
+    ]
     async_add_entities(entities)
 
 
@@ -50,7 +53,9 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
     the coordinator communicating with the Modbus device.
     """
 
-    def __init__(self, coordinator: MarstekCoordinator, definition: dict[str, Any]) -> None:
+    def __init__(
+        self, coordinator: MarstekCoordinator, definition: dict[str, Any]
+    ) -> None:
         """
         Initialize the select entity.
 
@@ -62,7 +67,7 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
 
         # Store the key and definition
         self._key = definition["key"]
-        self.definition = definition   
+        self.definition = definition
 
         # Assign the entity type to the coordinator mapping
         self.coordinator._entity_types[self._key] = self.entity_type
@@ -88,6 +93,13 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
+        # Add translation key if present
+        if "translation_key" in definition:
+            self._attr_translation_key = definition["translation_key"]
+
+        # Use option keys (lowercase, underscore) instead of display names
+        self._attr_options = list(definition["options"].keys())
+
     @property
     def entity_type(self) -> str:
         """
@@ -112,7 +124,7 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
         Returns:
             List of option strings.
         """
-        return list(self.definition.get("options", {}).keys())  
+        return list(self.definition.get("options", {}).keys())
 
     @property
     def current_option(self) -> str | None:

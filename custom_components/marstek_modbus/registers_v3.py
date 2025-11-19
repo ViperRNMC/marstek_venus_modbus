@@ -127,10 +127,10 @@ SENSOR_DEFINITIONS = [
         "data_type": "char",
         "precision": 0,
         "scan_interval": "very_low",
-    },   
+    },
     {
         "name": "MAC Address",
-        "register": 30304, # 30402 in v12
+        "register": 30304,  # 30402 in v12
         "count": 6,
         "unit": None,
         "key": "mac_address",
@@ -141,7 +141,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Battery SOC",
-        "register": 37005, # 32104 in v12
+        "register": 37005,  # 32104 in v12
         "scale": 1,
         "unit": "%",
         "device_class": "battery",
@@ -151,7 +151,7 @@ SENSOR_DEFINITIONS = [
         "data_type": "uint16",
         "precision": 1,
         "scan_interval": "medium",
-    },    
+    },
     {
         "name": "Battery Total Energy",
         "register": 32105,
@@ -167,7 +167,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Battery Voltage",
-        "register": 30100, # 32100 in v12
+        "register": 30100,  # 32100 in v12
         "scale": 0.01,
         "unit": "V",
         "device_class": "voltage",
@@ -180,8 +180,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Battery Current",
-        "register": 30101, # 32101 in v12
-        "scale": 0.1, # 0.01 in v12
+        "register": 30101,  # 32101 in v12
+        "scale": 0.1,  # 0.01 in v12
         "unit": "A",
         "device_class": "current",
         "state_class": "measurement",
@@ -193,7 +193,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Battery Power",
-        "register": 30001, 
+        "register": 30001,
         "count": 1,
         "scale": 1,
         "unit": "W",
@@ -220,7 +220,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Internal MOS1 Temperature",
-        "register": 35001, # 30002 in v3 list
+        "register": 35001,  # 30002 in v3 list
         "scale": 0.1,
         "unit": "°C",
         "device_class": "temperature",
@@ -233,7 +233,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "Internal MOS2 Temperature",
-        "register": 35002, # 30003 in v3 list
+        "register": 35002,  # 30003 in v3 list
         "scale": 0.1,
         "unit": "°C",
         "device_class": "temperature",
@@ -246,7 +246,7 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "AC Voltage",
-        "register": 32200, # 30004 in v3 list
+        "register": 32200,  # 30004 in v3 list
         "scale": 0.1,
         "unit": "V",
         "device_class": "voltage",
@@ -259,8 +259,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "AC Current",
-        "register": 37004, #32201 
-        "scale": 0.004, #0.01
+        "register": 37004,  # 32201
+        "scale": 0.004,  # 0.01
         "unit": "A",
         "device_class": "current",
         "state_class": "measurement",
@@ -272,8 +272,8 @@ SENSOR_DEFINITIONS = [
     },
     {
         "name": "AC Power",
-        "register": 30006, # 37004
-        "count": 1, 
+        "register": 30006,  # 37004
+        "count": 1,
         "scale": 1,
         "unit": "W",
         "device_class": "power",
@@ -287,7 +287,7 @@ SENSOR_DEFINITIONS = [
     {
         "name": "AC Frequency",
         "register": 32204,
-        "scale": 0.1, #0.01
+        "scale": 0.1,  # 0.01
         "unit": "Hz",
         "device_class": "frequency",
         "state_class": "measurement",
@@ -384,7 +384,7 @@ SENSOR_DEFINITIONS = [
     {
         "name": "Max Cell Temperature",
         "register": 35010,
-        "scale": 0.1, # 1
+        "scale": 0.1,  # 1
         "unit": "°C",
         "device_class": "temperature",
         "state_class": "measurement",
@@ -397,7 +397,7 @@ SENSOR_DEFINITIONS = [
     {
         "name": "Min Cell Temperature",
         "register": 35011,
-        "scale": 0.1, # 1
+        "scale": 0.1,  # 1
         "unit": "°C",
         "device_class": "temperature",
         "state_class": "measurement",
@@ -407,7 +407,7 @@ SENSOR_DEFINITIONS = [
         "precision": 1,
         "scan_interval": "medium",
     },
-   {
+    {
         "name": "Max Cell Voltage",
         "register": 37007,
         "scale": 0.001,
@@ -661,7 +661,7 @@ SENSOR_DEFINITIONS = [
             6: "Bypass",
         },
         "scan_interval": "high",
-    },    
+    },
     # {
     #     "name": "Fault Status",
     #     "register": 36100,
@@ -742,7 +742,7 @@ SENSOR_DEFINITIONS = [
         "scan_interval": "very_low",
         "precision": 0,
     },
-   {
+    {
         "name": "AC Offgrid Voltage",
         "register": 32300,
         "scale": 0.1,
@@ -844,7 +844,8 @@ SELECT_DEFINITIONS = [
         "key": "user_work_mode",
         "enabled_by_default": True,
         "scan_interval": "high",
-        "options": {"Manual": 0, "Anti-Feed": 1, "Trade Mode": 2},
+        "translation_key": "user_work_mode",
+        "options": {"manual": 0, "anti_feed": 1, "trade_mode": 2},
     },
     {
         "name": "Force Mode",
@@ -852,7 +853,8 @@ SELECT_DEFINITIONS = [
         "key": "force_mode",
         "enabled_by_default": False,
         "scan_interval": "high",
-        "options": {"Standby": 0, "Charge": 1, "Discharge": 2},
+        "translation_key": "force_mode",
+        "options": {"standby": 0, "charge": 1, "discharge": 2},
     },
     # {
     #     "name": "Grid Standard",
@@ -1018,7 +1020,7 @@ BUTTON_DEFINITIONS = [
         "key": "factory_reset",
         "enabled_by_default": False,
         "data_type": "uint16",
-    },    
+    },
 ]
 
 # EFFICIENCY_SENSOR_DEFINITIONS
@@ -1030,7 +1032,10 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
         "device_class": "battery",
         "state_class": "measurement",
         "mode": "round_trip",
-        "dependency_keys": {"charge": "total_charging_energy", "discharge": "total_discharging_energy"},
+        "dependency_keys": {
+            "charge": "total_charging_energy",
+            "discharge": "total_discharging_energy",
+        },
     },
     {
         "name": "Round-Trip Efficiency Monthly",
@@ -1039,7 +1044,10 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
         "device_class": "battery",
         "state_class": "measurement",
         "mode": "round_trip",
-        "dependency_keys": {"charge": "total_monthly_charging_energy", "discharge": "total_monthly_discharging_energy"},
+        "dependency_keys": {
+            "charge": "total_monthly_charging_energy",
+            "discharge": "total_monthly_discharging_energy",
+        },
     },
     {
         "name": "Conversion Efficiency",
