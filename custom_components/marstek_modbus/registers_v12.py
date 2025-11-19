@@ -594,7 +594,8 @@ SELECT_DEFINITIONS = [
         "key": "user_work_mode",
         "enabled_by_default": True,
         "scan_interval": "high",
-        "options": {"Manual": 0, "Anti-Feed": 1, "Trade Mode": 2},
+        "translation_key": "user_work_mode",
+        "options": {"manual": 0, "anti_feed": 1, "trade_mode": 2},
     },
     {
         "name": "Force Mode",
@@ -602,7 +603,8 @@ SELECT_DEFINITIONS = [
         "key": "force_mode",
         "enabled_by_default": False,
         "scan_interval": "high",
-        "options": {"Standby": 0, "Charge": 1, "Discharge": 2},
+        "translation_key": "force_mode",
+        "options": {"standby": 0, "charge": 1, "discharge": 2},
     },
     {
         "name": "Grid Standard",
@@ -780,7 +782,10 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
         "device_class": "battery",
         "state_class": "measurement",
         "mode": "round_trip",
-        "dependency_keys": {"charge": "total_charging_energy", "discharge": "total_discharging_energy"},
+        "dependency_keys": {
+            "charge": "total_charging_energy",
+            "discharge": "total_discharging_energy",
+        },
     },
     {
         "name": "Round-Trip Efficiency Monthly",
@@ -789,7 +794,10 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
         "device_class": "battery",
         "state_class": "measurement",
         "mode": "round_trip",
-        "dependency_keys": {"charge": "total_monthly_charging_energy", "discharge": "total_monthly_discharging_energy"},
+        "dependency_keys": {
+            "charge": "total_monthly_charging_energy",
+            "discharge": "total_monthly_discharging_energy",
+        },
     },
     {
         "name": "Conversion Efficiency",
