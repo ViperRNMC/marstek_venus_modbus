@@ -37,6 +37,151 @@
     }
   },
   "entity": {
+    "sensor": {
+      "device_name": {
+        "name": "Device Name"
+      },
+      "sn_code": {
+        "name": "SN Code"
+      },
+      "software_version": {
+        "name": "Software Version"
+      },
+      "bms_version": {
+        "name": "BMS Version"
+      },
+      "ems_version": {
+        "name": "EMS Version"
+      },
+      "comm_module_firmware": {
+        "name": "Communication Module Firmware"
+      },
+      "mac_address": {
+        "name": "MAC Address"
+      },
+      "battery_soc": {
+        "name": "Battery SOC"
+      },
+      "battery_total_energy": {
+        "name": "Battery Total Energy"
+      },
+      "battery_voltage": {
+        "name": "Battery Voltage"
+      },
+      "battery_current": {
+        "name": "Battery Current"
+      },
+      "battery_power": {
+        "name": "Battery Power"
+      },
+      "internal_temperature": {
+        "name": "Internal Temperature"
+      },
+      "internal_mos1_temperature": {
+        "name": "Internal MOS1 Temperature"
+      },
+      "internal_mos2_temperature": {
+        "name": "Internal MOS2 Temperature"
+      },
+      "ac_voltage": {
+        "name": "AC Voltage"
+      },
+      "ac_current": {
+        "name": "AC Current"
+      },
+      "ac_power": {
+        "name": "AC Power"
+      },
+      "ac_frequency": {
+        "name": "AC Frequency"
+      },
+      "total_charging_energy": {
+        "name": "Total Charging Energy"
+      },
+      "total_discharging_energy": {
+        "name": "Total Discharging Energy"
+      },
+      "total_daily_charging_energy": {
+        "name": "Total Daily Charging Energy"
+      },
+      "total_daily_discharging_energy": {
+        "name": "Total Daily Discharging Energy"
+      },
+      "total_monthly_charging_energy": {
+        "name": "Total Monthly Charging Energy"
+      },
+      "total_monthly_discharging_energy": {
+        "name": "Total Monthly Discharging Energy"
+      },
+      "max_cell_temperature": {
+        "name": "Max Cell Temperature"
+      },
+      "min_cell_temperature": {
+        "name": "Min Cell Temperature"
+      },
+      "max_cell_voltage": {
+        "name": "Max Cell Voltage"
+      },
+      "min_cell_voltage": {
+        "name": "Min Cell Voltage"
+      },
+      "inverter_state": {
+        "name": "Inverter State",
+        "state": {
+          "0": "Sleep",
+          "1": "Standby",
+          "2": "Charge",
+          "3": "Discharge",
+          "4": "Backup Mode",
+          "5": "OTA Upgrade",
+          "6": "Bypass"
+        }
+      },
+      "fault_status": {
+        "name": "Fault Status"
+      },
+      "alarm_status": {
+        "name": "Alarm Status"
+      },
+      "modbus_address": {
+        "name": "Modbus Address"
+      },
+      "ac_offgrid_voltage": {
+        "name": "AC Offgrid Voltage"
+      },
+      "ac_offgrid_current": {
+        "name": "AC Offgrid Current"
+      },
+      "ac_offgrid_power": {
+        "name": "AC Offgrid Power"
+      },
+      "wifi_signal_strength": {
+        "name": "WiFi Signal Strength"
+      },
+      "round_trip_efficiency_total": {
+        "name": "Round-Trip Efficiency Total"
+      },
+      "round_trip_efficiency_monthly": {
+        "name": "Round-Trip Efficiency Monthly"
+      },
+      "conversion_efficiency": {
+        "name": "Conversion Efficiency"
+      },
+      "stored_energy": {
+        "name": "Stored Energy"
+      }
+    },
+    "binary_sensor": {
+      "wifi_status": {
+        "name": "WiFi Status"
+      },
+      "cloud_status": {
+        "name": "Cloud Status"
+      },
+      "discharge_limit_mode": {
+        "name": "Discharge Limit"
+      }
+    },
     "select": {
       "user_work_mode": {
         "name": "User Work Mode",
@@ -53,6 +198,60 @@
           "charge": "Charge",
           "discharge": "Discharge"
         }
+      },
+      "grid_standard": {
+        "name": "Grid Standard",
+        "state": {
+          "auto": "Auto",
+          "en50549": "EN50549",
+          "netherlands": "Netherlands",
+          "germany": "Germany",
+          "austria": "Austria",
+          "united_kingdom": "United Kingdom",
+          "spain": "Spain",
+          "poland": "Poland",
+          "italy": "Italy",
+          "china": "China"
+        }
+      }
+    },
+    "switch": {
+      "backup_function": {
+        "name": "Backup Function"
+      },
+      "rs485_control_mode": {
+        "name": "RS485 Control Mode"
+      }
+    },
+    "number": {
+      "set_charge_power": {
+        "name": "Set Forcible Charge Power"
+      },
+      "set_discharge_power": {
+        "name": "Set Forcible Discharge Power"
+      },
+      "max_charge_power": {
+        "name": "Max Charge Power"
+      },
+      "max_discharge_power": {
+        "name": "Max Discharge Power"
+      },
+      "charging_cutoff_capacity": {
+        "name": "Charging Cutoff Capacity"
+      },
+      "discharging_cutoff_capacity": {
+        "name": "Discharging Cutoff Capacity"
+      },
+      "charge_to_soc": {
+        "name": "Charge to SOC"
+      }
+    },
+    "button": {
+      "reset_device": {
+        "name": "Reset Device"
+      },
+      "factory_reset": {
+        "name": "Factory reset"
       }
     }
   }
