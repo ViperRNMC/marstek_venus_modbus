@@ -47,7 +47,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 5. Enter the connection details:
    - IP address of your Modbus TCP gateway
    - Port (default: 502)
-   - Unit ID / Slave ID (default: 1, valid range: 1-247)
+   - Unit ID / Slave ID (default: 1, valid range: 1-255)
    - Device version (v1/v2 or v3)
 
 
