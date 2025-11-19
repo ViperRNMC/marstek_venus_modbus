@@ -39,19 +39,19 @@
   "entity": {
     "select": {
       "user_work_mode": {
-        "name": "User Work Mode",
+        "name": "Gebruiker modus",
         "state": {
-          "manual": "Manual",
-          "anti_feed": "Anti-Feed",
-          "trade_mode": "Trade Mode"
+          "manual": "Handmatig",
+          "anti_feed": "Anti-Teruglevering",
+          "trade_mode": "Handelsmodus"
         }
       },
       "force_mode": {
-        "name": "Force Mode",
+        "name": "Geforceerde Modus",
         "state": {
-          "standby": "Standby",
-          "charge": "Charge",
-          "discharge": "Discharge"
+            "standby": "Standby",
+          "charge": "Laden",
+          "discharge": "Ontladen"
         }
       }
     }
