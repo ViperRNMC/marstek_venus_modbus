@@ -25,21 +25,21 @@ def get_entity_type(entity) -> str:
             return base.__name__.replace("Entity", "").lower()
     return "entity"
 
-
 class MarstekCoordinator(DataUpdateCoordinator):
     """Coordinator managing all Marstek Venus Modbus sensors."""
 
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
-        """Initialize the coordinator with connection parameters and update interval."""        
+        """Initialize the coordinator with connection parameters and update interval."""
         self.hass = hass
         self.host = entry.data["host"]
         self.port = entry.data["port"]
         self.message_wait_ms = entry.data.get("message_wait_milliseconds")
         self.timeout = entry.data.get("timeout")
         self.unit_id = entry.data.get("unit_id", DEFAULT_UNIT_ID)
-
-        # Mapping from sensor key to entity type for logging and processing
-        self._entity_types: dict[str, str] = {}
+        
+        # Lock for serializing write operations
+        # This prevents flooding the modbus device with write operations.
+        self._write_lock = asyncio.Lock()
 
         # Store the config entry for potential future use
         self.config_entry = entry
