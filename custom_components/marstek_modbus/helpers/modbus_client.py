@@ -4,13 +4,16 @@ Provides an abstraction for reading and writing registers from
 a Marstek Venus battery system asynchronously.
 """
 
-from pymodbus.client.tcp import AsyncModbusTcpClient
 import asyncio
+import logging
 from typing import Optional
 
-import logging
+from pymodbus.client.tcp import AsyncModbusTcpClient
 
 _LOGGER = logging.getLogger(__name__)
+
+RETRY_DELAY_DEFAULT = 0.2  # seconds
+MAX_RETRIES_DEFAULT = 3
 
 
 class MarstekModbusClient:
@@ -19,7 +22,14 @@ class MarstekModbusClient:
     for async reading/writing and interpreting common data types.
     """
 
-    def __init__(self, host: str, port: int, message_wait_ms: int = 50, timeout: int = 3, unit_id: int = 1):
+    def __init__(
+        self,
+        host: str,
+        port: int,
+        message_wait_ms: int = 50,
+        timeout: int = 3,
+        unit_id: int = 1,
+    ) -> None:
         """
         Initialize Modbus client with host, port, message wait time, timeout, and unit ID.
 
@@ -89,7 +99,7 @@ class MarstekModbusClient:
 
     async def async_close(self) -> None:
         """
-        Close the Modbus TCP connection safely (sync or async) 
+        Close the Modbus TCP connection safely (sync or async)
         and reset client reference.
         """
         if not self.client:
@@ -112,9 +122,9 @@ class MarstekModbusClient:
         count: Optional[int] = None,
         bit_index: Optional[int] = None,
         sensor_key: Optional[str] = None,
-        max_retries: int = 3,
-        retry_delay: float = 0.1,
-    ):
+        max_retries: int = MAX_RETRIES_DEFAULT,
+        retry_delay: float = RETRY_DELAY_DEFAULT,
+    ) -> None | int | str | bool:
         """
         Robustly read registers and interpret the data asynchronously with retries.
 
@@ -154,7 +164,9 @@ class MarstekModbusClient:
             # Guard against client being None (closed during unload)
             client_connected = False
             try:
-                client_connected = bool(self.client and getattr(self.client, "connected", False))
+                client_connected = bool(
+                    self.client and getattr(self.client, "connected", False)
+                )
             except Exception:
                 client_connected = False
 
@@ -173,6 +185,11 @@ class MarstekModbusClient:
                     )
                     return None
 
+            # Additional safety check for type checker, in case client became None
+            if self.client is None:
+                _LOGGER.error("Modbus Client became None unexpectedly")
+                return None
+
             try:
                 result = await self.client.read_holding_registers(
                     address=register, count=count, device_id=self.unit_id
@@ -184,7 +201,11 @@ class MarstekModbusClient:
                         register,
                         attempt + 1,
                     )
-                elif not hasattr(result, "registers") or result.registers is None or len(result.registers) < count:
+                elif (
+                    not hasattr(result, "registers")
+                    or result.registers is None
+                    or len(result.registers) < count
+                ):
                     _LOGGER.warning(
                         "Incomplete data received at register %d (0x%04X) on attempt %d: expected %d registers, got %s",
                         register,
@@ -199,11 +220,16 @@ class MarstekModbusClient:
                         "Requesting register %d (0x%04X) for sensor '%s' (type: %s, count: %s)",
                         register,
                         register,
-                        sensor_key or 'unknown',
+                        sensor_key or "unknown",
                         data_type,
                         count,
                     )
-                    _LOGGER.debug("Received data from register %d (0x%04X): %s", register, register, regs)
+                    _LOGGER.debug(
+                        "Received data from register %d (0x%04X): %s",
+                        register,
+                        register,
+                        regs,
+                    )
 
                     if data_type == "int16":
                         val = regs[0]
@@ -240,11 +266,15 @@ class MarstekModbusClient:
                         for reg in regs:
                             byte_array.append((reg >> 8) & 0xFF)
                             byte_array.append(reg & 0xFF)
-                        return byte_array.decode("ascii", errors="ignore").rstrip('\x00')
+                        return byte_array.decode("ascii", errors="ignore").rstrip(
+                            "\x00"
+                        )
 
                     elif data_type == "bit":
                         if bit_index is None or not (0 <= bit_index < 16):
-                            raise ValueError("bit_index must be between 0 and 15 for bit data_type")
+                            raise ValueError(
+                                "bit_index must be between 0 and 15 for bit data_type"
+                            )
                         reg_val = regs[0]
                         return bool((reg_val >> bit_index) & 1)
 
@@ -285,18 +315,18 @@ class MarstekModbusClient:
         self,
         register: int,
         value: int,
-        max_retries: int = 3,
-        retry_delay: float = 0.2,
+        max_retries: int = MAX_RETRIES_DEFAULT,
+        retry_delay: float = RETRY_DELAY_DEFAULT,
     ) -> bool:
         """
         Write a single value to a Modbus holding register asynchronously with retries.
-    
+
         Args:
             register (int): Register address to write to.
             value (int): Value to write.
             max_retries (int): Maximum number of write attempts.
             retry_delay (float): Delay in seconds between retries.
-    
+
         Returns:
             bool: True if write was successful, False otherwise.
         """
@@ -307,23 +337,25 @@ class MarstekModbusClient:
                 register,
             )
             return False
-    
+
         if not (0 <= value <= 0xFFFF):
             _LOGGER.error(
                 "Invalid value for write: %d. Must be 0-65535.",
                 value,
             )
             return False
-    
+
         attempt = 0
         while attempt < max_retries:
             # Ensure client is connected
             client_connected = False
             try:
-                client_connected = bool(self.client and getattr(self.client, "connected", False))
+                client_connected = bool(
+                    self.client and getattr(self.client, "connected", False)
+                )
             except Exception:
                 client_connected = False
-    
+
             if not client_connected:
                 _LOGGER.warning(
                     "Modbus client not connected, attempting reconnect before write to register %d (0x%04X)",
@@ -338,7 +370,12 @@ class MarstekModbusClient:
                         register,
                     )
                     return False
-    
+
+            # Additional safety check for type checker, in case client became None
+            if self.client is None:
+                _LOGGER.error("Modbus Client became None unexpectedly")
+                return False
+
             try:
                 _LOGGER.debug(
                     "Writing to register %d (0x%04X), value=%d (0x%04X), attempt=%d",
@@ -348,11 +385,11 @@ class MarstekModbusClient:
                     value,
                     attempt + 1,
                 )
-                
+
                 result = await self.client.write_register(
                     address=register, value=value, device_id=self.unit_id
                 )
-    
+
                 if result.isError():
                     _LOGGER.warning(
                         "Modbus write error at register %d (0x%04X) on attempt %d",
@@ -368,17 +405,17 @@ class MarstekModbusClient:
                         value,
                     )
                     return True
-    
+
             except asyncio.CancelledError:
                 # Allow cancellation to propagate during Home Assistant shutdown
                 raise
-                
+
             except Exception as e:
                 # If the underlying cause is a CancelledError, propagate it
                 cause = getattr(e, "__cause__", None)
                 if isinstance(cause, asyncio.CancelledError):
                     raise cause
-                    
+
                 _LOGGER.exception(
                     "Exception during Modbus write at register %d (0x%04X) on attempt %d: %s",
                     register,
@@ -386,11 +423,11 @@ class MarstekModbusClient:
                     attempt + 1,
                     e,
                 )
-    
+
             attempt += 1
             if attempt < max_retries:
                 await asyncio.sleep(retry_delay)
-    
+
         _LOGGER.error(
             "Failed to write to register %d (0x%04X) after %d attempts",
             register,
