@@ -281,23 +281,120 @@ class MarstekModbusClient:
         )
         return None
 
-    async def async_write_register(self, register: int, value: int) -> bool:
+    async def async_write_register(
+        self,
+        register: int,
+        value: int,
+        max_retries: int = 3,
+        retry_delay: float = 0.2,
+    ) -> bool:
         """
-        Write a single value to a Modbus holding register asynchronously.
-
+        Write a single value to a Modbus holding register asynchronously with retries.
+    
         Args:
             register (int): Register address to write to.
             value (int): Value to write.
-
+            max_retries (int): Maximum number of write attempts.
+            retry_delay (float): Delay in seconds between retries.
+    
         Returns:
             bool: True if write was successful, False otherwise.
         """
-        try:
-            result = await self.client.write_register(
-                address=register, value=value, device_id=self.unit_id
+        if not (0 <= register <= 0xFFFF):
+            _LOGGER.error(
+                "Invalid register address for write: %d (0x%04X). Must be 0-65535.",
+                register,
+                register,
             )
-            return not result.isError()
-
-        except Exception as e:
-            _LOGGER.exception("Exception during modbus write: %s", e)
             return False
+    
+        if not (0 <= value <= 0xFFFF):
+            _LOGGER.error(
+                "Invalid value for write: %d. Must be 0-65535.",
+                value,
+            )
+            return False
+    
+        attempt = 0
+        while attempt < max_retries:
+            # Ensure client is connected
+            client_connected = False
+            try:
+                client_connected = bool(self.client and getattr(self.client, "connected", False))
+            except Exception:
+                client_connected = False
+    
+            if not client_connected:
+                _LOGGER.warning(
+                    "Modbus client not connected, attempting reconnect before write to register %d (0x%04X)",
+                    register,
+                    register,
+                )
+                connected = await self.async_connect()
+                if not connected:
+                    _LOGGER.error(
+                        "Reconnect failed, skipping write to register %d (0x%04X)",
+                        register,
+                        register,
+                    )
+                    return False
+    
+            try:
+                _LOGGER.debug(
+                    "Writing to register %d (0x%04X), value=%d (0x%04X), attempt=%d",
+                    register,
+                    register,
+                    value,
+                    value,
+                    attempt + 1,
+                )
+                
+                result = await self.client.write_register(
+                    address=register, value=value, device_id=self.unit_id
+                )
+    
+                if result.isError():
+                    _LOGGER.warning(
+                        "Modbus write error at register %d (0x%04X) on attempt %d",
+                        register,
+                        register,
+                        attempt + 1,
+                    )
+                else:
+                    _LOGGER.debug(
+                        "Write confirmed for register %d (0x%04X), value=%d",
+                        register,
+                        register,
+                        value,
+                    )
+                    return True
+    
+            except asyncio.CancelledError:
+                # Allow cancellation to propagate during Home Assistant shutdown
+                raise
+                
+            except Exception as e:
+                # If the underlying cause is a CancelledError, propagate it
+                cause = getattr(e, "__cause__", None)
+                if isinstance(cause, asyncio.CancelledError):
+                    raise cause
+                    
+                _LOGGER.exception(
+                    "Exception during Modbus write at register %d (0x%04X) on attempt %d: %s",
+                    register,
+                    register,
+                    attempt + 1,
+                    e,
+                )
+    
+            attempt += 1
+            if attempt < max_retries:
+                await asyncio.sleep(retry_delay)
+    
+        _LOGGER.error(
+            "Failed to write to register %d (0x%04X) after %d attempts",
+            register,
+            register,
+            max_retries,
+        )
+        return False
