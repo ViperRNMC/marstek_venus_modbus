@@ -3,6 +3,7 @@ Handles all sensor polling via Home Assistant DataUpdateCoordinator,
 with per-sensor intervals and optional skipping if not due.
 """
 
+import asyncio
 import logging
 from datetime import timedelta
 
@@ -259,25 +260,59 @@ class MarstekCoordinator(DataUpdateCoordinator):
         if not hasattr(self, "client") or self.client is None:
             _LOGGER.error("Modbus client is not available when writing %s '%s'", entity_type, key)
             return False
-
-        try:
-            await self.client.async_write_register(register=register, value=value)
+    
+        # MODIFIED: Acquire lock to serialize all write operations
+        async with self._write_lock:
             _LOGGER.debug(
-                "Wrote to %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
+                "Acquired write lock for %s '%s': register=%d (0x%04X), value=%s",
                 entity_type,
                 key,
                 register,
                 register,
                 value,
-                scale if scale is not None else 1,
-                unit if unit is not None else "N/A",
             )
-            return True
-        except Exception as e:
-            _LOGGER.error(
-                "Failed to write value %s to register 0x%X: %s", value, register, e
-            )
-            return False
+            
+            try:
+                success = await self.client.async_write_register(register=register, value=value)
+                
+                if success:
+                    _LOGGER.debug(
+                        "Successfully wrote to %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
+                        entity_type,
+                        key,
+                        register,
+                        register,
+                        value,
+                        scale if scale is not None else 1,
+                        unit if unit is not None else "N/A",
+                    )
+                    
+                    # ADD: Small delay after successful write to allow device to process
+                    await asyncio.sleep(self.message_wait_ms / 1000.0)
+                    
+                    return True
+                else:
+                    _LOGGER.warning(
+                        "Write operation failed for %s '%s': register=%d (0x%04X), value=%s",
+                        entity_type,
+                        key,
+                        register,
+                        register,
+                        value,
+                    )
+                    return False
+                    
+            except Exception as e:
+                _LOGGER.error(
+                    "Failed to write value %s to register 0x%X for %s '%s': %s",
+                    value,
+                    register,
+                    entity_type,
+                    key,
+                    e
+                )
+                return False
+
 
     async def _async_update_data(self):
         """Update all sensors asynchronously with per-sensor interval skipping.
