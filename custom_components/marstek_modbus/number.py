@@ -68,9 +68,9 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         self.coordinator._entity_types[self._key] = self.entity_type
 
         # Set entity attributes from definition
-        self._attr_name = f"{self.definition['name']}"
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
+        self._attr_translation_key = definition["key"]
 
         # Internal state variables
         self._state = None

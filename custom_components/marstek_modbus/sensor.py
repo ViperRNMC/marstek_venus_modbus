@@ -55,9 +55,9 @@ class MarstekSensor(CoordinatorEntity, SensorEntity):
         self.coordinator._entity_types[self._key] = self.entity_type
 
         # Set entity attributes from definition
-        self._attr_name = f"{self.definition['name']}"
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
+        self._attr_translation_key = definition["key"]
 
         # Set basic attributes from definition
         self._attr_native_unit_of_measurement = definition.get("unit")
@@ -139,15 +139,14 @@ class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):
         self.coordinator._entity_types[self._key] = self.entity_type
 
         # Set entity attributes from definition
-        self._attr_name = f"{self.definition['name']}"
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
+        self._attr_translation_key = definition["key"]
 
         # Set basic attributes from definition
         self._attr_native_unit_of_measurement = definition.get("unit")
         self._attr_device_class = definition.get("device_class")
         self._attr_state_class = definition.get("state_class")
-        self._attr_has_entity_name = True
 
         # Optional: entity category and icon
         if "category" in definition:
@@ -237,7 +236,7 @@ class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):
         if missing:
             _LOGGER.warning(
                 "%s missing required value(s): %s. Current data: %s. Cannot calculate value.",
-                self._attr_name, ", ".join(missing), {k: data.get(v) for k, v in dependency_keys.items()},
+                self._key, ", ".join(missing), {k: data.get(v) for k, v in dependency_keys.items()},
             )
             self._attr_native_value = None
             return
@@ -246,14 +245,14 @@ class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):
             value = self.calculate_value(dep_values)
             _LOGGER.debug(
                 "Calculated value for %s: %s (input values: %s)",
-                self._attr_name,
+                self._key,
                 value,
                 dep_values
             )
             self._attr_native_value = value
         except Exception as ex:
             _LOGGER.warning(
-                "Error calculating value for sensor %s: %s", self._attr_name, ex
+                "Error calculating value for sensor %s: %s", self._key, ex
             )
             self._attr_native_value = None
 
@@ -313,7 +312,7 @@ class MarstekEfficiencySensor(MarstekCalculatedSensor):
                 efficiency = abs(ac_power) / abs(battery_power) * 100
 
         else:
-            _LOGGER.warning("%s unknown efficiency mode '%s'", self._attr_name, mode)
+            _LOGGER.warning("%s unknown efficiency mode '%s'", self._key, mode)
             return None
 
         efficiency_rounded = round(min(efficiency, 100.0), 1)
