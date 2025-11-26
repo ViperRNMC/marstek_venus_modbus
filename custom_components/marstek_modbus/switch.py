@@ -68,9 +68,9 @@ class MarstekSwitch(CoordinatorEntity, SwitchEntity):
         self.coordinator._entity_types[self._key] = self.entity_type
 
         # Set entity attributes from definition
-        self._attr_name = f"{self.definition['name']}"
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
         self._attr_has_entity_name = True
+        self._attr_translation_key = definition["key"]
 
         # Internal state variables
         self._state = None
@@ -127,7 +127,7 @@ class MarstekSwitch(CoordinatorEntity, SwitchEntity):
         """
         value = self.definition.get("command_on")
         if value is None:
-            _LOGGER.error("No command_on value defined for switch %s", self._attr_name)
+            _LOGGER.error("No command_on value defined for switch %s", self._key)
             return
 
         # Optimistically update the coordinator data so HA shows the new state immediately
@@ -151,7 +151,7 @@ class MarstekSwitch(CoordinatorEntity, SwitchEntity):
         """
         value = self.definition.get("command_off")
         if value is None:
-            _LOGGER.error("No command_off value defined for switch %s", self._attr_name)
+            _LOGGER.error("No command_off value defined for switch %s", self._key)
             return
 
         # Optimistically update the coordinator data so HA shows the new state immediately

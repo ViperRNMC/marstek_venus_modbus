@@ -73,9 +73,9 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
         self.coordinator._entity_types[self._key] = self.entity_type
 
         # Set entity attributes from definition
-        self._attr_name = definition["name"]
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self._key}"
         self._attr_has_entity_name = True
+        self._attr_translation_key = definition["key"]
 
         # Internal state variables
         self._state = None
@@ -93,9 +93,12 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
         if definition.get("enabled_by_default") is False:
             self._attr_entity_registry_enabled_default = False
 
-        # Add translation key if present
-        if "translation_key" in definition:
-            self._attr_translation_key = definition["translation_key"]
+        # Use key as translation_key for automatic translations
+        self._attr_translation_key = definition["key"]
+        
+        # Force entity_id to use key regardless of language setting
+        # This ensures English entity_ids while friendly_name follows user language
+        self._attr_suggested_object_id = definition["key"]
 
         # Use option keys (lowercase, underscore) instead of display names
         self._attr_options = list(definition["options"].keys())
@@ -157,7 +160,7 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
         """
         options_map = self.definition.get("options", {})
         if option not in options_map:
-            _LOGGER.warning("Invalid option '%s' for %s", option, self._attr_name)
+            _LOGGER.warning("Invalid option '%s' for %s", option, self._key)
             return
 
         value = options_map[option]

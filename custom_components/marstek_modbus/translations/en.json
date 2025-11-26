@@ -202,16 +202,16 @@
       "grid_standard": {
         "name": "Grid Standard",
         "state": {
-          "auto": "Auto",
-          "en50549": "EN50549",
-          "netherlands": "Netherlands",
-          "germany": "Germany",
-          "austria": "Austria",
-          "united_kingdom": "United Kingdom",
-          "spain": "Spain",
-          "poland": "Poland",
-          "italy": "Italy",
-          "china": "China"
+          "Auto": "Auto",
+          "EN50549": "EN50549",
+          "Netherlands": "Netherlands",
+          "Germany": "Germany",
+          "Austria": "Austria",
+          "United Kingdom": "United Kingdom",
+          "Spain": "Spain",
+          "Poland": "Poland",
+          "Italy": "Italy",
+          "China": "China"
         }
       }
     },

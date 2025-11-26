@@ -268,14 +268,19 @@ async def async_test_modbus_connection(host: str, port: int, unit_id: int = 1):
         # First test TCP connection
         if not client.connect():
             raise ConnectionError("Unable to connect")
+        
+        # Small delay to ensure connection is stable
+        await asyncio.sleep(0.1)
             
         # Test actual Modbus communication with the specified unit_id
         try:
-            # Try to read a common register (register 0) with timeout to test unit_id
-            async def _test_read():
-                return client.read_holding_registers(address=0, count=1, slave=unit_id)
-                
-            result = await asyncio.wait_for(_test_read(), timeout=5.0)
+            # Try to read a known register - use register 32104 (Battery SOC) which should exist
+            # We run the sync operation in an executor to avoid blocking
+            loop = asyncio.get_event_loop()
+            result = await loop.run_in_executor(
+                None,
+                lambda: client.read_holding_registers(address=32104, count=1, slave=unit_id)
+            )
             
             # Check if we got any response (even an error response indicates unit_id communication)
             if result is None:
@@ -299,7 +304,9 @@ async def async_test_modbus_connection(host: str, port: int, unit_id: int = 1):
             return "unit_id_no_response"
         except Exception as e:
             _LOGGER.debug("Error testing unit_id %d: %s", unit_id, e)
-            return "unit_id_no_response"
+            # Don't fail on unit_id test - just warn and continue
+            _LOGGER.warning("Could not verify unit_id %d, but continuing anyway: %s", unit_id, e)
+            return None  # Allow connection even if unit_id test fails
             
     except OSError as err:
         err_msg = str(err).lower()

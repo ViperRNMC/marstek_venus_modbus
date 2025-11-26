@@ -57,9 +57,9 @@ class MarstekButton(ButtonEntity):
         self.coordinator._entity_types[self._key] = "button"
 
         # Set entity attributes from definition
-        self._attr_name = self.definition["name"]
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self._key}"
         self._attr_has_entity_name = True
+        self._attr_translation_key = definition["key"]
 
         # Optional: set entity category
         if "category" in self.definition:

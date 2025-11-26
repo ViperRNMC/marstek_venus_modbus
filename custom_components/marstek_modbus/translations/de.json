@@ -202,16 +202,16 @@
             "grid_standard": {
                 "name": "Netzstandard",
                 "state": {
-                    "auto": "Automatisch",
-                    "en50549": "EN50549",
-                    "netherlands": "Niederlande",
-                    "germany": "Deutschland",
-                    "austria": "Österreich",
-                    "united_kingdom": "Vereinigtes Königreich",
-                    "spain": "Spanien",
-                    "poland": "Polen",
-                    "italy": "Italien",
-                    "china": "China"
+                    "Auto": "Automatisch",
+                    "EN50549": "EN50549",
+                    "Netherlands": "Niederlande",
+                    "Germany": "Deutschland",
+                    "Austria": "Österreich",
+                    "United Kingdom": "Vereinigtes Königreich",
+                    "Spain": "Spanien",
+                    "Poland": "Polen",
+                    "Italy": "Italien",
+                    "China": "China"
                 }
             }
         },
