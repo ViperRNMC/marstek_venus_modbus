@@ -60,10 +60,6 @@ class MarstekButton(ButtonEntity):
         self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self._key}"
         self._attr_has_entity_name = True
         self._attr_translation_key = definition["key"]
-        
-        # Force entity_id to use key regardless of language setting
-        # This ensures English entity_ids while friendly_name follows user language
-        self._attr_suggested_object_id = definition["key"]
 
         # Optional: set entity category
         if "category" in self.definition:
