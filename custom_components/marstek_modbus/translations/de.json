@@ -37,6 +37,151 @@
         }
     },
     "entity": {
+        "sensor": {
+            "device_name": {
+                "name": "Gerätename"
+            },
+            "sn_code": {
+                "name": "Seriennummer"
+            },
+            "software_version": {
+                "name": "Softwareversion"
+            },
+            "bms_version": {
+                "name": "BMS-Version"
+            },
+            "ems_version": {
+                "name": "EMS-Version"
+            },
+            "comm_module_firmware": {
+                "name": "Kommunikationsmodul-Firmware"
+            },
+            "mac_address": {
+                "name": "MAC-Adresse"
+            },
+            "battery_soc": {
+                "name": "Batterie-Ladezustand"
+            },
+            "battery_total_energy": {
+                "name": "Batterie-Gesamtenergie"
+            },
+            "battery_voltage": {
+                "name": "Batteriespannung"
+            },
+            "battery_current": {
+                "name": "Batteriestrom"
+            },
+            "battery_power": {
+                "name": "Batterieleistung"
+            },
+            "internal_temperature": {
+                "name": "Innentemperatur"
+            },
+            "internal_mos1_temperature": {
+                "name": "Interne MOS1-Temperatur"
+            },
+            "internal_mos2_temperature": {
+                "name": "Interne MOS2-Temperatur"
+            },
+            "ac_voltage": {
+                "name": "AC-Spannung"
+            },
+            "ac_current": {
+                "name": "AC-Strom"
+            },
+            "ac_power": {
+                "name": "AC-Leistung"
+            },
+            "ac_frequency": {
+                "name": "AC-Frequenz"
+            },
+            "total_charging_energy": {
+                "name": "Gesamte Ladeenergie"
+            },
+            "total_discharging_energy": {
+                "name": "Gesamte Entladeenergie"
+            },
+            "total_daily_charging_energy": {
+                "name": "Tägliche Ladeenergie"
+            },
+            "total_daily_discharging_energy": {
+                "name": "Tägliche Entladeenergie"
+            },
+            "total_monthly_charging_energy": {
+                "name": "Monatliche Ladeenergie"
+            },
+            "total_monthly_discharging_energy": {
+                "name": "Monatliche Entladeenergie"
+            },
+            "max_cell_temperature": {
+                "name": "Maximale Zellentemperatur"
+            },
+            "min_cell_temperature": {
+                "name": "Minimale Zellentemperatur"
+            },
+            "max_cell_voltage": {
+                "name": "Maximale Zellenspannung"
+            },
+            "min_cell_voltage": {
+                "name": "Minimale Zellenspannung"
+            },
+            "inverter_state": {
+                "name": "Wechselrichter-Status",
+                "state": {
+                    "0": "Schlafmodus",
+                    "1": "Standby",
+                    "2": "Laden",
+                    "3": "Entladen",
+                    "4": "Backup-Modus",
+                    "5": "OTA-Upgrade",
+                    "6": "Bypass"
+                }
+            },
+            "fault_status": {
+                "name": "Fehlerstatus"
+            },
+            "alarm_status": {
+                "name": "Alarmstatus"
+            },
+            "modbus_address": {
+                "name": "Modbus-Adresse"
+            },
+            "ac_offgrid_voltage": {
+                "name": "AC-Offgrid-Spannung"
+            },
+            "ac_offgrid_current": {
+                "name": "AC-Offgrid-Strom"
+            },
+            "ac_offgrid_power": {
+                "name": "AC-Offgrid-Leistung"
+            },
+            "wifi_signal_strength": {
+                "name": "WLAN-Signalstärke"
+            },
+            "round_trip_efficiency_total": {
+                "name": "Gesamt-Roundtrip-Effizienz"
+            },
+            "round_trip_efficiency_monthly": {
+                "name": "Monatliche Roundtrip-Effizienz"
+            },
+            "conversion_efficiency": {
+                "name": "Umwandlungseffizienz"
+            },
+            "stored_energy": {
+                "name": "Gespeicherte Energie"
+            }
+        },
+        "binary_sensor": {
+            "wifi_status": {
+                "name": "WLAN-Status"
+            },
+            "cloud_status": {
+                "name": "Cloud-Status"
+            },
+            "discharge_limit_mode": {
+                "name": "Entladebegrenzung"
+            }
+        },
         "select": {
             "user_work_mode": {
                 "name": "Modus",
@@ -53,6 +198,60 @@
                     "charge": "Laden",
                     "discharge": "Entladen"
                 }
+            },
+            "grid_standard": {
+                "name": "Netzstandard",
+                "state": {
+                    "auto": "Automatisch",
+                    "en50549": "EN50549",
+                    "netherlands": "Niederlande",
+                    "germany": "Deutschland",
+                    "austria": "Österreich",
+                    "united_kingdom": "Vereinigtes Königreich",
+                    "spain": "Spanien",
+                    "poland": "Polen",
+                    "italy": "Italien",
+                    "china": "China"
+                }
+            }
+        },
+        "switch": {
+            "backup_function": {
+                "name": "Backup-Funktion"
+            },
+            "rs485_control_mode": {
+                "name": "RS485-Steuermodus"
+            }
+        },
+        "number": {
+            "set_charge_power": {
+                "name": "Ladeleistung einstellen"
+            },
+            "set_discharge_power": {
+                "name": "Entladeleistung einstellen"
+            },
+            "max_charge_power": {
+                "name": "Maximale Ladeleistung"
+            },
+            "max_discharge_power": {
+                "name": "Maximale Entladeleistung"
+            },
+            "charging_cutoff_capacity": {
+                "name": "Ladeabschaltkapazität"
+            },
+            "discharging_cutoff_capacity": {
+                "name": "Entladeabschaltkapazität"
+            },
+            "charge_to_soc": {
+                "name": "Maximaler SoC"
+            }
+        },
+        "button": {
+            "reset_device": {
+                "name": "Gerät zurücksetzen"
+            },
+            "factory_reset": {
+                "name": "Werkseinstellungen"
             }
         }
     }
