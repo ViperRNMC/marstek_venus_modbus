@@ -10,7 +10,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 ### 🧩 Requirements
 
 - A configured **Modbus RTU to Modbus TCP bridge** connected to the battery's RS485 port
-- The IP address and port of the Modbus TCP (usually port 502)
+- The IP address, port of the Modbus TCP (usually port 502) and Unit ID (also called Slave ID).
 - Home Assistant Core 2025.9 or later
 - HACS installed
 
@@ -49,6 +49,19 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
    - Port (default: 502)
    - Unit ID / Slave ID (default: 1, valid range: 1-255)
    - Device version (v1/v2 or v3)
+
+
+## ⚙️ Configuration
+
+### Polling Intervals
+
+The integration uses intelligent polling with configurable intervals per entity type to balance responsiveness and network load.
+
+**Configurable via Options UI:**
+- **High priority** (default: 5 seconds) - Critical sensors like power, voltage, current, SOC
+- **Medium priority** (default: 30 seconds) - Temperature sensors, state sensors
+- **Low priority** (default: 60 seconds) - Energy totals, efficiency calculations
+- **Very low priority** (default: 300 seconds) - Device information, firmware versions
 
 
 ## ✅ Tested Devices for Modbus TCP
