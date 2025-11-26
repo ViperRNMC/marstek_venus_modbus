@@ -39,147 +39,147 @@
   "entity": {
     "sensor": {
       "device_name": {
-        "name": "Device Name"
+        "name": "Apparaatnaam"
       },
       "sn_code": {
-        "name": "SN Code"
+        "name": "Serienummer"
       },
       "software_version": {
-        "name": "Software Version"
+        "name": "Softwareversie"
       },
       "bms_version": {
-        "name": "BMS Version"
+        "name": "BMS-versie"
       },
       "ems_version": {
-        "name": "EMS Version"
+        "name": "EMS-versie"
       },
       "comm_module_firmware": {
-        "name": "Communication Module Firmware"
+        "name": "Communicatiemodule Firmware"
       },
       "mac_address": {
-        "name": "MAC Address"
+        "name": "MAC-adres"
       },
       "battery_soc": {
-        "name": "Battery SOC"
+        "name": "Batterij SOC"
       },
       "battery_total_energy": {
-        "name": "Battery Total Energy"
+        "name": "Batterij Totale Energie"
       },
       "battery_voltage": {
-        "name": "Battery Voltage"
+        "name": "Batterijspanning"
       },
       "battery_current": {
-        "name": "Battery Current"
+        "name": "Batterijstroom"
       },
       "battery_power": {
-        "name": "Battery Power"
+        "name": "Batterijvermogen"
       },
       "internal_temperature": {
-        "name": "Internal Temperature"
+        "name": "Interne Temperatuur"
       },
       "internal_mos1_temperature": {
-        "name": "Internal MOS1 Temperature"
+        "name": "Interne MOS1 Temperatuur"
       },
       "internal_mos2_temperature": {
-        "name": "Internal MOS2 Temperature"
+        "name": "Interne MOS2 Temperatuur"
       },
       "ac_voltage": {
-        "name": "AC Voltage"
+        "name": "AC-spanning"
       },
       "ac_current": {
-        "name": "AC Current"
+        "name": "AC-stroom"
       },
       "ac_power": {
-        "name": "AC Power"
+        "name": "AC-vermogen"
       },
       "ac_frequency": {
-        "name": "AC Frequency"
+        "name": "AC-frequentie"
       },
       "total_charging_energy": {
-        "name": "Total Charging Energy"
+        "name": "Totale Oplaadenergie"
       },
       "total_discharging_energy": {
-        "name": "Total Discharging Energy"
+        "name": "Totale Ontlaadenergie"
       },
       "total_daily_charging_energy": {
-        "name": "Total Daily Charging Energy"
+        "name": "Dagelijkse Oplaadenergie"
       },
       "total_daily_discharging_energy": {
-        "name": "Total Daily Discharging Energy"
+        "name": "Dagelijkse Ontlaadenergie"
       },
       "total_monthly_charging_energy": {
-        "name": "Total Monthly Charging Energy"
+        "name": "Maandelijkse Oplaadenergie"
       },
       "total_monthly_discharging_energy": {
-        "name": "Total Monthly Discharging Energy"
+        "name": "Maandelijkse Ontlaadenergie"
       },
       "max_cell_temperature": {
-        "name": "Max Cell Temperature"
+        "name": "Max. Celtemperatuur"
       },
       "min_cell_temperature": {
-        "name": "Min Cell Temperature"
+        "name": "Min. Celtemperatuur"
       },
       "max_cell_voltage": {
-        "name": "Max Cell Voltage"
+        "name": "Max. Celspanning"
       },
       "min_cell_voltage": {
-        "name": "Min Cell Voltage"
+        "name": "Min. Celspanning"
       },
       "inverter_state": {
-        "name": "Inverter State",
+        "name": "Omvormer Status",
         "state": {
-          "0": "Sleep",
+          "0": "Slaap",
           "1": "Standby",
-          "2": "Charge",
-          "3": "Discharge",
-          "4": "Backup Mode",
+          "2": "Laden",
+          "3": "Ontladen",
+          "4": "Backup-modus",
           "5": "OTA Upgrade",
           "6": "Bypass"
         }
       },
       "fault_status": {
-        "name": "Fault Status"
+        "name": "Foutstatus"
       },
       "alarm_status": {
-        "name": "Alarm Status"
+        "name": "Alarmstatus"
       },
       "modbus_address": {
-        "name": "Modbus Address"
+        "name": "Modbus-adres"
       },
       "ac_offgrid_voltage": {
-        "name": "AC Offgrid Voltage"
+        "name": "AC Off-grid Spanning"
       },
       "ac_offgrid_current": {
-        "name": "AC Offgrid Current"
+        "name": "AC Off-grid Stroom"
       },
       "ac_offgrid_power": {
-        "name": "AC Offgrid Power"
+        "name": "AC Off-grid Vermogen"
       },
       "wifi_signal_strength": {
-        "name": "WiFi Signal Strength"
+        "name": "WiFi-signaalsterkte"
       },
       "round_trip_efficiency_total": {
-        "name": "Round-Trip Efficiency Total"
+        "name": "Totaal Rendement"
       },
       "round_trip_efficiency_monthly": {
-        "name": "Round-Trip Efficiency Monthly"
+        "name": "Maandelijks Rendement"
       },
       "conversion_efficiency": {
-        "name": "Conversion Efficiency"
+        "name": "Conversierendement"
       },
       "stored_energy": {
-        "name": "Stored Energy"
+        "name": "Opgeslagen Energie"
       }
     },
     "binary_sensor": {
       "wifi_status": {
-        "name": "WiFi Status"
+        "name": "WiFi-status"
       },
       "cloud_status": {
-        "name": "Cloud Status"
+        "name": "Cloud-status"
       },
       "discharge_limit_mode": {
-        "name": "Discharge Limit"
+        "name": "Ontlaadlimiet"
       }
     },
     "select": {
@@ -200,58 +200,58 @@
         }
       },
       "grid_standard": {
-        "name": "Grid Standard",
+        "name": "Netstandaard",
         "state": {
-          "auto": "Auto",
+          "auto": "Automatisch",
           "en50549": "EN50549",
-          "netherlands": "Netherlands",
-          "germany": "Germany",
-          "austria": "Austria",
-          "united_kingdom": "United Kingdom",
-          "spain": "Spain",
-          "poland": "Poland",
-          "italy": "Italy",
+          "netherlands": "Nederland",
+          "germany": "Duitsland",
+          "austria": "Oostenrijk",
+          "united_kingdom": "Verenigd Koninkrijk",
+          "spain": "Spanje",
+          "poland": "Polen",
+          "italy": "Italië",
           "china": "China"
         }
       }
     },
     "switch": {
       "backup_function": {
-        "name": "Backup Function"
+        "name": "Backup-functie"
       },
       "rs485_control_mode": {
-        "name": "RS485 Control Mode"
+        "name": "RS485 Besturingsmodus"
       }
     },
     "number": {
       "set_charge_power": {
-        "name": "Set Forcible Charge Power"
+        "name": "Forceer Laadvermogen"
       },
       "set_discharge_power": {
-        "name": "Set Forcible Discharge Power"
+        "name": "Forceer Ontlaadvermogen"
       },
       "max_charge_power": {
-        "name": "Max Charge Power"
+        "name": "Max. Laadvermogen"
       },
       "max_discharge_power": {
-        "name": "Max Discharge Power"
+        "name": "Max. Ontlaadvermogen"
       },
       "charging_cutoff_capacity": {
-        "name": "Charging Cutoff Capacity"
+        "name": "Laadstop Capaciteit"
       },
       "discharging_cutoff_capacity": {
-        "name": "Discharging Cutoff Capacity"
+        "name": "Ontlaadstop Capaciteit"
       },
       "charge_to_soc": {
-        "name": "Charge to SOC"
+        "name": "Opladen tot SOC"
       }
     },
     "button": {
       "reset_device": {
-        "name": "Reset Device"
+        "name": "Apparaat Resetten"
       },
       "factory_reset": {
-        "name": "Factory reset"
+        "name": "Fabrieksinstellingen Herstellen"
       }
     }
   }
