@@ -10,6 +10,8 @@ from typing import Optional
 
 import logging
 
+from ..const import DEFAULT_MESSAGE_WAIT_MS, DEFAULT_UNIT_ID
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -19,7 +21,7 @@ class MarstekModbusClient:
     for async reading/writing and interpreting common data types.
     """
 
-    def __init__(self, host: str, port: int, message_wait_ms: int = 50, timeout: int = 3, unit_id: int = 1):
+    def __init__(self, host: str, port: int, message_wait_ms: int = DEFAULT_MESSAGE_WAIT_MS, timeout: int = 3, unit_id: int = DEFAULT_UNIT_ID):
         """
         Initialize Modbus client with host, port, message wait time, timeout, and unit ID.
 
@@ -33,7 +35,15 @@ class MarstekModbusClient:
         self.host = host
         self.port = port
         self.timeout = timeout
-        self.message_wait_ms = message_wait_ms
+
+        # Normalize and guard message_wait_ms so it is never None
+        self.message_wait_ms = int(message_wait_ms) if message_wait_ms is not None else DEFAULT_MESSAGE_WAIT_MS
+
+        # Precompute seconds sleep to avoid repeated float(None) errors
+        try:
+            self.message_wait_sec = max(0.0, float(self.message_wait_ms) / 1000.0)
+        except (TypeError, ValueError):
+            self.message_wait_sec = float(DEFAULT_MESSAGE_WAIT_MS) / 1000.0
 
         # Create pymodbus async TCP client instance
         self.client = AsyncModbusTcpClient(
@@ -42,8 +52,20 @@ class MarstekModbusClient:
             timeout=timeout,
         )
 
-        self.client.message_wait_milliseconds = message_wait_ms
-        self.unit_id = unit_id
+        # set message wait on client if supported
+        try:
+            self.client.message_wait_milliseconds = self.message_wait_ms
+        except AttributeError:
+            pass
+
+        # Normalize and guard unit_id so it is never None
+        try:
+            self.unit_id = int(unit_id)
+        except (TypeError, ValueError):
+            self.unit_id = DEFAULT_UNIT_ID
+
+        # Lock to serialize outgoing Modbus requests to avoid transaction id collisions
+        self._request_lock = asyncio.Lock()
 
     async def async_connect(self) -> bool:
         """
@@ -174,10 +196,34 @@ class MarstekModbusClient:
                     return None
 
             try:
-                result = await self.client.read_holding_registers(
-                    address=register, count=count, device_id=self.unit_id
-                )
-                if result.isError():
+                result = None
+                # Serialize Modbus requests to avoid overlapping frames and transaction id mismatches
+                async with self._request_lock:
+                    try:
+                        # Try multiple kwarg names for different pymodbus versions
+                        read_method = getattr(self.client, "read_holding_registers")
+                        for unit_kw in ("device_id", "unit", "slave"):
+                            try:
+                                result = await read_method(address=register, count=count, **{unit_kw: self.unit_id})
+                                break
+                            except TypeError:
+                                result = None
+                                continue
+                    finally:
+                        # Short spacing after each request to give the device time
+                        try:
+                            await asyncio.sleep(self.message_wait_sec)
+                        except asyncio.CancelledError:
+                            raise
+
+                if result is None:
+                    _LOGGER.error(
+                        "No response object returned for register %d (0x%04X) on attempt %d",
+                        register,
+                        register,
+                        attempt + 1,
+                    )
+                elif getattr(result, "isError", lambda: False)():
                     _LOGGER.error(
                         "Modbus read error at register %d (0x%04X) on attempt %d",
                         register,
@@ -293,10 +339,27 @@ class MarstekModbusClient:
             bool: True if write was successful, False otherwise.
         """
         try:
-            result = await self.client.write_register(
-                address=register, value=value, device_id=self.unit_id
-            )
-            return not result.isError()
+            result = None
+            async with self._request_lock:
+                try:
+                    # Try multiple kwarg names for compatibility across pymodbus versions
+                    result = None
+                    for unit_kw in ("device_id", "unit", "slave"):
+                        try:
+                            result = await self.client.write_register(
+                                address=register, value=value, **{unit_kw: self.unit_id}
+                            )
+                            break
+                        except TypeError:
+                            result = None
+                            continue
+                finally:
+                    try:
+                        await asyncio.sleep(self.message_wait_sec)
+                    except asyncio.CancelledError:
+                        raise
+
+            return result is not None and not getattr(result, "isError", lambda: False)()
 
         except Exception as e:
             _LOGGER.exception("Exception during modbus write: %s", e)
