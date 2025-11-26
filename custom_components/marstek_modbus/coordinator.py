@@ -260,22 +260,49 @@ class MarstekCoordinator(DataUpdateCoordinator):
             _LOGGER.error("Modbus client is not available when writing %s '%s'", entity_type, key)
             return False
 
+        _LOGGER.debug(
+            "Writing to %s '%s': register=%d (0x%04X), value=%s",
+            entity_type,
+            key,
+            register,
+            register,
+            value,
+        )
+
         try:
-            await self.client.async_write_register(register=register, value=value)
-            _LOGGER.debug(
-                "Wrote to %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
-                entity_type,
-                key,
-                register,
-                register,
-                value,
-                scale if scale is not None else 1,
-                unit if unit is not None else "N/A",
-            )
-            return True
+            success = await self.client.async_write_register(register=register, value=value)
+            
+            if success:
+                _LOGGER.debug(
+                    "Successfully wrote to %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
+                    entity_type,
+                    key,
+                    register,
+                    register,
+                    value,
+                    scale if scale is not None else 1,
+                    unit if unit is not None else "N/A",
+                )
+                return True
+            else:
+                _LOGGER.warning(
+                    "Write operation failed for %s '%s': register=%d (0x%04X), value=%s",
+                    entity_type,
+                    key,
+                    register,
+                    register,
+                    value,
+                )
+                return False
+                
         except Exception as e:
             _LOGGER.error(
-                "Failed to write value %s to register 0x%X: %s", value, register, e
+                "Failed to write value %s to register 0x%X for %s '%s': %s",
+                value,
+                register,
+                entity_type,
+                key,
+                e
             )
             return False
 
