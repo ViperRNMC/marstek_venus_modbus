@@ -136,7 +136,7 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         self.async_write_ha_state()
 
         # Write the value using the coordinator's async_write_value method
-        await self.coordinator.async_write_value(
+        success = await self.coordinator.async_write_value(
             register=self._register,
             value=raw_value,
             key=self._key,
@@ -144,8 +144,11 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
             unit=self._unit,
             entity_type=self.entity_type,
         )
-        # Refresh to get the actual state
-        await self.coordinator.async_read_value(self.definition, self._key)
+        
+        # Only refresh if write failed to get actual device state
+        if not success:
+            _LOGGER.debug("Write failed for %s, refreshing to get actual state", self._key)
+            await self.coordinator.async_read_value(self.definition, self._key)
 
     @property
     def device_info(self) -> dict:
