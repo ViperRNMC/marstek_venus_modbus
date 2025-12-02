@@ -324,6 +324,25 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 _LOGGER.info("Connection suspension expired - attempting reconnection")
                 self._connection_suspended = False
                 self._consecutive_failures = 0
+                
+                # Force reconnect after suspension
+                try:
+                    _LOGGER.debug("Closing existing connection before reconnect")
+                    await self.client.async_close()
+                except Exception as exc:
+                    _LOGGER.debug("Error closing client during reconnect: %s", exc)
+                
+                try:
+                    _LOGGER.info("Attempting to reconnect to %s:%d", self.host, self.port)
+                    connected = await self.client.async_connect()
+                    if connected:
+                        _LOGGER.info("Successfully reconnected after suspension")
+                    else:
+                        _LOGGER.warning("Failed to reconnect after suspension - will retry next cycle")
+                        return self.data or {}
+                except Exception as exc:
+                    _LOGGER.error("Exception during reconnect: %s", exc)
+                    return self.data or {}
             else:
                 _LOGGER.debug("Connection suspended - skipping update to prevent resource exhaustion")
                 return self.data or {}
