@@ -34,6 +34,40 @@
           "unit_id": "Modbus Unit-ID"
         }
       }
+      ,
+      "menu": {
+        "title": "Marstek opties",
+        "description": "Kies welke instellingen te configureren",
+        "menu_options": {
+          "connection": "Verbindingsgegevens",
+          "polling": "Polling-intervallen"
+        }
+      },
+      "polling": {
+        "title": "Configureer polling-intervallen",
+        "description": "Pas de pollingfrequentie per categorie aan",
+        "data": {
+          "high": "High-prioriteit interval (s)",
+          "medium": "Medium-prioriteit interval (s)",
+          "low": "Low-prioriteit interval (s)",
+          "very_low": "Very-low-prioriteit interval (s)"
+        },
+        "data_description": {
+          "high": "Interval voor sensoren met hoge prioriteit",
+          "medium": "Interval voor sensoren met gemiddelde prioriteit",
+          "low": "Interval voor sensoren met lage prioriteit",
+          "very_low": "Interval voor sensoren met zeer lage prioriteit"
+        }
+      },
+      "connection": {
+        "title": "Verbindingsgegevens bewerken",
+        "description": "Wijzig de Modbus TCP host, poort en unit id",
+        "data": {
+          "host": "IP-adres",
+          "port": "Poort",
+          "unit_id": "Unit-ID"
+        }
+      }
     }
   },
   "entity": {

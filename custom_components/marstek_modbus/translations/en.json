@@ -34,6 +34,34 @@
           "unit_id": "Modbus Unit ID"
         }
       }
+      ,
+      "menu": {
+        "title": "Marstek options",
+        "description": "Choose which settings to configure",
+        "menu_options": {
+          "connection": "Connection settings",
+          "polling": "Polling intervals"
+        }
+      },
+      "polling": {
+        "title": "Configure polling intervals",
+        "description": "Adjust polling frequency per category",
+        "data": {
+          "high": "High priority interval (s)",
+          "medium": "Medium priority interval (s)",
+          "low": "Low priority interval (s)",
+          "very_low": "Very low priority interval (s)"
+        }
+      },
+      "connection": {
+        "title": "Edit connection details",
+        "description": "Change the Modbus TCP host, port and unit id",
+        "data": {
+          "host": "IP Address",
+          "port": "Port",
+          "unit_id": "Unit ID"
+        }
+      }
     }
   },
   "entity": {
