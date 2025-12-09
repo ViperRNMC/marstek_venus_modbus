@@ -70,8 +70,8 @@ The Marstek Venus Modbus integration has been tested with the following hardware
 - Elfin EW11 WiFi to RS485 Converter
 - PUSR DR134 Modbus Gateway
 - Waveshare RS485 to RJ45 Ethernet Converter
-- M5Stack RS485 + Atom S3 Lite
-For more details and updates, see GitHub issue [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25).
+- M5Stack RS485 + Atom S3 Lite [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25)
+- V3 with ethernet cable (no adapter required)
 
 
 ## ⚠️ Known Issues / Bugs
