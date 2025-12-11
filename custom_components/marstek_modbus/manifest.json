@@ -1,7 +1,7 @@
 {
   "domain": "marstek_modbus",
   "name": "Marstek Venus Modbus",
-  "version": "2025.11.5",
+  "version": "2025.12.1",
   "config_flow": true,
   "documentation": "https://github.com/viperrnmc/marstek_venus_modbus",
   "requirements": ["pymodbus>=3.9.2"],
