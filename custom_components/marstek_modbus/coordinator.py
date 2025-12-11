@@ -109,6 +109,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self._max_consecutive_failures = 5
         self._connection_suspended = False
         self._suspension_reset_time = None
+        
+        # Connection health tracking for diagnostics
+        self._last_successful_read = None
+        self._connection_established_at = None
 
         # Prepare scan intervals (from config_entry.options or default)
         options = entry.options or {}
@@ -181,11 +185,34 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     if scale is not None:
                         self._scales[dep_key] = scale
 
+    def get_connection_diagnostics(self) -> dict:
+        """Return diagnostic information about the connection."""
+        from homeassistant.util.dt import utcnow
+        now = utcnow()
+        
+        diagnostics = {
+            "host": self.host,
+            "port": self.port,
+            "consecutive_failures": self._consecutive_failures,
+            "connection_suspended": self._connection_suspended,
+            "last_successful_read": self._last_successful_read.isoformat() if self._last_successful_read else None,
+            "connection_established_at": self._connection_established_at.isoformat() if self._connection_established_at else None,
+        }
+        
+        if self._connection_suspended and self._suspension_reset_time:
+            diagnostics["suspension_expires_in_seconds"] = (self._suspension_reset_time - now).total_seconds()
+        
+        return diagnostics
+
     async def async_init(self):
         """Asynchronously initialize the Modbus connection."""
+        from homeassistant.util.dt import utcnow
         connected = await self.client.async_connect()
         if not connected:
             _LOGGER.error("Failed to connect to Modbus device at %s:%d", self.host, self.port)
+        else:
+            self._connection_established_at = utcnow()
+            _LOGGER.info("Successfully connected to Modbus device at %s:%d", self.host, self.port)
         return connected
 
     async def async_read_value(self, sensor: dict, key: str):
@@ -317,6 +344,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         now = utcnow()
         updated_data = {}
+        
+        # Track if we actually attempted any reads (not just skipped due to intervals)
+        attempted_reads = 0
+        successful_reads = 0
 
         # Connection throttling: if too many failures, temporarily stop attempting connections
         if self._connection_suspended:
@@ -417,32 +448,62 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 )
                 continue
 
+            # Track that we're attempting a read
+            attempted_reads += 1
+
             # Attempt to read the sensor value from Modbus using helper function
             value = await self.async_read_value(sensor, key)
 
             if value is not None:
                 updated_data[key] = value
                 self._last_update_times[key] = now
+                successful_reads += 1
+            else:
+                # Individual sensor read failed
+                _LOGGER.warning("Failed to read %s '%s' - value is None", entity_type, key)
 
-        # Connection retry logic: track success/failure patterns
-        if updated_data:
-            # Data successfully retrieved - reset failure counter
-            if self._consecutive_failures > 0:
-                _LOGGER.info("Connection recovered after %d failures", self._consecutive_failures)
-            self._consecutive_failures = 0
-            self._connection_suspended = False
+        # Connection retry logic: only track failures if we actually attempted reads
+        if attempted_reads > 0:
+            if successful_reads > 0:
+                # At least some data successfully retrieved - reset failure counter
+                if self._consecutive_failures > 0:
+                    _LOGGER.info("Connection recovered after %d failures (successful reads: %d/%d)", 
+                               self._consecutive_failures, successful_reads, attempted_reads)
+                self._consecutive_failures = 0
+                self._connection_suspended = False
+                self._last_successful_read = now
+            elif successful_reads == 0:
+                # We attempted reads but ALL failed - connection issue
+                self._consecutive_failures += 1
+                _LOGGER.warning("All read attempts failed (%d/%d) - consecutive failures: %d/%d",
+                              successful_reads, attempted_reads, 
+                              self._consecutive_failures, self._max_consecutive_failures)
+                
+                # Try to reconnect immediately on failure
+                try:
+                    _LOGGER.info("Attempting immediate reconnection after read failures")
+                    await self.client.async_close()
+                    connected = await self.client.async_connect()
+                    if connected:
+                        _LOGGER.info("Successfully reconnected")
+                        self._consecutive_failures = 0
+                        self._connection_established_at = now
+                    else:
+                        _LOGGER.warning("Immediate reconnection failed")
+                except Exception as exc:
+                    _LOGGER.error("Exception during immediate reconnect: %s", exc)
+                
+                if self._consecutive_failures >= self._max_consecutive_failures:
+                    # Too many failures - suspend connection attempts for 5 minutes
+                    self._connection_suspended = True
+                    self._suspension_reset_time = now + timedelta(minutes=5)
+                    _LOGGER.error(
+                        "Connection suspended after %d consecutive failures. "
+                        "Will retry in 5 minutes to prevent resource exhaustion.",
+                        self._consecutive_failures
+                    )
         else:
-            # No data retrieved - possible connection issue
-            self._consecutive_failures += 1
-            if self._consecutive_failures >= self._max_consecutive_failures:
-                # Too many failures - suspend connection attempts for 5 minutes
-                self._connection_suspended = True
-                self._suspension_reset_time = now + timedelta(minutes=5)
-                _LOGGER.warning(
-                    "Connection suspended after %d consecutive failures. "
-                    "Will retry in 5 minutes to prevent resource exhaustion.",
-                    self._consecutive_failures
-                )
+            _LOGGER.debug("No sensors due for update in this cycle")
 
         # Defensive check
         if self.data is None:
