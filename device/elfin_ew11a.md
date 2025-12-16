@@ -70,5 +70,3 @@ DHCP        = Enable (or set static IP)
 ## Resources
 
 - [Elfin EW11A on AliExpress](https://nl.aliexpress.com/item/1005006939991800.html)
-- [Duravolt Modbus Manual](https://duravolt.nl/wp-content/uploads/Duravolt-Plug-in-Battery-Modbus.pdf)
-- [GitHub Issues](https://github.com/ViperRNMC/marstek_venus_modbus/issues)

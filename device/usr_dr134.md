@@ -32,7 +32,7 @@ BaudRate    = 115200
 DataBit     = 8
 StopBit     = 1
 Parity      = None
-WorkMode    = Modbus RTU to TCP
+WorkMode    = Modbus TCP 
 ```
 
 **Network**
@@ -48,19 +48,18 @@ DHCP        = Disable (static recommended)
 Protocol    = Modbus Gateway
 LocalPort   = 502
 Timeout     = 5000
-FramerType  = RTU  (Important! See troubleshooting)
 ```
 
 ## Troubleshooting
 
 | Problem | Solution |
 |---------|----------|
-| **"No response from Unit ID"** / timeout | **Set WorkMode = "Modbus RTU to TCP"** in serial settings (critical!) |
-| "Extra data" / unexpected data errors | DR134 sending RTU frames - verify RTU framing mode enabled |
+| **"No response from Unit ID"** / timeout | Verify **WorkMode = "Modbus TCP"** (NOT "RTU to TCP") in serial settings |
+| "Extra data" / unexpected data errors | Wrong WorkMode - must be "Modbus TCP", not "Modbus RTU to TCP" |
 | Module not found | Marstek powered on? Try `192.168.0.7`, check PC subnet `192.168.0.x` |
 | No Modbus connection | Check A/B wiring not swapped, baud rate 115200, Unit ID = 1 |
+| Connection works with other tools but not HA | Other tool may auto-detect RTU framing - DR134 must use "Modbus TCP" mode for this integration |
 
 ## Resources
 
 - [USR-DR134 Product Page](https://www.pusr.com/) (search "DR134" on PUSR website)
-- [PV Forum Setup Guide](https://www.photovoltaikforum.com/thread/247095-marstek-venus-e-hat-jetzt-einen-lan-anschluss-von-mir-bekommen/) (German)
