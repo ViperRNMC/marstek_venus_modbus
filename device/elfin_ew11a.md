@@ -59,23 +59,6 @@ Password    = [Your WiFi password]
 DHCP        = Enable (or set static IP)
 ```
 
-## Home Assistant Setup
-
-**Settings** → **Devices & Services** → **Add Integration** → **Marstek Venus Modbus**
-
-```
-Host:           [EW11A IP]
-Port:           502
-Unit ID:        1
-Device version: v1/v2 or v3
-```
-
-## Testing
-
-Use **Modbus Poll**, **OpenModScan**, or **QModMaster** to test:
-- Register `32104` (Battery SOC), Function `03`, Type `uint16`, Unit `1`
-- Expected: 0-100 (battery percentage)
-
 ## Troubleshooting
 
 | Problem | Solution |
@@ -83,7 +66,6 @@ Use **Modbus Poll**, **OpenModScan**, or **QModMaster** to test:
 | Cannot connect to WiFi AP | Reset device (hold button 5s), connect to `HF-A11-xxxx` |
 | No Modbus connection | Check A/B wiring not swapped, baud rate 115200, FlowControl = HalfDuplex |
 | Unstable connection | Reduce GapTime to 20ms, check WiFi signal strength |
-| No data | Enable RS485 Control Mode in Marstek, firmware v1.48+, test register 32104 |
 
 ## Resources
 

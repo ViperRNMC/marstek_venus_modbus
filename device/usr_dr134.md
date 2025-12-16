@@ -51,24 +51,6 @@ Timeout     = 5000
 FramerType  = RTU  (Important! See troubleshooting)
 ```
 
-## Home Assistant Setup
-
-**Settings** → **Devices & Services** → **Add Integration** → **Marstek Venus Modbus**
-
-```
-Host:           10.0.0.150  (USR-DR134 IP)
-Port:           502
-Unit ID:        1
-Device version: v1/v2 or v3
-```
-
-## Testing
-
-Use **Modbus Poll**, **OpenModScan**, or **QModMaster** to test:
-
-- Register `32104` (Battery SOC), Function `03`, Type `uint16`, Unit `1`
-- Expected: 0-100 (battery percentage)
-
 ## Troubleshooting
 
 | Problem | Solution |
@@ -77,11 +59,8 @@ Use **Modbus Poll**, **OpenModScan**, or **QModMaster** to test:
 | "Extra data" / unexpected data errors | DR134 sending RTU frames - verify RTU framing mode enabled |
 | Module not found | Marstek powered on? Try `192.168.0.7`, check PC subnet `192.168.0.x` |
 | No Modbus connection | Check A/B wiring not swapped, baud rate 115200, Unit ID = 1 |
-| No data | Enable RS485 Control Mode in Marstek, firmware v1.48+, test register 32104 |
 
 ## Resources
 
 - [USR-DR134 Product Page](https://www.pusr.com/) (search "DR134" on PUSR website)
 - [PV Forum Setup Guide](https://www.photovoltaikforum.com/thread/247095-marstek-venus-e-hat-jetzt-einen-lan-anschluss-von-mir-bekommen/) (German)
-- [Duravolt Modbus Manual](https://duravolt.nl/wp-content/uploads/Duravolt-Plug-in-Battery-Modbus.pdf)
-- [GitHub Issues](https://github.com/ViperRNMC/marstek_venus_modbus/issues)
