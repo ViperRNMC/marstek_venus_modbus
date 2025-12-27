@@ -722,7 +722,7 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
     {
         "key": "round_trip_efficiency_total",
         "unit": "%",
-        "device_class": "battery",
+        "category": "diagnostic",
         "state_class": "measurement",
         "mode": "round_trip",
         "dependency_keys": {
@@ -733,7 +733,7 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
     {
         "key": "round_trip_efficiency_monthly",
         "unit": "%",
-        "device_class": "battery",
+        "category": "diagnostic",
         "state_class": "measurement",
         "mode": "round_trip",
         "dependency_keys": {
@@ -744,7 +744,7 @@ EFFICIENCY_SENSOR_DEFINITIONS = [
     {
         "key": "conversion_efficiency",
         "unit": "%",
-        "device_class": "battery",
+        "category": "diagnostic",
         "state_class": "measurement",
         "mode": "conversion",
         "dependency_keys": {"battery_power": "battery_power", "ac_power": "ac_power"},
