@@ -261,8 +261,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         except asyncio.TimeoutError:
             _LOGGER.warning(
-                "Timeout reading %s '%s' at register %d - connection may be slow or incorrect",
-                entity_type, key, sensor["register"]
+                "Timeout reading %s '%s' at register %d from %s:%d - connection may be slow or incorrect",
+                entity_type, key, sensor["register"], self.client.host, self.client.port
             )
             return None
         except Exception as e:
