@@ -242,14 +242,15 @@ class MarstekModbusClient:
                 else:
                     regs = result.registers
                     _LOGGER.debug(
-                        "Requesting register %d (0x%04X) for sensor '%s' (type: %s, count: %s)",
+                        "Requesting register %d (0x%04X) from '%s' for sensor '%s' (type: %s, count: %s)",
                         register,
                         register,
                         sensor_key or 'unknown',
+                        self.host,
                         data_type,
                         count,
                     )
-                    _LOGGER.debug("Received data from register %d (0x%04X): %s", register, register, regs)
+                    _LOGGER.debug("Received data from '%s' for register %d (0x%04X): %s", self.host, register, register, regs)
 
                     if data_type == "int16":
                         val = regs[0]
