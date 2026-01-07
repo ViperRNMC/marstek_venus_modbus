@@ -222,7 +222,7 @@
             "force_mode": {
                 "name": "Force Mode",
                 "state": {
-                    "standby": "Standby",
+                    "stop": "Halt",
                     "charge": "Laden",
                     "discharge": "Entladen"
                 }
