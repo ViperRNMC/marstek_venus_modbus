@@ -19,7 +19,10 @@ DEFAULT_SCAN_INTERVALS = {
 }
 
 # Supported device versions
-SUPPORTED_VERSIONS = ["v1/v2", "v3"]
+SUPPORTED_VERSIONS = [
+    "E v1/v2", 
+    "E v3",
+    "D"]
 
 # Note: register loading logic (get_registers_for_version) was moved to
 # `register_loader.py` to keep `const.py` focused on constants only.

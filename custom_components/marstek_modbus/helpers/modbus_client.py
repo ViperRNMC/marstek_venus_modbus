@@ -74,40 +74,57 @@ class MarstekModbusClient:
         Returns:
             bool: True if connection succeeded, False otherwise.
         """
-        # If client was closed previously, recreate the AsyncModbusTcpClient
-        if self.client is None:
+        # Always create a fresh client instance to avoid reusing internal
+        # buffers/state that may be left in an inconsistent state after
+        # network interruptions. This reduces "extra data" / parse errors
+        # and stale transaction id problems.
+        try:
+            # Close and discard any existing client first
+            if self.client:
+                try:
+                    result = self.client.close()
+                    if asyncio.iscoroutine(result):
+                        await result
+                except Exception:
+                    pass
+
+            # Create a new client instance
             self.client = AsyncModbusTcpClient(
                 host=self.host,
                 port=self.port,
                 timeout=self.timeout,
             )
-            # restore configured properties
+            # restore configured properties where supported
             try:
                 self.client.message_wait_milliseconds = self.message_wait_ms
             except Exception:
-                # some client implementations may not expose this attribute
                 pass
 
-        connected = await self.client.connect()
+            connected = await self.client.connect()
 
-        if connected:
-            # Wait briefly to ensure connection stability
-            await asyncio.sleep(0.2)
-            _LOGGER.info(
-                "Connected to Modbus server at %s:%s with unit %s",
-                self.host,
-                self.port,
-                self.unit_id,
-            )
-        else:
-            _LOGGER.warning(
-                "Failed to connect to Modbus server at %s:%s with unit %s",
-                self.host,
-                self.port,
-                self.unit_id,
-            )
+            if connected:
+                # Small settle time so the device has time to flush and be ready
+                await asyncio.sleep(max(0.2, self.message_wait_sec))
+                # Reset the request lock to ensure no stale lock state
+                self._request_lock = asyncio.Lock()
+                _LOGGER.info(
+                    "Connected to Modbus server at %s:%s with unit %s",
+                    self.host,
+                    self.port,
+                    self.unit_id,
+                )
+            else:
+                _LOGGER.warning(
+                    "Failed to connect to Modbus server at %s:%s with unit %s",
+                    self.host,
+                    self.port,
+                    self.unit_id,
+                )
 
-        return connected
+            return bool(connected)
+        except Exception as e:
+            _LOGGER.exception("Exception while connecting to Modbus server: %s", e)
+            return False
 
     async def async_close(self) -> None:
         """
@@ -123,9 +140,15 @@ class MarstekModbusClient:
                 await result
             _LOGGER.debug("Modbus client closed successfully")
         except Exception as e:
-            _LOGGER.warning("Error closing Modbus client: %s", e)
+            _LOGGER.debug("Error closing Modbus client: %s", e)
         finally:
+            # Ensure client reference is cleared so future connect creates fresh instance
             self.client = None
+            # Reset request lock as well
+            try:
+                self._request_lock = asyncio.Lock()
+            except Exception:
+                pass
 
     async def async_read_register(
         self,

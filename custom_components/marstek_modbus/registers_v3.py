@@ -793,7 +793,7 @@ SELECT_DEFINITIONS = [
         "key": "force_mode",
         "enabled_by_default": False,
         "scan_interval": "high",
-        "options": {"standby": 0, "charge": 1, "discharge": 2},
+        "options": {"stop": 0, "charge": 1, "discharge": 2},
     },
     # {
     #     "register": 44100,

@@ -540,28 +540,42 @@ def get_registers(version: str):
     If an unknown version is requested, the function falls back to the v1/v2
     register set (because v1 and v2 share the same registers in this integration).
     """
-    # Normalize and validate the requested version. We consider a missing or
-    # unknown version to be an error — callers/config flow must provide a
-    # supported device version explicitly.
-    version = (version or "").lower()
+    # Normalize incoming version value and accept legacy tokens.
+    version_raw = (version or "").strip()
+    version = version_raw.lower()
 
-    # Use the literal tokens from SUPPORTED_VERSIONS (for example "v1/v2",
-    # or "v3"). Do not split on '/' here; the config entry is expected to
-    # contain one of the supported tokens exactly as presented to the user.
+    # Accept legacy tokens 'v1/v2' and 'v3' and automatically map them
+    # to the new tokens used by the integration ('e v1/v2', 'e v3').
+    legacy_to_new = {
+        "v1/v2": "e v1/v2",
+        "v3": "e v3",
+    }
+    if version in legacy_to_new:
+        mapped = legacy_to_new[version]
+        _LOGGER.info(
+            "Mapping legacy device version '%s' to '%s' for backwards compatibility",
+            version_raw,
+            mapped,
+        )
+        version = mapped
+
+    # Validate against supported versions (case-insensitive)
     allowed = {str(item).lower() for item in SUPPORTED_VERSIONS}
-
     if version not in allowed:
         raise ValueError(
             "Unsupported or missing device version %r. Supported versions: %s"
-            % (version, ", ".join(sorted(allowed)))
+            % (version_raw, ", ".join(sorted(allowed)))
         )
 
-    # Map the validated version token to the correct registers module
-    if version == "v1/v2":
+    # Map the validated version token to the correct registers module.
+    # Support the new tokens 'e v1/v2' and 'e v3'.
+    if version == "e v1/v2":
         from . import registers_v12 as registers
-    elif version == "v3":
+    elif version == "e v3":
         from . import registers_v3 as registers
-
+    elif version == "d":
+        from . import registers_v12 as registers
+        
     return {
         "SENSOR_DEFINITIONS": getattr(registers, "SENSOR_DEFINITIONS", []),
         "BINARY_SENSOR_DEFINITIONS": getattr(registers, "BINARY_SENSOR_DEFINITIONS", []),
