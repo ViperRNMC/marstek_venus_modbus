@@ -148,7 +148,7 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         # Only refresh if write failed to get actual device state
         if not success:
             _LOGGER.debug("Write failed for %s, refreshing to get actual state", self._key)
-            await self.coordinator.async_read_value(self.definition, self._key)
+            await self.coordinator.async_read_value(self.definition, self._key, track_failure=False)
 
     @property
     def device_info(self) -> dict:

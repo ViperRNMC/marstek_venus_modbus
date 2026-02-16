@@ -109,6 +109,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self._max_consecutive_failures = 5
         self._connection_suspended = False
         self._suspension_reset_time = None
+
+        self._consecutive_timeout_cycles = 0
+        self._max_consecutive_timeout_cycles = 3
+        self._timeout_ratio_reconnect_threshold = 0.5
         
         # Connection health tracking for diagnostics
         self._last_successful_read = None
@@ -215,7 +219,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             _LOGGER.info("Successfully connected to Modbus device at %s:%d", self.host, self.port)
         return connected
 
-    async def async_read_value(self, sensor: dict, key: str):
+    async def async_read_value(self, sensor: dict, key: str, track_failure: bool = True):
         """Helper to read a single sensor value from Modbus with logging and type checking."""
         entity_type = self._entity_types.get(key, get_entity_type(sensor))
 
@@ -260,9 +264,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 return None
 
         except asyncio.TimeoutError:
+            if track_failure:
+                self._timeouts_in_cycle = getattr(self, "_timeouts_in_cycle", 0) + 1
             _LOGGER.warning(
-                "Timeout reading %s '%s' at register %d - connection may be slow or incorrect",
-                entity_type, key, sensor["register"]
+                "Timeout reading %s '%s' at register %d from %s:%d - connection may be slow or incorrect",
+                entity_type, key, sensor["register"], self.client.host, self.client.port
             )
             return None
         except Exception as e:
@@ -348,6 +354,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Track if we actually attempted any reads (not just skipped due to intervals)
         attempted_reads = 0
         successful_reads = 0
+        self._timeouts_in_cycle = 0
 
         # Connection throttling: if too many failures, temporarily stop attempting connections
         if self._connection_suspended:
@@ -355,17 +362,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 _LOGGER.info("Connection suspension expired - attempting reconnection")
                 self._connection_suspended = False
                 self._consecutive_failures = 0
-                
+
                 # Force reconnect after suspension
                 try:
-                    _LOGGER.debug("Closing existing connection before reconnect")
-                    await self.client.async_close()
-                except Exception as exc:
-                    _LOGGER.debug("Error closing client during reconnect: %s", exc)
-                
-                try:
-                    _LOGGER.info("Attempting to reconnect to %s:%d", self.host, self.port)
-                    connected = await self.client.async_connect()
+                    connected = await self.client.async_reconnect()
                     if connected:
                         _LOGGER.info("Successfully reconnected after suspension")
                     else:
@@ -464,6 +464,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         # Connection retry logic: only track failures if we actually attempted reads
         if attempted_reads > 0:
+            timeout_reads = int(getattr(self, "_timeouts_in_cycle", 0) or 0)
             if successful_reads > 0:
                 # At least some data successfully retrieved - reset failure counter
                 if self._consecutive_failures > 0:
@@ -472,18 +473,47 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 self._consecutive_failures = 0
                 self._connection_suspended = False
                 self._last_successful_read = now
+
+                if timeout_reads and (timeout_reads / attempted_reads) >= self._timeout_ratio_reconnect_threshold:
+                    self._consecutive_timeout_cycles += 1
+                    _LOGGER.warning(
+                        "High timeout rate detected (%d/%d) - consecutive timeout cycles: %d/%d",
+                        timeout_reads,
+                        attempted_reads,
+                        self._consecutive_timeout_cycles,
+                        self._max_consecutive_timeout_cycles,
+                    )
+                else:
+                    self._consecutive_timeout_cycles = 0
+
+                if self._consecutive_timeout_cycles >= self._max_consecutive_timeout_cycles:
+                    try:
+                        _LOGGER.info(
+                            "Attempting reconnect due to repeated timeouts (%d/%d cycles)",
+                            self._consecutive_timeout_cycles,
+                            self._max_consecutive_timeout_cycles,
+                        )
+                        connected = await self.client.async_reconnect()
+                        if connected:
+                            _LOGGER.info("Successfully reconnected after repeated timeouts")
+                            self._consecutive_timeout_cycles = 0
+                            self._connection_established_at = now
+                        else:
+                            _LOGGER.warning("Reconnect attempt after repeated timeouts failed")
+                    except Exception as exc:
+                        _LOGGER.error("Exception during reconnect after repeated timeouts: %s", exc)
             elif successful_reads == 0:
                 # We attempted reads but ALL failed - connection issue
                 self._consecutive_failures += 1
                 _LOGGER.warning("All read attempts failed (%d/%d) - consecutive failures: %d/%d",
                               successful_reads, attempted_reads, 
                               self._consecutive_failures, self._max_consecutive_failures)
+                self._consecutive_timeout_cycles = 0
                 
                 # Try to reconnect immediately on failure
                 try:
                     _LOGGER.info("Attempting immediate reconnection after read failures")
-                    await self.client.async_close()
-                    connected = await self.client.async_connect()
+                    connected = await self.client.async_reconnect()
                     if connected:
                         _LOGGER.info("Successfully reconnected")
                         self._consecutive_failures = 0
@@ -504,6 +534,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     )
         else:
             _LOGGER.debug("No sensors due for update in this cycle")
+            self._consecutive_timeout_cycles = 0
 
         # Defensive check
         if self.data is None:

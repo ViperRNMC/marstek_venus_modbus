@@ -150,6 +150,34 @@ class MarstekModbusClient:
             except Exception:
                 pass
 
+    async def async_reconnect(self) -> bool:
+        """Reconnect to the Modbus TCP server by closing and re-opening the connection."""
+        async with self._request_lock:
+            _LOGGER.info("Reconnecting to Modbus server at %s:%s", self.host, self.port)
+
+            try:
+                await self.async_close()
+            except Exception as e:
+                _LOGGER.debug("Error closing Modbus client during reconnect: %s", e)
+
+            try:
+                connected = await self.async_connect()
+            except Exception as e:
+                _LOGGER.warning(
+                    "Exception while reconnecting to Modbus server at %s:%s: %s",
+                    self.host,
+                    self.port,
+                    e,
+                )
+                return False
+
+            if connected:
+                _LOGGER.info("Reconnected to Modbus server at %s:%s", self.host, self.port)
+            else:
+                _LOGGER.warning("Reconnect failed to Modbus server at %s:%s", self.host, self.port)
+
+            return connected
+
     async def async_read_register(
         self,
         register: int,
@@ -265,14 +293,15 @@ class MarstekModbusClient:
                 else:
                     regs = result.registers
                     _LOGGER.debug(
-                        "Requesting register %d (0x%04X) for sensor '%s' (type: %s, count: %s)",
+                        "Requesting register %d (0x%04X) from '%s' for sensor '%s' (type: %s, count: %s)",
                         register,
                         register,
                         sensor_key or 'unknown',
+                        self.host,
                         data_type,
                         count,
                     )
-                    _LOGGER.debug("Received data from register %d (0x%04X): %s", register, register, regs)
+                    _LOGGER.debug("Received data from '%s' for register %d (0x%04X): %s", self.host, register, register, regs)
 
                     if data_type == "int16":
                         val = regs[0]
