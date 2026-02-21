@@ -202,7 +202,7 @@
                 "name": "Gespeicherte Energie"
             },
             "mppt1_voltage": {
-            "name": "MPPT1 Spannung"
+                "name": "MPPT1 Spannung"
             },
             "mppt1_current": {
                 "name": "MPPT1 Strom"
