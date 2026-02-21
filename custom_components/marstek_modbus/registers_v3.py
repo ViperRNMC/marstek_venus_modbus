@@ -742,41 +742,6 @@ SENSOR_DEFINITIONS = [
         "precision": 0,
         "scan_interval": "high",
     },
-]
-
-# BINARY_SENSOR_DEFINITIONS
-BINARY_SENSOR_DEFINITIONS = [
-    {
-        "register": 30300,
-        "data_type": "uint16",
-        "unit": None,
-        "category": "diagnostic",
-        "device_class": "connectivity",
-        "icon": "mdi:check-network-outline",
-        "key": "wifi_status",
-        "enabled_by_default": False,
-        "scan_interval": "medium",
-    },
-    {
-        "register": 30302,
-        "data_type": "uint16",
-        "unit": None,
-        "category": "diagnostic",
-        "device_class": "connectivity",
-        "icon": "mdi:cloud-outline",
-        "key": "cloud_status",
-        "enabled_by_default": False,
-        "scan_interval": "medium",
-    },
-    # {
-    #     "register": 41010,
-    #     "data_type": "uint16",
-    #     "unit": None,
-    #     "icon": "mdi:battery-arrow-down-outline",
-    #     "key": "discharge_limit_mode",
-    #     "enabled_by_default": False,
-    #     "scan_interval": "medium",
-    # },
     {
         "register": 30020,
         "scale": 0.1,
@@ -924,6 +889,41 @@ BINARY_SENSOR_DEFINITIONS = [
         "precision": 1,
         "scan_interval": "high",
     },
+]
+
+# BINARY_SENSOR_DEFINITIONS
+BINARY_SENSOR_DEFINITIONS = [
+    {
+        "register": 30300,
+        "data_type": "uint16",
+        "unit": None,
+        "category": "diagnostic",
+        "device_class": "connectivity",
+        "icon": "mdi:check-network-outline",
+        "key": "wifi_status",
+        "enabled_by_default": False,
+        "scan_interval": "medium",
+    },
+    {
+        "register": 30302,
+        "data_type": "uint16",
+        "unit": None,
+        "category": "diagnostic",
+        "device_class": "connectivity",
+        "icon": "mdi:cloud-outline",
+        "key": "cloud_status",
+        "enabled_by_default": False,
+        "scan_interval": "medium",
+    },
+    # {
+    #     "register": 41010,
+    #     "data_type": "uint16",
+    #     "unit": None,
+    #     "icon": "mdi:battery-arrow-down-outline",
+    #     "key": "discharge_limit_mode",
+    #     "enabled_by_default": False,
+    #     "scan_interval": "medium",
+    # },
 ]
 
 # SELECT_DEFINITIONS
