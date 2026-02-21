@@ -200,6 +200,42 @@
       },
       "stored_energy": {
         "name": "Stored Energy"
+      },
+      "mppt1_voltage": {
+            "name": "MPPT1 Voltage"
+      },
+      "mppt1_current": {
+          "name": "MPPT1 Current"
+      },
+      "mppt1_power": {
+          "name": "MPPT1 Power"
+      },
+      "mppt2_voltage": {
+          "name": "MPPT2 Voltage"
+      },
+      "mppt2_current": {
+          "name": "MPPT2 Current"
+      },
+      "mppt2_power": {
+          "name": "MPPT2 Power"
+      },
+      "mppt3_voltage": {
+          "name": "MPPT3 Voltage"
+      },
+      "mppt3_current": {
+          "name": "MPPT3 Current"
+      },
+      "mppt3_power": {
+          "name": "MPPT3 Power"
+      },
+      "mppt4_voltage": {
+          "name": "MPPT4 Voltage"
+      },
+      "mppt4_current": {
+          "name": "MPPT4 Current"
+      },
+      "mppt4_power": {
+          "name": "MPPT4 Power"
       }
     },
     "binary_sensor": {
