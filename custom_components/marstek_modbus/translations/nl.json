@@ -206,12 +206,19 @@
       },
       "stored_energy": {
         "name": "Opgeslagen Energie"
+      },
+      "bluetooth_status": {
+        "name": "Bluetooth-status",
+        "state": {
+          "0": "Niet verbonden",
+          "1": "Verbonden na herstart",
+          "2": "Verbonden",
+          "3": "Actief",
+          "4": "Locked"
+        }
       }
     },
     "binary_sensor": {
-      "bluetooth_status": {
-        "name": "Bluetooth-Status"
-      },
       "wifi_status": {
         "name": "WiFi-status"
       },
