@@ -203,6 +203,9 @@
             }
         },
         "binary_sensor": {
+            "bluetooth_status": {
+                "name": "Bluetooth-Status"
+            },
             "wifi_status": {
                 "name": "WLAN-Status"
             },
