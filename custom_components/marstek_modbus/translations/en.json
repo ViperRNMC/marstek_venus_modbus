@@ -200,7 +200,7 @@
       },
       "stored_energy": {
         "name": "Stored Energy"
-      }
+      },
       "bluetooth_status": {
         "name": "Bluetooth Status",
         "state": {
@@ -210,7 +210,7 @@
           "3": "Active",
           "4": "Locked"
         }
-      },
+      }
     },
     "binary_sensor": {
       "wifi_status": {
