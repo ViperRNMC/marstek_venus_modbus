@@ -201,11 +201,18 @@
       "stored_energy": {
         "name": "Stored Energy"
       }
+      "bluetooth_status": {
+        "name": "Bluetooth Status",
+        "state": {
+          "0": "Disconnected",
+          "1": "Connected after reboot",
+          "2": "Connected",
+          "3": "Active",
+          "4": "Locked"
+        }
+      },
     },
     "binary_sensor": {
-      "bluetooth_status": {
-        "name": "Bluetooth Status"
-      },
       "wifi_status": {
         "name": "WiFi Status"
       },
