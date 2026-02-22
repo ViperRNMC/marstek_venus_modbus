@@ -200,12 +200,19 @@
             },
             "stored_energy": {
                 "name": "Gespeicherte Energie"
-            }
+            },
+      "bluetooth_status": {
+        "name": "Bluetooth-Status",
+        "state": {
+          "0": "Getrennt",
+          "1": "Nach dem Neustart verbunden",
+          "2": "Verbunden",
+          "3": "Aktiv",
+          "4": "Gesperrt"
+        }
+      }
         },
         "binary_sensor": {
-            "bluetooth_status": {
-                "name": "Bluetooth-Status"
-            },
             "wifi_status": {
                 "name": "WLAN-Status"
             },
