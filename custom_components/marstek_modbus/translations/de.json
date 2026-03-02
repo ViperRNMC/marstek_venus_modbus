@@ -255,39 +255,6 @@
         "name": "Entladebegrenzung"
       }
     },
-    "select": {
-      "user_work_mode": {
-        "name": "Modus",
-        "state": {
-          "manual": "Manuell",
-          "anti_feed": "Eigenverbrauch",
-          "trade_mode": "KI-Optimierung"
-        }
-      },
-      "force_mode": {
-        "name": "Force Mode",
-        "state": {
-          "stop": "Halt",
-          "charge": "Laden",
-          "discharge": "Entladen"
-        }
-      },
-      "grid_standard": {
-        "name": "Netzstandard",
-        "state": {
-          "Auto": "Automatisch",
-          "EN50549": "EN50549",
-          "Netherlands": "Niederlande",
-          "Germany": "Deutschland",
-          "Austria": "Österreich",
-          "United Kingdom": "Vereinigtes Königreich",
-          "Spain": "Spanien",
-          "Poland": "Polen",
-          "Italy": "Italien",
-          "China": "China"
-        }
-      }
-    },
     "switch": {
       "backup_function": {
         "name": "Backup-Funktion"
@@ -327,5 +294,4 @@
         "name": "Werkseinstellungen"
       }
     }
-  }
 }

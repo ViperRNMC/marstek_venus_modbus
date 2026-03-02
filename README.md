@@ -39,7 +39,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 ## 🚀 Installation
 
 1. Add this repository to HACS **Integrations → Custom repositories**
-[![Add repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ViperRNMC&repository=marstek_venus_modbus)
+[![Add repository to HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ViperRNMC&repository=marstek_venus_modbus&category=integration)
 2. Install the “Marstek Venus Modbus” integration
 3. Restart Home Assistant
 4. Add the integration via **Settings → Devices & Services**
@@ -70,8 +70,8 @@ The Marstek Venus Modbus integration has been tested with the following hardware
 - Elfin EW11 WiFi to RS485 Converter
 - PUSR DR134 Modbus Gateway
 - Waveshare RS485 to RJ45 Ethernet Converter
-- M5Stack RS485 + Atom S3 Lite
-For more details and updates, see GitHub issue [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25).
+- M5Stack RS485 + Atom S3 Lite [#25](https://github.com/ViperRNMC/marstek_venus_modbus/issues/25)
+- A/D/E-v3 with ethernet cable (no adapter required) [#46](https://github.com/ViperRNMC/marstek_venus_modbus/issues/46#issuecomment-3631312782) [#106](https://github.com/ViperRNMC/marstek_venus_modbus/issues/106)
 
 
 ## ⚠️ Known Issues / Bugs
