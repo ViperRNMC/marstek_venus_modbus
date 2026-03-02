@@ -52,7 +52,8 @@ SENSOR_DEFINITIONS:
         icon: "mdi:ticket-confirmation-outline"
         enabled_by_default: true
         data_type: uint16
-        precision: 0
+        scale: 0.1
+        precision: 1
         scan_interval: very_low
     comm_module_firmware:
         register: 30800
@@ -428,6 +429,13 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         precision: 0
         scan_interval: high
+    bluetooth_status:
+        register: 30301
+        data_type: uint16
+        unit: null
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: medium
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:
@@ -437,15 +445,6 @@ BINARY_SENSOR_DEFINITIONS:
         category: diagnostic
         device_class: connectivity
         icon: "mdi:check-network-outline"
-        enabled_by_default: false
-        scan_interval: medium
-    bluetooth_status:
-        register: 30301
-        data_type: uint16
-        unit: null
-        category: diagnostic
-        device_class: connectivity
-        icon: "mdi:bluetooth"
         enabled_by_default: false
         scan_interval: medium
     cloud_status:

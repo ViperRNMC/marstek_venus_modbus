@@ -33,8 +33,7 @@
         "data": {
           "unit_id": "Modbus Unit ID"
         }
-      }
-      ,
+      },
       "menu": {
         "title": "Marstek options",
         "description": "Choose which settings to configure",
@@ -233,6 +232,9 @@
       },
       "mppt4_power": {
         "name": "MPPT4 Power"
+      },
+      "bluetooth_status": {
+        "name": "Bluetooth Status"
       }
     },
     "binary_sensor": {
