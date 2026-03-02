@@ -14,6 +14,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS, DEFAULT_UNIT_ID
 
 from .helpers.modbus_client import MarstekModbusClient
+from pathlib import Path
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -109,6 +110,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self._max_consecutive_failures = 5
         self._connection_suspended = False
         self._suspension_reset_time = None
+        
+        self._consecutive_timeout_cycles = 0
+        self._max_consecutive_timeout_cycles = 3
+        self._timeout_ratio_reconnect_threshold = 0.5
         
         # Connection health tracking for diagnostics
         self._last_successful_read = None
@@ -215,8 +220,14 @@ class MarstekCoordinator(DataUpdateCoordinator):
             _LOGGER.info("Successfully connected to Modbus device at %s:%d", self.host, self.port)
         return connected
 
-    async def async_read_value(self, sensor: dict, key: str):
-        """Helper to read a single sensor value from Modbus with logging and type checking."""
+    async def async_read_value(self, sensor: dict, key: str, track_failure: bool = True):
+        """Helper to read a single sensor value from Modbus with logging and type checking.
+
+        Args:
+            sensor: sensor definition dict
+            key: the sensor key
+            track_failure: if False, timeouts will not count towards timeout metrics
+        """
         entity_type = self._entity_types.get(key, get_entity_type(sensor))
 
          # Determine scale and unit
@@ -260,9 +271,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 return None
 
         except asyncio.TimeoutError:
+            if track_failure:
+                self._timeouts_in_cycle = getattr(self, "_timeouts_in_cycle", 0) + 1
             _LOGGER.warning(
-                "Timeout reading %s '%s' at register %d - connection may be slow or incorrect",
-                entity_type, key, sensor["register"]
+                "Timeout reading %s '%s' at register %d from %s:%d - connection may be slow or incorrect",
+                entity_type, key, sensor["register"], self.client.host, self.client.port
             )
             return None
         except Exception as e:
@@ -348,6 +361,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Track if we actually attempted any reads (not just skipped due to intervals)
         attempted_reads = 0
         successful_reads = 0
+        self._timeouts_in_cycle = 0
 
         # Connection throttling: if too many failures, temporarily stop attempting connections
         if self._connection_suspended:
@@ -358,14 +372,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 
                 # Force reconnect after suspension
                 try:
-                    _LOGGER.debug("Closing existing connection before reconnect")
-                    await self.client.async_close()
-                except Exception as exc:
-                    _LOGGER.debug("Error closing client during reconnect: %s", exc)
-                
-                try:
-                    _LOGGER.info("Attempting to reconnect to %s:%d", self.host, self.port)
-                    connected = await self.client.async_connect()
+                    connected = await self.client.async_reconnect()
                     if connected:
                         _LOGGER.info("Successfully reconnected after suspension")
                     else:
@@ -464,6 +471,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         # Connection retry logic: only track failures if we actually attempted reads
         if attempted_reads > 0:
+            timeout_reads = int(getattr(self, "_timeouts_in_cycle", 0) or 0)
             if successful_reads > 0:
                 # At least some data successfully retrieved - reset failure counter
                 if self._consecutive_failures > 0:
@@ -472,6 +480,35 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 self._consecutive_failures = 0
                 self._connection_suspended = False
                 self._last_successful_read = now
+                
+                if timeout_reads and (timeout_reads / attempted_reads) >= self._timeout_ratio_reconnect_threshold:
+                    self._consecutive_timeout_cycles += 1
+                    _LOGGER.warning(
+                        "High timeout rate detected (%d/%d) - consecutive timeout cycles: %d/%d",
+                        timeout_reads,
+                        attempted_reads,
+                        self._consecutive_timeout_cycles,
+                        self._max_consecutive_timeout_cycles,
+                    )
+                else:
+                    self._consecutive_timeout_cycles = 0
+                
+                if self._consecutive_timeout_cycles >= self._max_consecutive_timeout_cycles:
+                    try:
+                        _LOGGER.info(
+                            "Attempting reconnect due to repeated timeouts (%d/%d cycles)",
+                            self._consecutive_timeout_cycles,
+                            self._max_consecutive_timeout_cycles,
+                        )
+                        connected = await self.client.async_reconnect()
+                        if connected:
+                            _LOGGER.info("Successfully reconnected after repeated timeouts")
+                            self._consecutive_timeout_cycles = 0
+                            self._connection_established_at = now
+                        else:
+                            _LOGGER.warning("Reconnect attempt after repeated timeouts failed")
+                    except Exception as exc:
+                        _LOGGER.error("Exception during reconnect after repeated timeouts: %s", exc)
             elif successful_reads == 0:
                 # We attempted reads but ALL failed - connection issue
                 self._consecutive_failures += 1
@@ -479,11 +516,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
                               successful_reads, attempted_reads, 
                               self._consecutive_failures, self._max_consecutive_failures)
                 
-                # Try to reconnect immediately on failure
+                # Try to reconnect immediately on failure (use reconnect helper)
                 try:
                     _LOGGER.info("Attempting immediate reconnection after read failures")
-                    await self.client.async_close()
-                    connected = await self.client.async_connect()
+                    connected = await self.client.async_reconnect()
                     if connected:
                         _LOGGER.info("Successfully reconnected")
                         self._consecutive_failures = 0
@@ -502,6 +538,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                         "Will retry in 5 minutes to prevent resource exhaustion.",
                         self._consecutive_failures
                     )
+                self._consecutive_timeout_cycles = 0
         else:
             _LOGGER.debug("No sensors due for update in this cycle")
 
@@ -567,22 +604,90 @@ def get_registers(version: str):
             % (version_raw, ", ".join(sorted(allowed)))
         )
 
-    # Map the validated version token to the correct registers module.
-    # Support the new tokens 'e v1/v2' and 'e v3'.
+    def _normalize_section(section):
+        """Convert mapping-based sections into the legacy list-of-dicts format."""
+        if isinstance(section, dict):
+            normalized = []
+            for key, value in section.items():
+                entry = dict(value or {})
+                entry.setdefault("key", key)
+                normalized.append(entry)
+            return normalized
+        if isinstance(section, list):
+            return section
+        return []
+
+    # Prefer YAML-based register definitions placed in the `registers/` folder.
+    # Map version tokens to YAML filenames.
+    filename_map = {
+        "e v1/v2": "e_v12.yaml",
+        "e v3": "e_v3.yaml",
+        "d": "d.yaml",
+        "a": "a.yaml",
+    }
+
+    yaml_filename = filename_map.get(version)
+    if yaml_filename:
+        yaml_path = Path(__file__).parent / "registers" / yaml_filename
+        if yaml_path.exists():
+            try:
+                import yaml
+
+                with open(yaml_path, "r", encoding="utf-8") as fh:
+                    data = yaml.safe_load(fh) or {}
+
+                return {
+                    "SENSOR_DEFINITIONS": _normalize_section(data.get("SENSOR_DEFINITIONS")),
+                    "BINARY_SENSOR_DEFINITIONS": _normalize_section(data.get("BINARY_SENSOR_DEFINITIONS")),
+                    "SELECT_DEFINITIONS": _normalize_section(data.get("SELECT_DEFINITIONS")),
+                    "SWITCH_DEFINITIONS": _normalize_section(data.get("SWITCH_DEFINITIONS")),
+                    "NUMBER_DEFINITIONS": _normalize_section(data.get("NUMBER_DEFINITIONS")),
+                    "BUTTON_DEFINITIONS": _normalize_section(data.get("BUTTON_DEFINITIONS")),
+                    "EFFICIENCY_SENSOR_DEFINITIONS": _normalize_section(
+                        data.get("EFFICIENCY_SENSOR_DEFINITIONS")
+                    ),
+                    "STORED_ENERGY_SENSOR_DEFINITIONS": _normalize_section(
+                        data.get("STORED_ENERGY_SENSOR_DEFINITIONS")
+                    ),
+                }
+            except Exception as e:
+                _LOGGER.warning("Failed to load YAML registers %s: %s", yaml_path, e)
+
+    # Fall back to legacy Python modules if YAML not present or failed to load
     if version == "e v1/v2":
         from . import registers_v12 as registers
     elif version == "e v3":
         from . import registers_v3 as registers
     elif version == "d":
-        from . import registers_v12 as registers
-        
+        from . import registers_d as registers
+    elif version == "a":
+        # No legacy Python module for A exists; return empty definitions as fallback
+        registers = None
+
+    if registers:
+        return {
+            "SENSOR_DEFINITIONS": getattr(registers, "SENSOR_DEFINITIONS", []),
+            "BINARY_SENSOR_DEFINITIONS": getattr(registers, "BINARY_SENSOR_DEFINITIONS", []),
+            "SELECT_DEFINITIONS": getattr(registers, "SELECT_DEFINITIONS", []),
+            "SWITCH_DEFINITIONS": getattr(registers, "SWITCH_DEFINITIONS", []),
+            "NUMBER_DEFINITIONS": getattr(registers, "NUMBER_DEFINITIONS", []),
+            "BUTTON_DEFINITIONS": getattr(registers, "BUTTON_DEFINITIONS", []),
+            "EFFICIENCY_SENSOR_DEFINITIONS": getattr(
+                registers, "EFFICIENCY_SENSOR_DEFINITIONS", []
+            ),
+            "STORED_ENERGY_SENSOR_DEFINITIONS": getattr(
+                registers, "STORED_ENERGY_SENSOR_DEFINITIONS", []
+            ),
+        }
+
+    # Default empty return if nothing found
     return {
-        "SENSOR_DEFINITIONS": getattr(registers, "SENSOR_DEFINITIONS", []),
-        "BINARY_SENSOR_DEFINITIONS": getattr(registers, "BINARY_SENSOR_DEFINITIONS", []),
-        "SELECT_DEFINITIONS": getattr(registers, "SELECT_DEFINITIONS", []),
-        "SWITCH_DEFINITIONS": getattr(registers, "SWITCH_DEFINITIONS", []),
-        "NUMBER_DEFINITIONS": getattr(registers, "NUMBER_DEFINITIONS", []),
-        "BUTTON_DEFINITIONS": getattr(registers, "BUTTON_DEFINITIONS", []),
-        "EFFICIENCY_SENSOR_DEFINITIONS": getattr(registers, "EFFICIENCY_SENSOR_DEFINITIONS", []),
-        "STORED_ENERGY_SENSOR_DEFINITIONS": getattr(registers, "STORED_ENERGY_SENSOR_DEFINITIONS", []),
+        "SENSOR_DEFINITIONS": [],
+        "BINARY_SENSOR_DEFINITIONS": [],
+        "SELECT_DEFINITIONS": [],
+        "SWITCH_DEFINITIONS": [],
+        "NUMBER_DEFINITIONS": [],
+        "BUTTON_DEFINITIONS": [],
+        "EFFICIENCY_SENSOR_DEFINITIONS": [],
+        "STORED_ENERGY_SENSOR_DEFINITIONS": [],
     }
