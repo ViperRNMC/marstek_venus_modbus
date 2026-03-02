@@ -98,10 +98,11 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             except (socket.gaierror, TypeError):
                 errors["base"] = "invalid_host"
             else:
-                # Prevent duplicate entries for same host and unit_id
+                # Prevent duplicate entries for same host, port and unit_id
                 for entry in self._async_current_entries():
                     if (
                         entry.data.get(CONF_HOST) == host
+                        and entry.data.get(CONF_PORT) == port
                         and entry.data.get(CONF_UNIT_ID) == unit_id
                     ):
                         return self.async_abort(reason="already_configured")
