@@ -234,14 +234,6 @@
         "name": "MPPT4 Leistung"
       },
       "bluetooth_status": {
-        "name": "Bluetooth-Status"
-      }
-    },
-    "binary_sensor": {
-      "wifi_status": {
-        "name": "WLAN-Status"
-      },
-      "bluetooth_status": {
         "name": "Bluetooth-Status",
         "state": {
           "0": "Getrennt",
@@ -250,6 +242,11 @@
           "3": "Aktiv",
           "4": "Gesperrt"
         }
+      }
+    },
+    "binary_sensor": {
+      "wifi_status": {
+        "name": "WLAN-Status"
       },
       "cloud_status": {
         "name": "Cloud-Status"

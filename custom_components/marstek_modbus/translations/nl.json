@@ -239,15 +239,7 @@
       "mppt4_power": {
         "name": "MPPT4 Vermogen"
       },
-      "bluetooth_status": {
-        "name": "Bluetooth-status"
-      }
-    },
-    "binary_sensor": {
-      "wifi_status": {
-        "name": "WiFi-status"
-      },
-      "bluetooth_status": {
+     "bluetooth_status": {
         "name": "Bluetooth-status",
         "state": {
           "0": "Niet verbonden",
@@ -256,6 +248,10 @@
           "3": "Actief",
           "4": "Locked"
         }
+    },
+    "binary_sensor": {
+      "wifi_status": {
+        "name": "WiFi-status"
       },
       "cloud_status": {
         "name": "Cloud-status"

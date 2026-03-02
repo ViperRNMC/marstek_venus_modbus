@@ -234,14 +234,6 @@
         "name": "MPPT4 Power"
       },
       "bluetooth_status": {
-        "name": "Bluetooth Status"
-      }
-    },
-    "binary_sensor": {
-      "wifi_status": {
-        "name": "WiFi Status"
-      },
-      "bluetooth_status": {
         "name": "Bluetooth Status",
         "state": {
           "0": "Disconnected",
@@ -250,6 +242,11 @@
           "3": "Active",
           "4": "Locked"
         }
+      }
+    },
+    "binary_sensor": {
+      "wifi_status": {
+        "name": "WiFi Status"
       },
       "cloud_status": {
         "name": "Cloud Status"
