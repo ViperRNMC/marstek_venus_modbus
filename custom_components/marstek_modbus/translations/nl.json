@@ -33,8 +33,7 @@
         "data": {
           "unit_id": "Modbus Unit-ID"
         }
-      }
-      ,
+      },
       "menu": {
         "title": "Marstek opties",
         "description": "Kies welke instellingen te configureren",
@@ -206,7 +205,52 @@
       },
       "stored_energy": {
         "name": "Opgeslagen Energie"
-      }
+      },
+      "mppt1_voltage": {
+        "name": "MPPT1 Spanning"
+      },
+      "mppt1_current": {
+        "name": "MPPT1 Stroom"
+      },
+      "mppt1_power": {
+        "name": "MPPT1 Vermogen"
+      },
+      "mppt2_voltage": {
+        "name": "MPPT2 Spanning"
+      },
+      "mppt2_current": {
+        "name": "MPPT2 Stroom"
+      },
+      "mppt2_power": {
+        "name": "MPPT2 Vermogen"
+      },
+      "mppt3_voltage": {
+        "name": "MPPT3 Spanning"
+      },
+      "mppt3_current": {
+        "name": "MPPT3 Stroom"
+      },
+      "mppt3_power": {
+        "name": "MPPT3 Vermogen"
+      },
+      "mppt4_voltage": {
+        "name": "MPPT4 Spanning"
+      },
+      "mppt4_current": {
+        "name": "MPPT4 Stroom"
+      },
+      "mppt4_power": {
+        "name": "MPPT4 Vermogen"
+      },
+     "bluetooth_status": {
+        "name": "Bluetooth-status",
+        "state": {
+          "0": "Niet verbonden",
+          "1": "Verbonden na herstart",
+          "2": "Verbonden",
+          "3": "Actief",
+          "4": "Locked"
+        }
     },
     "binary_sensor": {
       "wifi_status": {

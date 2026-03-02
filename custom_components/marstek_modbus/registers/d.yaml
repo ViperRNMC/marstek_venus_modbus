@@ -1,0 +1,689 @@
+# Venus D registers are untested.
+# Base register map generated from CSV (v3 Description).
+# Verify all addresses, names, and mappings on real hardware before use.
+# Some entries may be incorrect, duplicated, or unmatched.
+# See `# UNMATCHED_CSV_ENTRIES` at the end of this file.
+
+MISSING:
+    sensor:
+        - sn_code
+        - software_version
+        - ac_offgrid_power
+        - fault_status
+        - alarm_status
+    binary:
+        - discharge_limit_mode
+    select:
+        - grid_standard
+    number:
+        - charging_cutoff_capacity
+        - discharging_cutoff_capacity
+
+SENSOR_DEFINITIONS:
+    device_name:
+        register: 31000
+        count: 10
+        data_type: char
+        unit: null
+        enabled_by_default: true
+        scan_interval: very_low
+        precision: 0
+    bms_version:
+        register: 30204
+        unit: null
+        icon: "mdi:battery-check-outline"
+        category: diagnostic
+        enabled_by_default: true
+        data_type: uint16
+        precision: 0
+        scan_interval: very_low
+    vms_version:
+        register: 30202
+        unit: null
+        icon: "mdi:battery-check-outline"
+        category: diagnostic
+        enabled_by_default: true
+        data_type: uint16
+        precision: 0
+        scan_interval: very_low
+    ems_version:
+        register: 30200
+        unit: null
+        category: diagnostic
+        icon: "mdi:ticket-confirmation-outline"
+        enabled_by_default: true
+        data_type: uint16
+        scale: 0.1
+        precision: 1
+        scan_interval: very_low
+    comm_module_firmware:
+        register: 30350
+        count: 6
+        unit: null
+        category: diagnostic
+        icon: "mdi:ticket-confirmation-outline"
+        enabled_by_default: true
+        data_type: char
+        precision: 0
+        scan_interval: very_low
+    mac_address:
+        register: 30304
+        count: 6
+        unit: null
+        enabled_by_default: true
+        data_type: char
+        precision: 0
+        scan_interval: very_low
+    battery_soc:
+        register: 34002
+        scale: 0.1
+        unit: "%"
+        device_class: battery
+        state_class: measurement
+        enabled_by_default: true
+        data_type: uint16
+        precision: 2
+        scan_interval: medium
+    battery_total_energy:
+        register: 32105
+        scale: 0.001
+        unit: kWh
+        device_class: energy
+        state_class: total
+        enabled_by_default: true
+        data_type: uint16
+        precision: 3
+        scan_interval: low
+    battery_voltage:
+        register: 30100
+        scale: 0.01
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: true
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    battery_current:
+        register: 30101
+        scale: 0.1
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: true
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    battery_power:
+        register: 30001
+        count: 1
+        scale: 1
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: true
+        data_type: int16
+        precision: 1
+        scan_interval: high
+    internal_temperature:
+        register: 35000
+        scale: 0.1
+        unit: °C
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: true
+        data_type: int16
+        precision: 2
+        scan_interval: medium
+    internal_mos1_temperature:
+        register: 35001
+        scale: 0.1
+        unit: °C
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 2
+        scan_interval: medium
+    internal_mos2_temperature:
+        register: 35002
+        scale: 0.1
+        unit: °C
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 2
+        scan_interval: medium
+    ac_voltage:
+        register: 32200
+        scale: 0.1
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: true
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    ac_current:
+        register: 37004
+        scale: 0.004
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: true
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    ac_power:
+        register: 30006
+        count: 1
+        scale: 1
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: true
+        data_type: int16
+        precision: 0
+        scan_interval: high
+    ac_frequency:
+        register: 32204
+        scale: 0.1
+        unit: Hz
+        device_class: frequency
+        state_class: measurement
+        enabled_by_default: true
+        data_type: int16
+        precision: 2
+        scan_interval: medium
+    total_charging_energy:
+        register: 33000
+        count: 2
+        scale: 0.01
+        unit: kWh
+        device_class: energy
+        state_class: total_increasing
+        enabled_by_default: true
+        data_type: uint32
+        precision: 2
+        scan_interval: low
+    total_discharging_energy:
+        register: 33002
+        count: 2
+        scale: 0.01
+        unit: kWh
+        device_class: energy
+        state_class: total_increasing
+        enabled_by_default: true
+        data_type: int32
+        precision: 2
+        scan_interval: low
+    total_daily_charging_energy:
+        register: 33004
+        count: 2
+        scale: 0.01
+        unit: kWh
+        device_class: energy
+        state_class: total_increasing
+        enabled_by_default: false
+        data_type: uint32
+        precision: 2
+        scan_interval: low
+    total_daily_discharging_energy:
+        register: 33006
+        count: 2
+        scale: 0.01
+        unit: kWh
+        device_class: energy
+        state_class: total_increasing
+        enabled_by_default: false
+        data_type: int32
+        precision: 2
+        scan_interval: low
+    total_monthly_charging_energy:
+        register: 33008
+        count: 2
+        scale: 0.01
+        unit: kWh
+        device_class: energy
+        state_class: total_increasing
+        enabled_by_default: false
+        data_type: uint32
+        precision: 2
+        scan_interval: low
+    total_monthly_discharging_energy:
+        register: 33010
+        count: 2
+        scale: 0.01
+        unit: kWh
+        device_class: energy
+        state_class: total_increasing
+        enabled_by_default: false
+        data_type: int32
+        precision: 2
+        scan_interval: low
+    max_cell_temperature:
+        register: 35010
+        scale: 0.1
+        unit: °C
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    min_cell_temperature:
+        register: 35011
+        scale: 0.1
+        unit: °C
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    max_cell_voltage:
+        register: 37007
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    min_cell_voltage:
+        register: 37008
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_1_voltage:
+        register: 34018
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_2_voltage:
+        register: 34019
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_3_voltage:
+        register: 34020
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_4_voltage:
+        register: 34021
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_5_voltage:
+        register: 34022
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_6_voltage:
+        register: 34023
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_7_voltage:
+        register: 34024
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_8_voltage:
+        register: 34025
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_9_voltage:
+        register: 34026
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_10_voltage:
+        register: 34027
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_11_voltage:
+        register: 34028
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_12_voltage:
+        register: 34029
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_13_voltage:
+        register: 34030
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_14_voltage:
+        register: 34031
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_15_voltage:
+        register: 34032
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    cell_16_voltage:
+        register: 34033
+        scale: 0.001
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 3
+        scan_interval: medium
+    inverter_state:
+        register: 35100
+        scale: 1
+        unit: null
+        icon: "mdi:state-machine"
+        enabled_by_default: true
+        data_type: uint16
+        precision: 0
+        states:
+            0: Sleep
+            1: Standby
+            2: Charge
+            3: Discharge
+            4: Backup Mode
+            5: OTA Upgrade
+            6: Bypass
+        scan_interval: high
+    modbus_address:
+        register: 41100
+        data_type: uint16
+        unit: null
+        icon: "mdi:home-automation"
+        enabled_by_default: false
+        scan_interval: very_low
+        precision: 0
+    ac_offgrid_voltage:
+        register: 32300
+        scale: 0.1
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    ac_offgrid_current:
+        register: 32301
+        scale: 0.01
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    wifi_signal_strength:
+        register: 30303
+        scale: -1
+        data_type: uint16
+        device_class: diagnostic
+        unit: dBm
+        icon: "mdi:wifi"
+        category: diagnostic
+        enabled_by_default: false
+        precision: 0
+        scan_interval: high
+    bluetooth_status:
+        register: 30301
+        data_type: uint16
+        unit: null
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: medium
+
+BINARY_SENSOR_DEFINITIONS:
+    wifi_status:
+        register: 30300
+        data_type: uint16
+        unit: null
+        category: diagnostic
+        device_class: connectivity
+        icon: "mdi:check-network-outline"
+        enabled_by_default: false
+        scan_interval: medium
+    cloud_status:
+        register: 30302
+        data_type: uint16
+        unit: null
+        category: diagnostic
+        device_class: connectivity
+        icon: "mdi:cloud-outline"
+        enabled_by_default: false
+        scan_interval: medium
+
+SELECT_DEFINITIONS:
+    user_work_mode:
+        register: 43000
+        enabled_by_default: true
+        scan_interval: high
+        options:
+            manual: 0
+            anti_feed: 1
+            trade_mode: 2
+    force_mode:
+        register: 42010
+        enabled_by_default: false
+        scan_interval: high
+        options:
+            standby: 0
+            charge: 1
+            discharge: 2
+
+SWITCH_DEFINITIONS:
+    backup_function:
+        register: 41200
+        command_on: 0
+        command_off: 1
+        enabled_by_default: true
+        data_type: uint16
+        scan_interval: high
+    rs485_control_mode:
+        register: 42000
+        command_on: 21930
+        command_off: 21947
+        enabled_by_default: false
+        data_type: uint16
+        scan_interval: high
+
+NUMBER_DEFINITIONS:
+    set_charge_power:
+        register: 42020
+        enabled_by_default: false
+        icon: "mdi:battery-arrow-up-outline"
+        min: 0
+        max: 2200
+        step: 50
+        unit: W
+        data_type: uint16
+        scan_interval: high
+    set_discharge_power:
+        register: 42021
+        enabled_by_default: false
+        icon: "mdi:battery-arrow-down-outline"
+        min: 0
+        max: 2200
+        step: 50
+        unit: W
+        data_type: uint16
+        scan_interval: high
+    max_charge_power:
+        register: 44002
+        enabled_by_default: false
+        icon: "mdi:battery-arrow-up-outline"
+        min: 0
+        max: 2200
+        step: 50
+        unit: W
+        data_type: uint16
+        scan_interval: high
+    max_discharge_power:
+        register: 44003
+        enabled_by_default: false
+        icon: "mdi:battery-arrow-down-outline"
+        min: 0
+        max: 2200
+        step: 50
+        unit: W
+        data_type: uint16
+        scan_interval: high
+    charge_to_soc:
+        register: 42011
+        enabled_by_default: false
+        icon: "mdi:battery-sync-outline"
+        min: 10
+        max: 100
+        step: 1
+        unit: "%"
+        scale: 1
+        data_type: uint16
+        scan_interval: high
+
+BUTTON_DEFINITIONS:
+    reset_device:
+        register: 41000
+        command: 21930
+        icon: "mdi:restart"
+        category: diagnostic
+        enabled_by_default: false
+        data_type: uint16
+    factory_reset:
+        register: 41001
+        command: 21930
+        icon: "mdi:factory"
+        category: diagnostic
+        enabled_by_default: false
+        data_type: uint16
+
+EFFICIENCY_SENSOR_DEFINITIONS:
+    round_trip_efficiency_total:
+        key: round_trip_efficiency_total
+        unit: "%"
+        device_class: battery
+        state_class: measurement
+        mode: round_trip
+        dependency_keys:
+            charge: total_charging_energy
+            discharge: total_discharging_energy
+    round_trip_efficiency_monthly:
+        key: round_trip_efficiency_monthly
+        unit: "%"
+        device_class: battery
+        state_class: measurement
+        mode: round_trip
+        dependency_keys:
+            charge: total_monthly_charging_energy
+            discharge: total_monthly_discharging_energy
+    conversion_efficiency:
+        key: conversion_efficiency
+        unit: "%"
+        device_class: battery
+        state_class: measurement
+        mode: conversion
+        dependency_keys:
+            battery_power: battery_power
+            ac_power: ac_power
+
+STORED_ENERGY_SENSOR_DEFINITIONS:
+    stored_energy:
+        key: stored_energy
+        unit: kWh
+        device_class: energy
+        state_class: total
+        dependency_keys:
+            soc: battery_soc
+            capacity: battery_total_energy
