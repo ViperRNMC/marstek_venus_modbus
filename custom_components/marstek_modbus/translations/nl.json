@@ -245,6 +245,16 @@
       "wifi_status": {
         "name": "WiFi-status"
       },
+      "bluetooth_status": {
+        "name": "Bluetooth-status",
+        "state": {
+          "0": "Niet verbonden",
+          "1": "Verbonden na herstart",
+          "2": "Verbonden",
+          "3": "Actief",
+          "4": "Locked"
+        }
+      },
       "cloud_status": {
         "name": "Cloud-status"
       },

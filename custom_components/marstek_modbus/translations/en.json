@@ -239,6 +239,16 @@
       "wifi_status": {
         "name": "WiFi Status"
       },
+      "bluetooth_status": {
+        "name": "Bluetooth Status",
+        "state": {
+          "0": "Disconnected",
+          "1": "Connected after reboot",
+          "2": "Connected",
+          "3": "Active",
+          "4": "Locked"
+        }
+      },
       "cloud_status": {
         "name": "Cloud Status"
       },
