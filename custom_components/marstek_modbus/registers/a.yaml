@@ -74,14 +74,14 @@ SENSOR_DEFINITIONS:
         precision: 0
         scan_interval: very_low
     battery_soc:
-        register: 37005
-        scale: 1
+        register: 34002
+        scale: 0.1
         unit: "%"
         category: diagnostic
         state_class: measurement
         enabled_by_default: true
         data_type: uint16
-        precision: 1
+        precision: 2
         scan_interval: medium
     battery_total_energy:
         register: 32105
@@ -646,6 +646,15 @@ BINARY_SENSOR_DEFINITIONS:
         category: diagnostic
         device_class: connectivity
         icon: "mdi:check-network-outline"
+        enabled_by_default: false
+        scan_interval: medium
+    bluetooth_status:
+        register: 30301
+        data_type: uint16
+        unit: null
+        category: diagnostic
+        device_class: connectivity
+        icon: "mdi:bluetooth"
         enabled_by_default: false
         scan_interval: medium
     cloud_status:

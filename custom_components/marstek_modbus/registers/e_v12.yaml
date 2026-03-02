@@ -439,6 +439,15 @@ BINARY_SENSOR_DEFINITIONS:
         icon: "mdi:check-network-outline"
         enabled_by_default: false
         scan_interval: medium
+    bluetooth_status:
+        register: 30301
+        data_type: uint16
+        unit: null
+        category: diagnostic
+        device_class: connectivity
+        icon: "mdi:bluetooth"
+        enabled_by_default: false
+        scan_interval: medium
     cloud_status:
         register: 30302
         data_type: uint16
