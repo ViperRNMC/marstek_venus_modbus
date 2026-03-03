@@ -411,12 +411,18 @@ class MarstekModbusClient:
             )
             return False
 
+        # Expect caller to supply an already validated/converted 16-bit unsigned value.
+        if not isinstance(value, int):
+            _LOGGER.error("Invalid value type for write: %s. Must be int.", type(value))
+            return False
+
         if not (0 <= value <= 0xFFFF):
             _LOGGER.error(
                 "Invalid value for write: %d. Must be 0-65535.",
                 value,
             )
             return False
+        value_to_send = value
 
         attempt = 0
         while attempt < max_retries:
