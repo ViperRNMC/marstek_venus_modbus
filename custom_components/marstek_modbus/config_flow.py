@@ -62,7 +62,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self.hass,
             language,
             category="config",
-            integrations=DOMAIN,
+            integrations=[DOMAIN]
         )
 
         if user_input is not None:
@@ -152,7 +152,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
         errors = {}
         language = self.context.get("language", self.hass.config.language)
         translations = await async_get_translations(
-            self.hass, language, category="config", integrations=DOMAIN
+            self.hass, language, category="config", integrations=[DOMAIN]
         )
 
         if data is not None:
