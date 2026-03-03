@@ -128,7 +128,6 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | max_cell_temperature              | Max cell temperature                       | int16   | 2    | 0.1/1  | °C   | 35010 | 35010 | 35010 | 35010 |
 | max_cell_voltage                  | Max cell voltage                           | uint16  | 2    | 0.001  | V    | 37007 | 37007 | 37007 | 37007 |
 | min_cell_voltage                  | Min cell voltage                           | uint16  | 2    | 0.001  | V    | 37008 | 37008 | 37008 | 37008 |
-
 | cell_1_voltage                    | Cell 1 voltage                             | int16   | 2    | 0.001  | V    | 34018 | 34018 |       | 34018 |
 | cell_2_voltage                    | Cell 2 voltage                             | int16   | 2    | 0.001  | V    | 34019 | 34019 |       | 34019 |
 | cell_3_voltage                    | Cell 3 voltage                             | int16   | 2    | 0.001  | V    | 34020 | 34020 |       | 34020 |
@@ -145,7 +144,6 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | cell_14_voltage                   | Cell 14 voltage                            | int16   | 2    | 0.001  | V    | 34031 | 34031 |       | 34031 |
 | cell_15_voltage                   | Cell 15 voltage                            | int16   | 2    | 0.001  | V    | 34032 | 34032 |       | 34032 |
 | cell_16_voltage                   | Cell 16 voltage                            | int16   | 2    | 0.001  | V    | 34033 | 34033 |       | 34033 |
-
 | mppt1_voltage                     | MPPT1 array voltage                        | uint16  | 2    | 0.1    | V    | 30020 | 30020 |       |       |
 | mppt1_current                     | MPPT1 array current                        | uint16  | 2    | 0.1    | A    | 30024 | 30024 |       |       |
 | mppt1_power                       | MPPT1 array power                          | uint16  | 2    | 0.1    | W    | 30037 | 30037 |       |       |
@@ -158,7 +156,6 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | mppt4_voltage                     | MPPT4 array voltage                        | uint16  | 2    | 0.1    | V    | 30023 | 30023 |       |       |
 | mppt4_current                     | MPPT4 array current                        | uint16  | 2    | 0.1    | A    | 30027 | 30027 |       |       |
 | mppt4_power                       | MPPT4 array power                          | uint16  | 2    | 0.1    | W    | 30040 | 30040 |       |       |
-
 | inverter_state                    | Inverter / device state                    | uint16  | 2    | 1      | -    | 35100 | 35100 | 35100 | 35100 |
 | fault_status                      | Fault status bits                          | uint64  | 8    | -      | -    |       |       | 36100 |       |
 | alarm_status                      | Alarm status bits                          | uint32  | 4    | -      | -    |       |       | 36000 |       |
@@ -178,7 +175,6 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | discharging_cutoff_capacity       | Discharging cutoff (percentage)            | uint16  | 2    | 0.1    | %    |       |       | 44001 |       |
 | reset_device (button)             | Reset device command                       | uint16  | 2    | -      | -    | 41000 | 41000 | 41000 | 41000 |
 | factory_reset (button)            | Factory reset command                      | uint16  | 2    | -      | -    | 41001 | 41001 | 41001 | 41001 |
-
 | round_trip_efficiency_total       | Round-trip efficiency (total charge/discharge energies) | calculated | - | - | % |  |  |  |  |
 | round_trip_efficiency_monthly     | Round-trip efficiency (monthly charge/discharge) | calculated | - | - | % |  |  |  |  |
 | conversion_efficiency             | Conversion efficiency (battery ↔ AC)       | calculated | - | - | % |  |  |  |  |
