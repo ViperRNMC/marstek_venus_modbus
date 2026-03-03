@@ -83,83 +83,110 @@ The Marstek Venus Modbus integration has been tested with the following hardware
 
 
 ## 📘 Modbus Registers Used
+## 📘 Modbus Registers Used
 
-The following Modbus registers are used by this integration:
+Register definitions live in `custom_components/marstek_modbus/registers/`.
 
-| Reg12 | Reg3  | Name                             | Type     | Bytes | Scale | Unit | HA type       | Description / Options / Commands                                            |
-|:-----:|:-----:|:---------------------------------|:---------|:-----:|:-----:|:----:|:-------------:|:----------------------------------------------------------------------------|
-| 30300 | 30300 | WiFi Status                      | uint16   | 2     | 1     | -    | binary_sensor | WiFi connection status (0=Disconnected, 1=Connected)                        |
-| 30302 | 30302 | Cloud Status                     | uint16   | 2     | 1     | -    | binary_sensor | Cloud connection status (0=Disconnected, 1=Connected)                       |
-| 30303 | 30303 | WiFi Signal Strength             | uint16   | 2     | -1    | dBm  | sensor        | WiFi signal strength in dBm                                                 |
-| 30399 | 30204 | BMS Version                      | uint16   | 2     | 1     | -    | sensor        | Battery Management System version                                           |
-|  N/A  | 30202 | VMS Version                      | uint16   | 2     | 1     | -    | sensor        | VMS version                                                                 |
-| 30401 | 30200 | EMS Version                      | uint16   | 2     | 1     | -    | sensor        | EMS version                                                                 |
-| 30402 | 30304 | MAC Address                      | char     | 12    | -     | -    | sensor        | MAC address                                                                 |
-| 30800 | 30350 | Communication Module Firmware    | char     | 12    | -     | -    | sensor        | Firmware version of communication module                                    |
-| 31000 | 31000 | Device Name                      | char     | 20    | -     | -    | sensor        | Device name stored as string                                                |
-| 31100 |  N/A  | Software Version                 | uint16   | 2     | 0.01  | -    | sensor        | Software version                                                            |
-| 31200 |  N/A  | SN Code                          | char     | 20    | -     | -    | sensor        | Serial number code                                                          |
-| 32100 | 30100 | Battery Voltage                  | uint16   | 2     | 0.01  | V    | sensor        | Battery voltage                                                             |
-| 32101 | 30101 | Battery Current                  | int16    | 2     | 0.01  | A    | sensor        | Battery current                                                             |
-| 32102 | 30001 | Battery Power                    | int32/16 | 4/2   | 1     | W    | sensor        | Battery power                                                               |
-| 32104 | 37005 | Battery SOC                      | uint16   | 2     | 1     | %    | sensor        | Battery State of Charge                                                     |
-| 32105 | 32105 | Battery Total Energy             | uint16   | 2     | 0.001 | kWh  | sensor        | Total stored battery energy                                                 |
-| 32200 | 32200 | AC Voltage                       | uint16   | 2     | 0.1   | V    | sensor        | Battery AC voltage                                                          |
-| 32201 | 32201 | AC Current                       | int16    | 2     | 0.01  | A    | sensor        | Battery AC current                                                          |
-| 32202 | 30006 | AC Power                         | int32/16 | 4/2   | 1     | W    | sensor        | Battery AC power                                                            |
-| 32204 | 32204 | AC Frequency                     | int16    | 2     | 0.01  | Hz   | sensor        | Battery AC frequency                                                        |
-| 32300 | 32300 | AC Offgrid Voltage               | uint16   | 2     | 0.1   | V    | sensor        | AC Offgrid voltage                                                          |
-| 32301 | 32301 | AC Offgrid Current               | uint16   | 2     | 0.01  | A    | sensor        | AC Offgrid current                                                          |
-| 32302 |  N/A  | AC Offgrid Power                 | int32    | 4     | 1     | W    | sensor        | AC Offgrid power                                                            |
-| 33000 | 33000 | Total Charging Energy            | uint32   | 4     | 0.01  | kWh  | sensor        | Total energy charged into battery                                           |
-| 33002 | 33002 | Total Discharging Energy         | int32    | 4     | 0.01  | kWh  | sensor        | Total energy discharged from battery                                        |
-| 33004 | 33004 | Total Daily Charging Energy      | uint32   | 4     | 0.01  | kWh  | sensor        | Total daily energy charged into battery                                     |
-| 33006 | 33006 | Total Daily Discharging Energ    | int32    | 4     | 0.01  | kWh  | sensor        | Total daily energy discharged from battery                                  |
-| 33008 | 33008 | Total Monthly Charging Energy    | uint32   | 4     | 0.01  | kWh  | sensor        | Total monthly energy charged into battery                                   |
-| 33010 | 33010 | Total Monthly Discharging Energy | int32    | 4     | 0.01  | kWh  | sensor        | Total monthly energy discharged from battery                                |
-| 35000 | 35000 | Internal Temperature             | int16    | 2     | 0.1   | °C   | sensor        | Internal device temperature                                                 |
-| 35001 | 35001 | Internal MOS1 Temperature        | int16    | 2     | 0.1   | °C   | sensor        | Internal MOS1 temperature                                                   |
-| 35002 | 35002 | Internal MOS2 Temperature        | int16    | 2     | 0.1   | °C   | sensor        | Internal MOS2 temperature                                                   |
-| 35010 | 35010 | Max Cell Temperature             | int16    | 2     | 1     | °C   | sensor        | Maximum cell temperature                                                    |
-| 35011 | 35011 | Min Cell Temperature             | int16    | 2     | 1     | °C   | sensor        | Minimum cell temperature                                                    |
-| 35100 | 35100 | Inverter State                   | uint16   | 2     | 1     | -    | sensor        | Inverter state (0=Sleep, 1=Standby, 2=Charge, 3=Discharge, 4=Backup, 5=OTA) |
-| 37007 | 37007 | Max Cell Voltage                 | uint16   | 2     | 0.001 | V    | sensor        | Maximum cell voltage across battery cells                                   |
-| 37008 | 37008 | Min Cell Voltage                 | uint16   | 2     | 0.001 | V    | sensor        | Minimum cell voltage across battery cells                                   |
-|  N/A  | 34018 | Cell 1 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 1 voltage                                                              |
-|  N/A  | 34019 | Cell 2 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 2 voltage                                                              |
-|  N/A  | 34020 | Cell 3 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 3 voltage                                                              |
-|  N/A  | 34021 | Cell 4 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 4 voltage                                                              |
-|  N/A  | 34022 | Cell 5 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 5 voltage                                                              |
-|  N/A  | 34023 | Cell 6 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 6 voltage                                                              |
-|  N/A  | 34024 | Cell 7 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 7 voltage                                                              |
-|  N/A  | 34025 | Cell 8 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 8 voltage                                                              |
-|  N/A  | 34026 | Cell 9 Voltage                   | int16    | 2     | 0.001 | V    | sensor        | Cell 9 voltage                                                              |
-|  N/A  | 34027 | Cell 10 Voltage                  | int16    | 2     | 0.001 | V    | sensor        | Cell 10 voltage                                                             |
-|  N/A  | 34028 | Cell 11 Voltage                  | int16    | 2     | 0.001 | V    | sensor        | Cell 11 voltage                                                             |
-|  N/A  | 34029 | Cell 12 Voltage                  | int16    | 2     | 0.001 | V    | sensor        | Cell 12 voltage                                                             |
-|  N/A  | 34030 | Cell 13 Voltage                  | int16    | 2     | 0.001 | V    | sensor        | Cell 13 voltage                                                             |
-|  N/A  | 34031 | Cell 14 Voltage                  | int16    | 2     | 0.001 | V    | sensor        | Cell 14 voltage                                                             |
-|  N/A  | 34032 | Cell 15 Voltage                  | int16    | 2     | 0.001 | V    | sensor        | Cell 15 voltage                                                             |
-|  N/A  | 34033 | Cell 16 Voltage                  | int16    | 2     | 0.001 | V    | sensor        | Cell 16 voltage                                                             |
-| 36000 |  N/A  | Alarm Status                     | uint16   | 4     | -     | -    | sensor        | Alarm status bits (see bit descriptions)                                    |
-| 36100 |  N/A  | Fault Status                     | uint16   | 8     | -     | -    | sensor        | Fault status bits (64 bits total over 4 registers)                          |
-| 41010 |  N/A  | Discharge Limit                  | uint16   | 2     | 1     | -    | binary_sensor | Discharge limit mode (0=High 2500 W, 1=Low 800 W)                           |
-| 41100 | 41100 | Modbus Address                   | uint16   | 2     | -     | -    | sensor        | Modbus address (slave ID)                                                   |
-| 41200 | 41200 | Backup Function                  | uint16   | 2     | -     | -    | switch        | Battery backup switch (On=0 Enable, Off=1 Disable)                          |
-| 42000 | 42000 | RS485 Control Mode               | uint16   | 2     | -     | -    | switch        | RS485 control mode (On=21930, Off=21947)                                    |
-| 42010 | 42010 | Force Mode                       | uint16   | 2     | -     | -    | select        | Force mode (None=0, Charge=1, Discharge=2)                                  |
-| 42011 | 42011 | Charge to SOC                    | uint16   | 2     | 1     | %    | number        | Charge/discharge to SOC (10–100%) step 1%                                   |
-| 42020 | 42020 | Set Forcible Charge Power        | uint16   | 2     | -     | W    | number        | Power limit forced charging (0–2500 W step 50 W)                            |
-| 42021 | 42021 | Set Forcible Discharge Power     | uint16   | 2     | -     | W    | number        | Power limit forced discharging (0–2500 W step 50 W)                         |
-| 43000 | 43000 | User Work Mode                   | uint16   | 2     | -     | -    | select        | User work mode (Manual=0, Anti-Feed=1, Trade Mode=2)                        |
-| 44000 |  N/A  | Charging Cutoff Capacity         | uint16   | 2     | 0.1   | %    | number        | Charging cutoff (80–100% step 0.1%)                                         |
-| 44001 |  N/A  | Discharging Cutoff Capacity      | uint16   | 2     | 0.1   | %    | number        | Discharging cutoff (12–30% step 0.1%)                                       |
-| 44002 | 44002 | Max Charge Power                 | uint16   | 2     | -     | W    | number        | Maximum charge power (0–2500 W step 50 W)                                   |
-| 44003 | 44003 | Max Discharge Power              | uint16   | 2     | -     | W    | number        | Maximum discharge power (0–2500 W step 50 W)                                |
-| 44100 |  N/A  | Grid Standard                    | uint16   | 2     | -     | -    | select        | Grid standards (Auto=0, EN50549=1, Netherlands=2, Germany=3, etc.)          |
-| —     | —     | Round-Trip Efficiency Total      | -        | -     | -     | %    | sensor        | Efficiency from total charging/discharging and SOC                          |
-| —     | —     | Round-Trip Efficiency Monthly    | -        | -     | -     | %    | sensor        | Efficiency from monthly charging/discharging and SOC                        |
-| —     | —     | Conversion Efficiency            | -        | -     | -     | %    | sensor        | Actual charging/discharging conversion efficiency                           |
-| —     | —     | Stored Energy                    | -        | -     | -     | kWh  | sensor        | Calculated stored energy from SOC and battery capacity                      |
 
-_Note: For access to registers in the 42000–42999 range, the battery must be set to RS485 control mode._
+Below is a per-key table showing descriptive fields and the register defined in each YAML file. Columns `Type`, `Bytes`, `Scale` and `Unit` are taken from the YAML definitions when present.
+
+| Key / Name                        | Description                                | Type    | Bytes | Scale  | Unit | a     | d     | e_v12 | e_v3 |
+|:----------------------------------|:-------------------------------------------|:--------|:-----:|:------:|:----:|:-----:|:-----:|:------:|:-----:|
+| device_name                       | Device name (string)                       | char    | 20   | -      | -    | 31000 | 31000 | 31000 | 31000 |
+| sn_code                           | Device serial / SN code                    | char    | 20   | -      | -    |       |       | 31200 |       |
+| software_version                  | Device software version                    | uint16  | 2    | 0.01   | -    |       |       | 31100 |       |
+| bms_version                       | BMS firmware version                       | uint16  | 2    | -      | -    | 30204 | 30204 | 31102 | 30204 |
+| vms_version                       | VMS firmware version                       | uint16  | 2    | -      | -    | 30202 | 30202 |       | 30202 |
+| ems_version                       | EMS firmware version (special formatting)  | uint16  | 2    | 1      | -    | 30200 | 30200 | 31101 | 30200 |
+| mac_address                       | MAC address                                | char    | 12   | -      | -    | 30304 | 30304 | 30402 | 30304 |
+| comm_module_firmware              | Communication module firmware              | char    | 12   | -      | -    | 30350 | 30350 | 30800 | 30350 |
+| wifi_signal_strength              | WiFi RSSI                                  | uint16  | 2    | -1     | dBm  | 30303 | 30303 | 30303 | 30303 |
+| bluetooth_status                  | Bluetooth connectivity/status              | uint16  | 2    | -      | -    | 30301 | 30301 | 30301 | 30301 |
+| wifi_status (binary)              | WiFi connected (0/1)                       | uint16  | 2    | 1      | -    | 30300 | 30300 | 30300 | 30300 |
+| cloud_status (binary)             | Cloud connected (0/1)                      | uint16  | 2    | 1      | -    | 30302 | 30302 | 30302 | 30302 |
+| battery_soc                       | State of charge                            | uint16  | 2    | 0.1/1  | %    | 34002 | 34002 | 32104 | 34002 |
+| battery_total_energy              | Total stored energy                        | uint16  | 2    | 0.001  | kWh  | 32105 | 32105 | 32105 | 32105 |
+| battery_voltage                   | Battery voltage                            | uint16  | 2    | 0.01   | V    | 30100 | 30100 | 32100 | 30100 |
+| battery_current                   | Battery current                            | int16   | 2    | 0.1/0.01| A   | 30101 | 30101 | 32101 | 30101 |
+| battery_power                     | Battery power                              | int16/32| 2/4  | 1      | W    | 30001 | 30001 | 32102 | 30001 |
+| total_charging_energy             | Total charging energy                      | uint32  | 4    | 0.01   | kWh  | 33000 | 33000 | 33000 | 33000 |
+| total_discharging_energy          | Total discharging energy                   | int32   | 4    | 0.01   | kWh  | 33002 | 33002 | 33002 | 33002 |
+| total_daily_charging_energy       | Total daily charging energy                | uint32  | 4    | 0.01   | kWh  | 33004 | 33004 | 33004 | 33004 |
+| total_daily_discharging_energy    | Total daily discharging energy             | int32   | 4    | 0.01   | kWh  | 33006 | 33006 | 33006 | 33006 |
+| total_monthly_charging_energy     | Total monthly charging energy              | uint32  | 4    | 0.01   | kWh  | 33008 | 33008 | 33008 | 33008 |
+| total_monthly_discharging_energy  | Total monthly discharging energy           | int32   | 4    | 0.01   | kWh  | 33010 | 33010 | 33010 | 33010 |
+| ac_voltage                        | AC voltage                                 | uint16  | 2    | 0.1    | V    | 32200 | 32200 | 32200 | 32200 |
+| ac_current                        | AC current                                 | int16   | 2    | 0.004/0.01| A  | 37004 | 37004 | 32201 | 37004 |
+| ac_power                          | AC power                                   | int16/32| 2/4  | 1      | W    | 30006 | 30006 | 32202 | 30006 |
+| ac_frequency                      | AC frequency                               | int16   | 2    | 0.1/0.01| Hz  | 32204 | 32204 | 32204 | 32204 |
+| ac_offgrid_voltage                | AC offgrid voltage                         | uint16  | 2    | 0.1    | V    | 32300 | 32300 | 32300 | 32300 |
+| ac_offgrid_current                | AC offgrid current                         | uint16  | 2    | 0.01   | A    | 32301 | 32301 | 32301 | 32301 |
+| ac_offgrid_power                  | AC offgrid power                           | int32   | 4    | 1      | W    | 32302 | 32302 | 32302 | 32302 |
+| internal_temperature              | Internal device temperature                | int16   | 2    | 0.1    | °C   | 35000 | 35000 | 35000 | 35000 |
+| internal_mos1_temperature         | MOS1 internal temperature                  | int16   | 2    | 0.1    | °C   | 35001 | 35001 | 35001 | 35001 |
+| internal_mos2_temperature         | MOS2 internal temperature                  | int16   | 2    | 0.1    | °C   | 35002 | 35002 | 35002 | 35002 |
+| max_cell_temperature              | Max cell temperature                       | int16   | 2    | 0.1/1  | °C   | 35010 | 35010 | 35010 | 35010 |
+| max_cell_voltage                  | Max cell voltage                           | uint16  | 2    | 0.001  | V    | 37007 | 37007 | 37007 | 37007 |
+| min_cell_voltage                  | Min cell voltage                           | uint16  | 2    | 0.001  | V    | 37008 | 37008 | 37008 | 37008 |
+
+| cell_1_voltage                    | Cell 1 voltage                             | int16   | 2    | 0.001  | V    | 34018 | 34018 |       | 34018 |
+| cell_2_voltage                    | Cell 2 voltage                             | int16   | 2    | 0.001  | V    | 34019 | 34019 |       | 34019 |
+| cell_3_voltage                    | Cell 3 voltage                             | int16   | 2    | 0.001  | V    | 34020 | 34020 |       | 34020 |
+| cell_4_voltage                    | Cell 4 voltage                             | int16   | 2    | 0.001  | V    | 34021 | 34021 |       | 34021 |
+| cell_5_voltage                    | Cell 5 voltage                             | int16   | 2    | 0.001  | V    | 34022 | 34022 |       | 34022 |
+| cell_6_voltage                    | Cell 6 voltage                             | int16   | 2    | 0.001  | V    | 34023 | 34023 |       | 34023 |
+| cell_7_voltage                    | Cell 7 voltage                             | int16   | 2    | 0.001  | V    | 34024 | 34024 |       | 34024 |
+| cell_8_voltage                    | Cell 8 voltage                             | int16   | 2    | 0.001  | V    | 34025 | 34025 |       | 34025 |
+| cell_9_voltage                    | Cell 9 voltage                             | int16   | 2    | 0.001  | V    | 34026 | 34026 |       | 34026 |
+| cell_10_voltage                   | Cell 10 voltage                            | int16   | 2    | 0.001  | V    | 34027 | 34027 |       | 34027 |
+| cell_11_voltage                   | Cell 11 voltage                            | int16   | 2    | 0.001  | V    | 34028 | 34028 |       | 34028 |
+| cell_12_voltage                   | Cell 12 voltage                            | int16   | 2    | 0.001  | V    | 34029 | 34029 |       | 34029 |
+| cell_13_voltage                   | Cell 13 voltage                            | int16   | 2    | 0.001  | V    | 34030 | 34030 |       | 34030 |
+| cell_14_voltage                   | Cell 14 voltage                            | int16   | 2    | 0.001  | V    | 34031 | 34031 |       | 34031 |
+| cell_15_voltage                   | Cell 15 voltage                            | int16   | 2    | 0.001  | V    | 34032 | 34032 |       | 34032 |
+| cell_16_voltage                   | Cell 16 voltage                            | int16   | 2    | 0.001  | V    | 34033 | 34033 |       | 34033 |
+
+| mppt1_voltage                     | MPPT1 array voltage                        | uint16  | 2    | 0.1    | V    | 30020 | 30020 |       |       |
+| mppt1_current                     | MPPT1 array current                        | uint16  | 2    | 0.1    | A    | 30024 | 30024 |       |       |
+| mppt1_power                       | MPPT1 array power                          | uint16  | 2    | 0.1    | W    | 30037 | 30037 |       |       |
+| mppt2_voltage                     | MPPT2 array voltage                        | uint16  | 2    | 0.1    | V    | 30021 | 30021 |       |       |
+| mppt2_current                     | MPPT2 array current                        | uint16  | 2    | 0.1    | A    | 30025 | 30025 |       |       |
+| mppt2_power                       | MPPT2 array power                          | uint16  | 2    | 0.1    | W    | 30038 | 30038 |       |       |
+| mppt3_voltage                     | MPPT3 array voltage                        | uint16  | 2    | 0.1    | V    | 30022 | 30022 |       |       |
+| mppt3_current                     | MPPT3 array current                        | uint16  | 2    | 0.1    | A    | 30026 | 30026 |       |       |
+| mppt3_power                       | MPPT3 array power                          | uint16  | 2    | 0.1    | W    | 30039 | 30039 |       |       |
+| mppt4_voltage                     | MPPT4 array voltage                        | uint16  | 2    | 0.1    | V    | 30023 | 30023 |       |       |
+| mppt4_current                     | MPPT4 array current                        | uint16  | 2    | 0.1    | A    | 30027 | 30027 |       |       |
+| mppt4_power                       | MPPT4 array power                          | uint16  | 2    | 0.1    | W    | 30040 | 30040 |       |       |
+
+| inverter_state                    | Inverter / device state                    | uint16  | 2    | 1      | -    | 35100 | 35100 | 35100 | 35100 |
+| fault_status                      | Fault status bits                          | uint64  | 8    | -      | -    |       |       | 36100 |       |
+| alarm_status                      | Alarm status bits                          | uint32  | 4    | -      | -    |       |       | 36000 |       |
+| modbus_address                    | Modbus slave/unit id                       | uint16  | 2    | -      | -    | 41100 | 41100 | 41100 | 41100 |
+| rs485_control_mode (switch)       | RS485 control mode (write commands)        | uint16  | 2    | -      | -    | 42000 | 42000 | 42000 | 42000 |
+| backup_function (switch)          | Backup function control                    | uint16  | 2    | -      | -    | 41200 | 41200 | 41200 | 41200 |
+| force_mode (select)               | Force mode (None/Charge/Discharge)         | uint16  | 2    | -      | -    | 42010 | 42010 | 42010 | 42010 |
+| user_work_mode (select)           | User Work Mode (manual/anti_feed/trade)    | uint16  | 2    | -      | -    | 43000 | 43000 | 43000 | 43000 |
+| discharge_limit_mode (binary)     | Discharge limit mode (diagnostic)          | uint16  | 2    | -      | -    |       |       | 41010 |       |
+| grid_standard (select)            | Grid standard / region selection           | uint16  | 2    | -      | -    |       |       | 44100 |       |
+| charge_to_soc (number)            | Charge/discharge to SOC (0-100%)           | uint16  | 2    | 1      | %    | 42011 | 42011 | 42011 | 42011 |
+| set_charge_power (number)         | Forcible charge power setpoint             | uint16  | 2    | -      | W    | 42020 | 42020 | 42020 | 42020 |
+| set_discharge_power (number)      | Forcible discharge power setpoint          | uint16  | 2    | -      | W    | 42021 | 42021 | 42021 | 42021 |
+| max_charge_power (number)         | Max allowed charge power                   | uint16  | 2    | -      | W    | 44002 | 44002 | 44002 | 44002 |
+| max_discharge_power (number)      | Max allowed discharge power                | uint16  | 2    | -      | W    | 44003 | 44003 | 44003 | 44003 |
+| charging_cutoff_capacity (number) | Charging cutoff (percentage)               | uint16  | 2    | 0.1    | %    |       |       | 44000 |       |
+| discharging_cutoff_capacity       | Discharging cutoff (percentage)            | uint16  | 2    | 0.1    | %    |       |       | 44001 |       |
+| reset_device (button)             | Reset device command                       | uint16  | 2    | -      | -    | 41000 | 41000 | 41000 | 41000 |
+| factory_reset (button)            | Factory reset command                      | uint16  | 2    | -      | -    | 41001 | 41001 | 41001 | 41001 |
+
+| round_trip_efficiency_total       | Round-trip efficiency (total charge/discharge energies) | calculated | - | - | % |  |  |  |  |
+| round_trip_efficiency_monthly     | Round-trip efficiency (monthly charge/discharge) | calculated | - | - | % |  |  |  |  |
+| conversion_efficiency             | Conversion efficiency (battery ↔ AC)       | calculated | - | - | % |  |  |  |  |
+| stored_energy                     | Stored battery energy (SOC × capacity)     | calculated | - | - | kWh |  |  |  |  |
+
+_Notes:_
+- Columns `a`, `d`, `e_v12` and `e_v3` correspond to the YAML files under `custom_components/marstek_modbus/registers/`.
+- `Bytes` shows the typical byte size for the key (each Modbus register = 2 bytes).
+- Blank cells mean that YAML does not define that key (or the value is calculated and has no direct Modbus register).
+- The `rs485_control_mode` switch (register 42000) uses write commands (command_on=21930, command_off=21947) to trigger RS485 control operations; use with caution.
+- For access to registers in the 42000–42999 range, the battery must be set to RS485 control mode.
