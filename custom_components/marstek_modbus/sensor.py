@@ -101,8 +101,42 @@ class MarstekSensor(CoordinatorEntity, SensorEntity):
         value = self.coordinator.data[self._key]
 
         if isinstance(value, (int, float)):
-            value = value * self.definition.get("scale", 1) + self.definition.get("offset", 0)
-            value = round(value, self.definition.get("precision", 0))
+            # Special-case: EMS version is encoded as an integer where
+            # values with 4 digits encode a decimal in the last digit
+            # (e.g. 1573 -> 157.3), while 3-digit values are whole numbers
+            # (e.g. 158 -> 158). Handle that before applying generic scale.
+            if self._key == "ems_version":
+                try:
+                    iv = int(value)
+                except Exception:
+                    iv = None
+
+                if iv is not None:
+                    if iv >= 1000:
+                        # interpret last digit as decimal (tenths)
+                        value = round(iv / 10.0, 1)
+                    else:
+                        value = int(iv)
+                    # return early after mapping; skip generic scaling
+                    if isinstance(value, float) and value.is_integer():
+                        value = int(value)
+                    # apply states mapping below
+                else:
+                    # fall back to generic handling if conversion fails
+                    pass
+            else:
+                # Apply scaling/offset and round according to precision.
+                scale = self.definition.get("scale", 1)
+                offset = self.definition.get("offset", 0)
+                precision = int(self.definition.get("precision", 0) or 0)
+
+                value = float(value) * scale + offset
+                value = round(value, precision)
+
+                # If the rounded value has no fractional component, return int
+                # so Home Assistant does not render an unnecessary trailing .0.
+                if isinstance(value, float) and value.is_integer():
+                    value = int(value)
 
         if self.states and value in self.states:
             return self.states[value]

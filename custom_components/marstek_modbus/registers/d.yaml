@@ -8,7 +8,6 @@ MISSING:
     sensor:
         - sn_code
         - software_version
-        - ac_offgrid_power
         - fault_status
         - alarm_status
     binary:
@@ -53,8 +52,8 @@ SENSOR_DEFINITIONS:
         icon: "mdi:ticket-confirmation-outline"
         enabled_by_default: true
         data_type: uint16
-        scale: 0.1
-        precision: 1
+        scale: 1
+        precision: 0
         scan_interval: very_low
     comm_module_firmware:
         register: 30350
@@ -507,6 +506,17 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         precision: 1
         scan_interval: medium
+    ac_offgrid_power:
+        register: 32302
+        count: 2
+        scale: 1
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int32
+        precision: 0
+        scan_interval: high
     wifi_signal_strength:
         register: 30303
         scale: -1
@@ -522,6 +532,7 @@ SENSOR_DEFINITIONS:
         register: 30301
         data_type: uint16
         unit: null
+        icon: "mdi:bluetooth"
         category: diagnostic
         enabled_by_default: false
         scan_interval: medium

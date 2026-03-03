@@ -52,8 +52,8 @@ SENSOR_DEFINITIONS:
         icon: "mdi:ticket-confirmation-outline"
         enabled_by_default: true
         data_type: uint16
-        scale: 0.1
-        precision: 1
+        scale: 1
+        precision: 0
         scan_interval: very_low
     comm_module_firmware:
         register: 30800
@@ -433,6 +433,7 @@ SENSOR_DEFINITIONS:
         register: 30301
         data_type: uint16
         unit: null
+        icon: "mdi:bluetooth"
         category: diagnostic
         enabled_by_default: false
         scan_interval: medium
