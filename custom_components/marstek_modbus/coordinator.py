@@ -309,8 +309,41 @@ class MarstekCoordinator(DataUpdateCoordinator):
             value,
         )
 
+        # Determine data_type for this key (numbers typically in NUMBER_DEFINITIONS)
+        data_type = None
         try:
-            success = await self.client.async_write_register(register=register, value=value)
+            defn = next((d for d in self.NUMBER_DEFINITIONS if d.get("key") == key), None)
+            if not defn:
+                # fallback to switches/selects if user configured writes elsewhere
+                defn = next((d for d in self.SWITCH_DEFINITIONS if d.get("key") == key), None)
+            if defn:
+                data_type = defn.get("data_type")
+        except Exception:
+            data_type = None
+
+        # Default to uint16 when unknown
+        if not data_type:
+            data_type = "uint16"
+
+        # Convert/validate value according to data_type
+        value_to_send = None
+        if data_type == "int16":
+            if not isinstance(value, int):
+                _LOGGER.error("Value for %s '%s' must be int for data_type int16", entity_type, key)
+                return False
+            value_to_send = value & 0xFFFF
+        elif data_type == "uint16":
+            if not isinstance(value, int) or not (0 <= value <= 0xFFFF):
+                _LOGGER.error("Value for %s '%s' must be 0..65535 for data_type uint16", entity_type, key)
+                return False
+            value_to_send = value
+        else:
+            # Not implemented conversion for 32-bit types here
+            _LOGGER.error("Unsupported data_type '%s' for key '%s' on write", data_type, key)
+            return False
+
+        try:
+            success = await self.client.async_write_register(register=register, value=value_to_send)
             
             if success:
                 _LOGGER.debug(
@@ -319,7 +352,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     key,
                     register,
                     register,
-                    value,
+                    value_to_send,
                     scale if scale is not None else 1,
                     unit if unit is not None else "N/A",
                 )
