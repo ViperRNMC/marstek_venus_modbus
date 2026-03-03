@@ -8,7 +8,6 @@ MISSING:
     sensor:
         - sn_code
         - software_version
-        - ac_offgrid_power
         - fault_status
         - alarm_status
     binary:
@@ -26,6 +25,7 @@ SENSOR_DEFINITIONS:
         data_type: char
         unit: null
         enabled_by_default: true
+        icon: "mdi:package-variant-closed"
         scan_interval: very_low
         precision: 0
     bms_version:
@@ -53,8 +53,8 @@ SENSOR_DEFINITIONS:
         icon: "mdi:ticket-confirmation-outline"
         enabled_by_default: true
         data_type: uint16
-        scale: 0.1
-        precision: 1
+        scale: 1
+        precision: 0
         scan_interval: very_low
     comm_module_firmware:
         register: 30350
@@ -71,6 +71,7 @@ SENSOR_DEFINITIONS:
         count: 6
         unit: null
         enabled_by_default: true
+        icon: "mdi:ethernet"
         data_type: char
         precision: 0
         scan_interval: very_low
@@ -79,6 +80,7 @@ SENSOR_DEFINITIONS:
         scale: 0.1
         unit: "%"
         category: diagnostic
+        device_class: battery
         state_class: measurement
         enabled_by_default: true
         data_type: uint16
@@ -507,6 +509,17 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         precision: 1
         scan_interval: medium
+    ac_offgrid_power:
+        register: 32302
+        count: 2
+        scale: 1
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int32
+        precision: 0
+        scan_interval: high
     wifi_signal_strength:
         register: 30303
         scale: -1
@@ -524,7 +537,7 @@ SENSOR_DEFINITIONS:
         unit: V
         device_class: voltage
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -534,7 +547,7 @@ SENSOR_DEFINITIONS:
         unit: A
         device_class: current
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -544,7 +557,7 @@ SENSOR_DEFINITIONS:
         unit: W
         device_class: power
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: high
@@ -554,7 +567,7 @@ SENSOR_DEFINITIONS:
         unit: V
         device_class: voltage
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -564,7 +577,7 @@ SENSOR_DEFINITIONS:
         unit: A
         device_class: current
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -574,7 +587,7 @@ SENSOR_DEFINITIONS:
         unit: W
         device_class: power
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: high
@@ -584,7 +597,7 @@ SENSOR_DEFINITIONS:
         unit: V
         device_class: voltage
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -594,7 +607,7 @@ SENSOR_DEFINITIONS:
         unit: A
         device_class: current
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -604,7 +617,7 @@ SENSOR_DEFINITIONS:
         unit: W
         device_class: power
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: high
@@ -614,7 +627,7 @@ SENSOR_DEFINITIONS:
         unit: V
         device_class: voltage
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -624,7 +637,7 @@ SENSOR_DEFINITIONS:
         unit: A
         device_class: current
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -634,7 +647,7 @@ SENSOR_DEFINITIONS:
         unit: W
         device_class: power
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: high
@@ -642,6 +655,7 @@ SENSOR_DEFINITIONS:
         register: 30301
         data_type: uint16
         unit: null
+        icon: "mdi:bluetooth"
         category: diagnostic
         enabled_by_default: false
         scan_interval: medium
@@ -773,21 +787,23 @@ EFFICIENCY_SENSOR_DEFINITIONS:
     round_trip_efficiency_total:
         key: round_trip_efficiency_total
         unit: "%"
+        icon: "mdi:percent"
         category: diagnostic
         state_class: measurement
         mode: round_trip
         dependency_keys:
-        charge: total_charging_energy
-        discharge: total_discharging_energy
+            charge: total_charging_energy
+            discharge: total_discharging_energy
     round_trip_efficiency_monthly:
         key: round_trip_efficiency_monthly
         unit: "%"
+        icon: "mdi:percent"
         category: diagnostic
         state_class: measurement
         mode: round_trip
         dependency_keys:
-        charge: total_monthly_charging_energy
-        discharge: total_monthly_discharging_energy
+            charge: total_monthly_charging_energy
+            discharge: total_monthly_discharging_energy
     conversion_efficiency:
         key: conversion_efficiency
         unit: "%"
@@ -795,8 +811,8 @@ EFFICIENCY_SENSOR_DEFINITIONS:
         state_class: measurement
         mode: conversion
         dependency_keys:
-        battery_power: battery_power
-        ac_power: ac_power
+            battery_power: battery_power
+            ac_power: ac_power
 
 STORED_ENERGY_SENSOR_DEFINITIONS:
     stored_energy:
@@ -805,5 +821,5 @@ STORED_ENERGY_SENSOR_DEFINITIONS:
         device_class: energy
         state_class: total
         dependency_keys:
-        soc: battery_soc
-        capacity: battery_total_energy
+            soc: battery_soc
+            capacity: battery_total_energy
