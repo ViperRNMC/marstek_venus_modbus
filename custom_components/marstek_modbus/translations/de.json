@@ -242,8 +242,7 @@
           "3": "Aktiv",
           "4": "Gesperrt"
         }
-      }
-      ,
+      },
       "schedule_1": {
         "name": "Zeitplan 1"
       },
@@ -313,4 +312,5 @@
         "name": "Werkseinstellungen"
       }
     }
+  }
 }
