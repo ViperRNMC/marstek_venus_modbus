@@ -252,7 +252,9 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 timeout=10.0
             )
 
-            if isinstance(value, (int, float, bool, str)):
+            # Accept primitive values and structured types (dict/list) returned
+            # by specialized data_type handlers (e.g., `schedule` returning a dict).
+            if isinstance(value, (int, float, bool, str, dict, list)):
                 _LOGGER.debug(
                      "Updated %s '%s': register=%d, value=%s, scale=%s, unit=%s",
                     entity_type,
@@ -261,14 +263,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     value,
                     scale,
                     unit,
-            )   
-                return value
-            else:
-                _LOGGER.warning(
-                    "Invalid value for %s '%s': %r (type %s)",
-                    entity_type, key, value, type(value).__name__,
                 )
-                return None
+                return value
+            _LOGGER.warning(
+                "Invalid value for %s '%s': %r (type %s)",
+                entity_type,
+                key,
+                value,
+                type(value).__name__,
+            )
+            return None
 
         except asyncio.TimeoutError:
             if track_failure:
@@ -309,8 +313,41 @@ class MarstekCoordinator(DataUpdateCoordinator):
             value,
         )
 
+        # Determine data_type for this key (numbers typically in NUMBER_DEFINITIONS)
+        data_type = None
         try:
-            success = await self.client.async_write_register(register=register, value=value)
+            defn = next((d for d in self.NUMBER_DEFINITIONS if d.get("key") == key), None)
+            if not defn:
+                # fallback to switches/selects if user configured writes elsewhere
+                defn = next((d for d in self.SWITCH_DEFINITIONS if d.get("key") == key), None)
+            if defn:
+                data_type = defn.get("data_type")
+        except Exception:
+            data_type = None
+
+        # Default to uint16 when unknown
+        if not data_type:
+            data_type = "uint16"
+
+        # Convert/validate value according to data_type
+        value_to_send = None
+        if data_type == "int16":
+            if not isinstance(value, int):
+                _LOGGER.error("Value for %s '%s' must be int for data_type int16", entity_type, key)
+                return False
+            value_to_send = value & 0xFFFF
+        elif data_type == "uint16":
+            if not isinstance(value, int) or not (0 <= value <= 0xFFFF):
+                _LOGGER.error("Value for %s '%s' must be 0..65535 for data_type uint16", entity_type, key)
+                return False
+            value_to_send = value
+        else:
+            # Not implemented conversion for 32-bit types here
+            _LOGGER.error("Unsupported data_type '%s' for key '%s' on write", data_type, key)
+            return False
+
+        try:
+            success = await self.client.async_write_register(register=register, value=value_to_send)
             
             if success:
                 _LOGGER.debug(
@@ -319,7 +356,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     key,
                     register,
                     register,
-                    value,
+                    value_to_send,
                     scale if scale is not None else 1,
                     unit if unit is not None else "N/A",
                 )
@@ -462,7 +499,52 @@ class MarstekCoordinator(DataUpdateCoordinator):
             value = await self.async_read_value(sensor, key)
 
             if value is not None:
-                updated_data[key] = value
+                # Special-case: for packed schedule sensors, store both the
+                # raw 5-register list as the main `data[key]` and the decoded
+                # dict under `data["<key>_attrs"]` so sensors can expose
+                # attributes while the state remains the raw registers.
+                if sensor.get("data_type") == "schedule" and isinstance(value, dict):
+                    try:
+                        days = int(value.get("days") or 0)
+                    except Exception:
+                        days = value.get("days")
+                    try:
+                        start = int(value.get("start") or 0)
+                    except Exception:
+                        start = value.get("start")
+                    try:
+                        end = int(value.get("end") or 0)
+                    except Exception:
+                        end = value.get("end")
+                    try:
+                        enabled = int(value.get("enabled") or 0)
+                    except Exception:
+                        enabled = value.get("enabled")
+
+                    # Mode in attrs is signed; convert to unsigned 16-bit for raw register
+                    try:
+                        mode_signed = int(value.get("mode") or 0)
+                        mode_raw = mode_signed & 0xFFFF
+                    except Exception:
+                        mode_raw = value.get("mode")
+
+                    raw_regs = [days, start, end, mode_raw, enabled]
+
+                    updated_data[key] = raw_regs
+                    try:
+                        updated_data[f"{key}_attrs"] = value
+                    except Exception:
+                        _LOGGER.exception("Failed to populate %s_attrs", key)
+
+                    _LOGGER.debug(
+                        "Stored raw schedule for %s: %s and attrs: %s",
+                        key,
+                        raw_regs,
+                        value,
+                    )
+                else:
+                    updated_data[key] = value
+
                 self._last_update_times[key] = now
                 successful_reads += 1
             else:

@@ -344,6 +344,21 @@ class MarstekModbusClient:
                             byte_array.append(reg & 0xFF)
                         return byte_array.decode("ascii", errors="ignore").rstrip('\x00')
 
+                    elif data_type == "schedule":
+                        # Return the raw register list for schedule blocks.
+                        # Expect 5 registers per schedule: days, start, end, mode (int16), enabled
+                        if len(regs) < 5:
+                            _LOGGER.warning(
+                                "Expected 5 registers for schedule at %d (0x%04X), got %s",
+                                register,
+                                register,
+                                len(regs),
+                            )
+                            return None
+                        # Return raw registers as list of ints; interpretation is left
+                        # to the caller (coordinator/sensor) as requested.
+                        return [int(r) for r in regs[:5]]
+
                     elif data_type == "bit":
                         if bit_index is None or not (0 <= bit_index < 16):
                             raise ValueError("bit_index must be between 0 and 15 for bit data_type")
@@ -411,12 +426,18 @@ class MarstekModbusClient:
             )
             return False
 
+        # Expect caller to supply an already validated/converted 16-bit unsigned value.
+        if not isinstance(value, int):
+            _LOGGER.error("Invalid value type for write: %s. Must be int.", type(value))
+            return False
+
         if not (0 <= value <= 0xFFFF):
             _LOGGER.error(
                 "Invalid value for write: %d. Must be 0-65535.",
                 value,
             )
             return False
+        value_to_send = value
 
         attempt = 0
         while attempt < max_retries:
