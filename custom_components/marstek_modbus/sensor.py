@@ -86,12 +86,11 @@ class MarstekSensor(CoordinatorEntity, SensorEntity):
     @property
     def available(self) -> bool:
         """Return True if coordinator has valid data for this sensor."""
-        # Ensure coordinator data is a dict and contains the key, and update was successful
-        return (
-            getattr(self.coordinator, "last_update_success", False)
-            and isinstance(getattr(self.coordinator, "data", None), dict)
-            and self._key in self.coordinator.data
-        )
+        # Consider the sensor available when coordinator has provided a value
+        # for this key. This avoids sensors remaining 'unknown' when the
+        # coordinator had transient update failures but still supplies data.
+        data = getattr(self.coordinator, "data", None)
+        return isinstance(data, dict) and self._key in data
 
     @property
     def native_value(self):
@@ -99,6 +98,37 @@ class MarstekSensor(CoordinatorEntity, SensorEntity):
         if self._key not in self.coordinator.data:
             return None
         value = self.coordinator.data[self._key]
+
+        # Special handling for schedule data type: the sensor state should
+        # represent whether the schedule is enabled (boolean). The raw
+        # register list is exposed in attributes under `raw` and all decoding
+        # / interpretation is performed in `extra_state_attributes`.
+        if self.definition.get("data_type") == "schedule":
+            data = getattr(self.coordinator, "data", {}) or {}
+            # Prefer decoded attrs if coordinator provided them, otherwise
+            # attempt to decode from the raw register list.
+            attrs = data.get(f"{self._key}_attrs") or {}
+            enabled = None
+
+            if isinstance(attrs, dict) and "enabled" in attrs:
+                try:
+                    enabled = bool(int(attrs.get("enabled") or 0))
+                except Exception:
+                    enabled = bool(attrs.get("enabled"))
+            else:
+                # Try to decode from raw registers stored at data[self._key]
+                raw = data.get(self._key)
+                if isinstance(raw, (list, tuple)) and len(raw) >= 5:
+                    try:
+                        enabled = bool(int(raw[4]))
+                    except Exception:
+                        enabled = bool(raw[4])
+
+            # If we couldn't determine enabled state, return None (unknown)
+            if enabled is None:
+                return None
+
+            return enabled
 
         if isinstance(value, (int, float)):
             # Special-case: EMS version is encoded as an integer where
@@ -152,6 +182,107 @@ class MarstekSensor(CoordinatorEntity, SensorEntity):
             "model": MODEL,
             "entry_type": "service",
         }
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return attributes for packed schedule sensors from coordinator data."""
+        data = self.coordinator.data or {}
+        attrs = data.get(f"{self._key}_attrs") or {}
+        # For schedule types, enrich attributes with human-readable fields.
+        # If `_attrs` is not present but the coordinator stored the raw
+        # 5-register list in `data[key]`, decode that here so we don't
+        # duplicate decoding in the coordinator.
+        if self.definition.get("data_type") == "schedule":
+            if not isinstance(attrs, dict) or not attrs:
+                raw = data.get(self._key)
+                if isinstance(raw, (list, tuple)) and len(raw) >= 5:
+                    try:
+                        attrs = {
+                            "days": int(raw[0]),
+                            "start": int(raw[1]),
+                            "end": int(raw[2]),
+                            "mode": int(raw[3]) - 0x10000 if int(raw[3]) >= 0x8000 else int(raw[3]),
+                            "enabled": int(raw[4]),
+                        }
+                    except Exception:
+                        attrs = {}
+
+            if isinstance(attrs, dict) and attrs:
+                def _fmt_time(t):
+                    try:
+                        t = int(t)
+                        # Heuristic: device encodes times as HHMM (e.g. 200 -> 02:00,
+                        # 610 -> 06:10) when the low two digits are < 60 and the
+                        # value is within 0..2359. Otherwise treat value as
+                        # minutes-since-midnight.
+                        if 0 <= t <= 2359 and (t % 100) < 60:
+                            hh = t // 100
+                            mm = t % 100
+                        else:
+                            hh = t // 60
+                            mm = t % 60
+                        return f"{hh:02d}:{mm:02d}"
+                    except Exception:
+                        return t
+
+                # Debug logging for raw schedule data from coordinator
+                _LOGGER.warning(
+                    "Raw schedule data for %s: value=%s attrs=%s",
+                    self._key,
+                    data.get(self._key),
+                    attrs,
+                )
+
+                days = attrs.get("days")
+                try:
+                    dmask = int(days) if days is not None else 0
+                except Exception:
+                    dmask = 0
+                # Bits are encoded with Monday at bit 0 (device ordering), but
+                # display should start with Sunday. Compute set using Monday-first
+                # mapping, then reorder to Sunday-first for presentation.
+                weekday_names_mon = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"]
+                selected_mon = [weekday_names_mon[i] for i in range(7) if (dmask >> i) & 1]
+                display_order = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+                selected = [d for d in display_order if d in selected_mon]
+
+                # Build a minimal enriched dict — do not duplicate raw fields.
+                enriched = {}
+                enriched["days_list"] = selected
+                enriched["start_time"] = _fmt_time(attrs.get("start"))
+                enriched["end_time"] = _fmt_time(attrs.get("end"))
+
+                # Interpret mode into a human-friendly type and a separate watt attribute.
+                # NOTE: device uses signed mode where -1 == self consumption and
+                # signed values represent magnitude. Empirically the device
+                # uses negative -> charge and positive -> discharge (inverse
+                # of earlier assumption), so map accordingly.
+                mode_raw = attrs.get("mode")
+                mode = None
+                power = None
+                try:
+                    if mode_raw is None:
+                        mode = None
+                    else:
+                        m = int(mode_raw)
+                        if m == -1:
+                            mode = "self consumption"
+                        elif m < 0:
+                            mode = "charge"
+                            power = abs(m)
+                        else:
+                            mode = "discharge"
+                            power = m
+                except Exception:
+                    mode = None
+                    power = None
+
+                enriched["mode"] = mode
+                enriched["power"] = power
+                enriched["enabled"] = bool(attrs.get("enabled"))
+                return enriched
+
+        return attrs or {}
 
 
 class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):

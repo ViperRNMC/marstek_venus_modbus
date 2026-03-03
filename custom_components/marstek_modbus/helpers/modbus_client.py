@@ -344,6 +344,21 @@ class MarstekModbusClient:
                             byte_array.append(reg & 0xFF)
                         return byte_array.decode("ascii", errors="ignore").rstrip('\x00')
 
+                    elif data_type == "schedule":
+                        # Return the raw register list for schedule blocks.
+                        # Expect 5 registers per schedule: days, start, end, mode (int16), enabled
+                        if len(regs) < 5:
+                            _LOGGER.warning(
+                                "Expected 5 registers for schedule at %d (0x%04X), got %s",
+                                register,
+                                register,
+                                len(regs),
+                            )
+                            return None
+                        # Return raw registers as list of ints; interpretation is left
+                        # to the caller (coordinator/sensor) as requested.
+                        return [int(r) for r in regs[:5]]
+
                     elif data_type == "bit":
                         if bit_index is None or not (0 <= bit_index < 16):
                             raise ValueError("bit_index must be between 0 and 15 for bit data_type")

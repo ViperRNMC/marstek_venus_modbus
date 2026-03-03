@@ -245,6 +245,24 @@
           "3": "Active",
           "4": "Locked"
         }
+      },
+      "schedule_1": {
+        "name": "Schedule 1"
+      },
+      "schedule_2": {
+        "name": "Schedule 2"
+      },
+      "schedule_3": {
+        "name": "Schedule 3"
+      },
+      "schedule_4": {
+        "name": "Schedule 4"
+      },
+      "schedule_5": {
+        "name": "Schedule 5"
+      },
+      "schedule_6": {
+        "name": "Schedule 6"
       }
     },
     "binary_sensor": {

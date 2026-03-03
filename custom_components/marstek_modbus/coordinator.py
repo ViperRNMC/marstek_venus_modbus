@@ -252,7 +252,9 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 timeout=10.0
             )
 
-            if isinstance(value, (int, float, bool, str)):
+            # Accept primitive values and structured types (dict/list) returned
+            # by specialized data_type handlers (e.g., `schedule` returning a dict).
+            if isinstance(value, (int, float, bool, str, dict, list)):
                 _LOGGER.debug(
                      "Updated %s '%s': register=%d, value=%s, scale=%s, unit=%s",
                     entity_type,
@@ -261,14 +263,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     value,
                     scale,
                     unit,
-            )   
-                return value
-            else:
-                _LOGGER.warning(
-                    "Invalid value for %s '%s': %r (type %s)",
-                    entity_type, key, value, type(value).__name__,
                 )
-                return None
+                return value
+            _LOGGER.warning(
+                "Invalid value for %s '%s': %r (type %s)",
+                entity_type,
+                key,
+                value,
+                type(value).__name__,
+            )
+            return None
 
         except asyncio.TimeoutError:
             if track_failure:
@@ -495,7 +499,52 @@ class MarstekCoordinator(DataUpdateCoordinator):
             value = await self.async_read_value(sensor, key)
 
             if value is not None:
-                updated_data[key] = value
+                # Special-case: for packed schedule sensors, store both the
+                # raw 5-register list as the main `data[key]` and the decoded
+                # dict under `data["<key>_attrs"]` so sensors can expose
+                # attributes while the state remains the raw registers.
+                if sensor.get("data_type") == "schedule" and isinstance(value, dict):
+                    try:
+                        days = int(value.get("days") or 0)
+                    except Exception:
+                        days = value.get("days")
+                    try:
+                        start = int(value.get("start") or 0)
+                    except Exception:
+                        start = value.get("start")
+                    try:
+                        end = int(value.get("end") or 0)
+                    except Exception:
+                        end = value.get("end")
+                    try:
+                        enabled = int(value.get("enabled") or 0)
+                    except Exception:
+                        enabled = value.get("enabled")
+
+                    # Mode in attrs is signed; convert to unsigned 16-bit for raw register
+                    try:
+                        mode_signed = int(value.get("mode") or 0)
+                        mode_raw = mode_signed & 0xFFFF
+                    except Exception:
+                        mode_raw = value.get("mode")
+
+                    raw_regs = [days, start, end, mode_raw, enabled]
+
+                    updated_data[key] = raw_regs
+                    try:
+                        updated_data[f"{key}_attrs"] = value
+                    except Exception:
+                        _LOGGER.exception("Failed to populate %s_attrs", key)
+
+                    _LOGGER.debug(
+                        "Stored raw schedule for %s: %s and attrs: %s",
+                        key,
+                        raw_regs,
+                        value,
+                    )
+                else:
+                    updated_data[key] = value
+
                 self._last_update_times[key] = now
                 successful_reads += 1
             else:

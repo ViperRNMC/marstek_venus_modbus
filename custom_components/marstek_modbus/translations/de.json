@@ -243,6 +243,25 @@
           "4": "Gesperrt"
         }
       }
+      ,
+      "schedule_1": {
+        "name": "Zeitplan 1"
+      },
+      "schedule_2": {
+        "name": "Zeitplan 2"
+      },
+      "schedule_3": {
+        "name": "Zeitplan 3"
+      },
+      "schedule_4": {
+        "name": "Zeitplan 4"
+      },
+      "schedule_5": {
+        "name": "Zeitplan 5"
+      },
+      "schedule_6": {
+        "name": "Zeitplan 6"
+      }
     },
     "binary_sensor": {
       "wifi_status": {
