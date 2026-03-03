@@ -64,24 +64,17 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         raw_version = (entry.data.get("device_version") or "").strip()
         if raw_version:
             normalized = raw_version.lower()
-            legacy_map = {
-                "v1/v2": next((s for s in SUPPORTED_VERSIONS if s.lower().startswith("e v1")), "E v1/v2"),
-                "v3": next((s for s in SUPPORTED_VERSIONS if s.lower().startswith("e v3")), "E v3"),
-            }
-            # Also accept plain 'd' or 'D' and map to the canonical 'D'
-            if normalized in legacy_map:
-                new_version = legacy_map[normalized]
-                if new_version != raw_version:
-                    _LOGGER.info(
-                        "Updating config entry %s device_version '%s' -> '%s'",
-                        entry.entry_id,
-                        raw_version,
-                        new_version,
-                    )
-                    new_data = dict(entry.data)
-                    new_data["device_version"] = new_version
-                    hass.config_entries.async_update_entry(entry, data=new_data)
-        # Create and initialize the coordinator for data management
+            # Consider anything not listed in SUPPORTED_VERSIONS as legacy/unsupported.
+            allowed = {s.lower() for s in SUPPORTED_VERSIONS}
+            if normalized not in allowed:
+                _LOGGER.warning(
+                    "Config entry %s uses unsupported device_version '%s'. Please remove and re-add the device with the correct device version. Supported versions: %s",
+                    entry.entry_id,
+                    raw_version,
+                    ", ".join(SUPPORTED_VERSIONS),
+                )
+        # Create the coordinator for data management and attempt an initial
+        # connection before forwarding platform setup so the client is ready.
         coordinator = MarstekCoordinator(hass, entry)
         hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
