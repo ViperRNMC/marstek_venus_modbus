@@ -25,6 +25,7 @@ SENSOR_DEFINITIONS:
         data_type: char
         unit: null
         enabled_by_default: true
+        icon: "mdi:package-variant-closed"
         scan_interval: very_low
         precision: 0
     bms_version:
@@ -70,6 +71,7 @@ SENSOR_DEFINITIONS:
         count: 6
         unit: null
         enabled_by_default: true
+        icon: "mdi:ethernet"
         data_type: char
         precision: 0
         scan_interval: very_low
@@ -665,6 +667,7 @@ EFFICIENCY_SENSOR_DEFINITIONS:
         key: round_trip_efficiency_total
         unit: "%"
         device_class: battery
+            icon: "mdi:percent"
         state_class: measurement
         mode: round_trip
         dependency_keys:
@@ -674,6 +677,7 @@ EFFICIENCY_SENSOR_DEFINITIONS:
         key: round_trip_efficiency_monthly
         unit: "%"
         device_class: battery
+            icon: "mdi:percent"
         state_class: measurement
         mode: round_trip
         dependency_keys:
