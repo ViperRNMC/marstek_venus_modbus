@@ -530,6 +530,126 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         precision: 0
         scan_interval: high
+    mppt1_voltage:
+        register: 30020
+        scale: 0.1
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    mppt1_current:
+        register: 30024
+        scale: 0.1
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    mppt1_power:
+        register: 30037
+        scale: 0.1
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: high
+    mppt2_voltage:
+        register: 30021
+        scale: 0.1
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    mppt2_current:
+        register: 30025
+        scale: 0.1
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    mppt2_power:
+        register: 30038
+        scale: 0.1
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: high
+    mppt3_voltage:
+        register: 30022
+        scale: 0.1
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    mppt3_current:
+        register: 30026
+        scale: 0.1
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    mppt3_power:
+        register: 30039
+        scale: 0.1
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: high
+    mppt4_voltage:
+        register: 30023
+        scale: 0.1
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    mppt4_current:
+        register: 30027
+        scale: 0.1
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
+    mppt4_power:
+        register: 30040
+        scale: 0.1
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: high
     bluetooth_status:
         register: 30301
         data_type: uint16
