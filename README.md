@@ -128,7 +128,6 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | max_cell_temperature              | Max cell temperature                       | int16   | 2    | 0.1/1  | °C   | 35010 | 35010 | 35010 | 35010 |
 | max_cell_voltage                  | Max cell voltage                           | uint16  | 2    | 0.001  | V    | 37007 | 37007 | 37007 | 37007 |
 | min_cell_voltage                  | Min cell voltage                           | uint16  | 2    | 0.001  | V    | 37008 | 37008 | 37008 | 37008 |
-
 | cell_1_voltage                    | Cell 1 voltage                             | int16   | 2    | 0.001  | V    | 34018 | 34018 |       | 34018 |
 | cell_2_voltage                    | Cell 2 voltage                             | int16   | 2    | 0.001  | V    | 34019 | 34019 |       | 34019 |
 | cell_3_voltage                    | Cell 3 voltage                             | int16   | 2    | 0.001  | V    | 34020 | 34020 |       | 34020 |
@@ -145,7 +144,6 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | cell_14_voltage                   | Cell 14 voltage                            | int16   | 2    | 0.001  | V    | 34031 | 34031 |       | 34031 |
 | cell_15_voltage                   | Cell 15 voltage                            | int16   | 2    | 0.001  | V    | 34032 | 34032 |       | 34032 |
 | cell_16_voltage                   | Cell 16 voltage                            | int16   | 2    | 0.001  | V    | 34033 | 34033 |       | 34033 |
-
 | mppt1_voltage                     | MPPT1 array voltage                        | uint16  | 2    | 0.1    | V    | 30020 | 30020 |       |       |
 | mppt1_current                     | MPPT1 array current                        | uint16  | 2    | 0.1    | A    | 30024 | 30024 |       |       |
 | mppt1_power                       | MPPT1 array power                          | uint16  | 2    | 0.1    | W    | 30037 | 30037 |       |       |
@@ -158,7 +156,6 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | mppt4_voltage                     | MPPT4 array voltage                        | uint16  | 2    | 0.1    | V    | 30023 | 30023 |       |       |
 | mppt4_current                     | MPPT4 array current                        | uint16  | 2    | 0.1    | A    | 30027 | 30027 |       |       |
 | mppt4_power                       | MPPT4 array power                          | uint16  | 2    | 0.1    | W    | 30040 | 30040 |       |       |
-
 | inverter_state                    | Inverter / device state                    | uint16  | 2    | 1      | -    | 35100 | 35100 | 35100 | 35100 |
 | fault_status                      | Fault status bits                          | uint64  | 8    | -      | -    |       |       | 36100 |       |
 | alarm_status                      | Alarm status bits                          | uint32  | 4    | -      | -    |       |       | 36000 |       |
@@ -178,7 +175,36 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | discharging_cutoff_capacity       | Discharging cutoff (percentage)            | uint16  | 2    | 0.1    | %    |       |       | 44001 |       |
 | reset_device (button)             | Reset device command                       | uint16  | 2    | -      | -    | 41000 | 41000 | 41000 | 41000 |
 | factory_reset (button)            | Factory reset command                      | uint16  | 2    | -      | -    | 41001 | 41001 | 41001 | 41001 |
-
+| schedule_1_days                  | Schedule 1 days (bitmask)                   | bit      | 2    | -      | -    | 43100 | 43100 | 43100 | 43100 |
+| schedule_1_start                 | Schedule 1 start (HHMM)                     | uint     | 2    | -      | min  | 43101 | 43101 | 43101 | 43101 |
+| schedule_1_end                   | Schedule 1 end (HHMM)                       | uint     | 2    | -      | min  | 43102 | 43102 | 43102 | 43102 |
+| schedule_1_mode                  | Schedule 1 mode (numeric)                   | int16    | 2    | -      | W    | 43103 | 43103 | 43103 | 43103 |
+| schedule_1_enabled               | Schedule 1 enabled (0/1)                    | uint     | 2    | -      | -    | 43104 | 43104 | 43104 | 43104 |
+| schedule_2_days                  | Schedule 2 days (bitmask)                   | bit      | 2    | -      | -    | 43105 | 43105 | 43105 | 43105 |
+| schedule_2_start                 | Schedule 2 start (HHMM)                     | uint     | 2    | -      | min  | 43106 | 43106 | 43106 | 43106 |
+| schedule_2_end                   | Schedule 2 end (HHMM)                       | uint     | 2    | -      | min  | 43107 | 43107 | 43107 | 43107 |
+| schedule_2_mode                  | Schedule 2 mode (numeric)                   | int16    | 2    | -      | W    | 43108 | 43108 | 43108 | 43108 |
+| schedule_2_enabled               | Schedule 2 enabled (0/1)                    | uint     | 2    | -      | -    | 43109 | 43109 | 43109 | 43109 |
+| schedule_3_days                  | Schedule 3 days (bitmask)                   | bit      | 2    | -      | -    | 43110 | 43110 | 43110 | 43110 |
+| schedule_3_start                 | Schedule 3 start (HHMM)                     | uint     | 2    | -      | min  | 43111 | 43111 | 43111 | 43111 |
+| schedule_3_end                   | Schedule 3 end (HHMM)                       | uint     | 2    | -      | min  | 43112 | 43112 | 43112 | 43112 |
+| schedule_3_mode                  | Schedule 3 mode (numeric)                   | int16    | 2    | -      | W    | 43113 | 43113 | 43113 | 43113 |
+| schedule_3_enabled               | Schedule 3 enabled (0/1)                    | uint     | 2    | -      | -    | 43114 | 43114 | 43114 | 43114 |
+| schedule_4_days                  | Schedule 4 days (bitmask)                   | bit      | 2    | -      | -    | 43115 | 43115 | 43115 | 43115 |
+| schedule_4_start                 | Schedule 4 start (HHMM)                     | uint     | 2    | -      | min  | 43116 | 43116 | 43116 | 43116 |
+| schedule_4_end                   | Schedule 4 end (HHMM)                       | uint     | 2    | -      | min  | 43117 | 43117 | 43117 | 43117 |
+| schedule_4_mode                  | Schedule 4 mode (numeric)                   | int16    | 2    | -      | W    | 43118 | 43118 | 43118 | 43118 |
+| schedule_4_enabled               | Schedule 4 enabled (0/1)                    | uint     | 2    | -      | -    | 43119 | 43119 | 43119 | 43119 |
+| schedule_5_days                  | Schedule 5 days (bitmask)                   | bit      | 2    | -      | -    | 43120 | 43120 | 43120 | 43120 |
+| schedule_5_start                 | Schedule 5 start (HHMM)                     | uint     | 2    | -      | min  | 43121 | 43121 | 43121 | 43121 |
+| schedule_5_end                   | Schedule 5 end (HHMM)                       | uint     | 2    | -      | min  | 43122 | 43122 | 43122 | 43122 |
+| schedule_5_mode                  | Schedule 5 mode (numeric)                   | int16    | 2    | -      | W    | 43123 | 43123 | 43123 | 43123 |
+| schedule_5_enabled               | Schedule 5 enabled (0/1)                    | uint     | 2    | -      | -    | 43124 | 43124 | 43124 | 43124 |
+| schedule_6_days                  | Schedule 6 days (bitmask)                   | bit      | 2    | -      | -    | 43125 | 43125 | 43125 | 43125 |
+| schedule_6_start                 | Schedule 6 start (HHMM)                     | uint     | 2    | -      | min  | 43126 | 43126 | 43126 | 43126 |
+| schedule_6_end                   | Schedule 6 end (HHMM)                       | uint     | 2    | -      | min  | 43127 | 43127 | 43127 | 43127 |
+| schedule_6_mode                  | Schedule 6 mode (numeric)                   | int16    | 2    | -      | W    | 43128 | 43128 | 43128 | 43128 |
+| schedule_6_enabled               | Schedule 6 enabled (0/1)                    | uint     | 2    | -      | -    | 43129 | 43129 | 43129 | 43129 |
 | round_trip_efficiency_total       | Round-trip efficiency (total charge/discharge energies) | calculated | - | - | % |  |  |  |  |
 | round_trip_efficiency_monthly     | Round-trip efficiency (monthly charge/discharge) | calculated | - | - | % |  |  |  |  |
 | conversion_efficiency             | Conversion efficiency (battery ↔ AC)       | calculated | - | - | % |  |  |  |  |
@@ -190,3 +216,5 @@ _Notes:_
 - Blank cells mean that YAML does not define that key (or the value is calculated and has no direct Modbus register).
 - The `rs485_control_mode` switch (register 42000) uses write commands (command_on=21930, command_off=21947) to trigger RS485 control operations; use with caution.
 - For access to registers in the 42000–42999 range, the battery must be set to RS485 control mode.
+- Schedule Time format: `start` and `end` are entered as HHMM 24-hour integers (for example `0830` = 08:30). Use values within the valid range shown in the YAML for each device; ensure `start` is earlier than `end` for a single active period.
+- Schedule Day selection: the underlying `schedule_*_days` register uses a bitmask to represent multiple days, but the integration currently exposes it as a single-select option in Home Assistant. Due to this limitation you cannot select multiple days from the integration UI.

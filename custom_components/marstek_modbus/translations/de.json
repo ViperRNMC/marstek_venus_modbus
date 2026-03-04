@@ -242,24 +242,6 @@
           "3": "Aktiv",
           "4": "Gesperrt"
         }
-      },
-      "schedule_1": {
-        "name": "Zeitplan 1"
-      },
-      "schedule_2": {
-        "name": "Zeitplan 2"
-      },
-      "schedule_3": {
-        "name": "Zeitplan 3"
-      },
-      "schedule_4": {
-        "name": "Zeitplan 4"
-      },
-      "schedule_5": {
-        "name": "Zeitplan 5"
-      },
-      "schedule_6": {
-        "name": "Zeitplan 6"
       }
     },
     "binary_sensor": {
@@ -273,12 +255,136 @@
         "name": "Entladebegrenzung"
       }
     },
+    "select": {
+      "user_work_mode": {
+        "name": "Benutzer-Modus",
+        "state": {
+          "manual": "Manuell",
+          "anti_feed": "Anti-Feed",
+          "trade_mode": "Trade Mode"
+        }
+      },
+      "force_mode": {
+        "name": "Erzwungener Modus",
+        "state": {
+          "standby": "Standby",
+          "charge": "Laden",
+          "discharge": "Entladen"
+        }
+      },
+      "grid_standard": {
+        "name": "Netzstandard",
+        "state": {
+          "Auto": "Automatisch",
+          "EN50549": "EN50549",
+          "Netherlands": "Niederlande",
+          "Germany": "Deutschland",
+          "Austria": "Österreich",
+          "United Kingdom": "Vereinigtes Königreich",
+          "Spain": "Spanien",
+          "Poland": "Polen",
+          "Italy": "Italien",
+          "China": "China"
+        }
+      },
+      "schedule_1_days": {
+        "name": "Zeitplan 1 Tage",
+        "state": {
+          "sunday": "Sonntag",
+          "monday": "Montag",
+          "tuesday": "Dienstag",
+          "wednesday": "Mittwoch",
+          "thursday": "Donnerstag",
+          "friday": "Freitag",
+          "saturday": "Samstag"
+        }
+      },
+      "schedule_2_days": {
+        "name": "Zeitplan 2 Tage",
+        "state": {
+          "sunday": "Sonntag",
+          "monday": "Montag",
+          "tuesday": "Dienstag",
+          "wednesday": "Mittwoch",
+          "thursday": "Donnerstag",
+          "friday": "Freitag",
+          "saturday": "Samstag"
+        }
+      },
+      "schedule_3_days": {
+        "name": "Zeitplan 3 Tage",
+        "state": {
+          "sunday": "Sonntag",
+          "monday": "Montag",
+          "tuesday": "Dienstag",
+          "wednesday": "Mittwoch",
+          "thursday": "Donnerstag",
+          "friday": "Freitag",
+          "saturday": "Samstag"
+        }
+      },
+      "schedule_4_days": {
+        "name": "Zeitplan 4 Tage",
+        "state": {
+          "sunday": "Sonntag",
+          "monday": "Montag",
+          "tuesday": "Dienstag",
+          "wednesday": "Mittwoch",
+          "thursday": "Donnerstag",
+          "friday": "Freitag",
+          "saturday": "Samstag"
+        }
+      },
+      "schedule_5_days": {
+        "name": "Zeitplan 5 Tage",
+        "state": {
+          "sunday": "Sonntag",
+          "monday": "Montag",
+          "tuesday": "Dienstag",
+          "wednesday": "Mittwoch",
+          "thursday": "Donnerstag",
+          "friday": "Freitag",
+          "saturday": "Samstag"
+        }
+      },
+      "schedule_6_days": {
+        "name": "Zeitplan 6 Tage",
+        "state": {
+          "sunday": "Sonntag",
+          "monday": "Montag",
+          "tuesday": "Dienstag",
+          "wednesday": "Mittwoch",
+          "thursday": "Donnerstag",
+          "friday": "Freitag",
+          "saturday": "Samstag"
+        }
+      }
+    },
     "switch": {
       "backup_function": {
         "name": "Backup-Funktion"
       },
       "rs485_control_mode": {
         "name": "RS485-Steuermodus"
+      },
+      "schedule_1_enabled": {
+        "name": "Zeitplan 1 aktivieren"
+      }
+      ,
+      "schedule_2_enabled": {
+        "name": "Zeitplan 2 aktivieren"
+      },
+      "schedule_3_enabled": {
+        "name": "Zeitplan 3 aktivieren"
+      },
+      "schedule_4_enabled": {
+        "name": "Zeitplan 4 aktivieren"
+      },
+      "schedule_5_enabled": {
+        "name": "Zeitplan 5 aktivieren"
+      },
+      "schedule_6_enabled": {
+        "name": "Zeitplan 6 aktivieren"
       }
     },
     "number": {
@@ -302,6 +408,61 @@
       },
       "charge_to_soc": {
         "name": "Maximaler SoC"
+      },
+      "schedule_1_start": {
+        "name": "Zeitplan 1 Start"
+      },
+      "schedule_2_start": {
+        "name": "Zeitplan 2 Start"
+      },
+      "schedule_3_start": {
+        "name": "Zeitplan 3 Start"
+      },
+      "schedule_4_start": {
+        "name": "Zeitplan 4 Start"
+      },
+      "schedule_5_start": {
+        "name": "Zeitplan 5 Start"
+      },
+      "schedule_6_start": {
+        "name": "Zeitplan 6 Start"
+      },
+      "schedule_1_end": {
+        "name": "Zeitplan 1 Ende"
+      },
+      "schedule_2_end": {
+        "name": "Zeitplan 2 Ende"
+      },
+      "schedule_3_end": {
+        "name": "Zeitplan 3 Ende"
+      },
+      "schedule_4_end": {
+        "name": "Zeitplan 4 Ende"
+      },
+      "schedule_5_end": {
+        "name": "Zeitplan 5 Ende"
+      },
+      "schedule_6_end": {
+        "name": "Zeitplan 6 Ende"
+      },
+      "schedule_1_mode": {
+        "name": "Zeitplan 1 Modus"
+      }
+      ,
+      "schedule_2_mode": {
+        "name": "Zeitplan 2 Modus"
+      },
+      "schedule_3_mode": {
+        "name": "Zeitplan 3 Modus"
+      },
+      "schedule_4_mode": {
+        "name": "Zeitplan 4 Modus"
+      },
+      "schedule_5_mode": {
+        "name": "Zeitplan 5 Modus"
+      },
+      "schedule_6_mode": {
+        "name": "Zeitplan 6 Modus"
       }
     },
     "button": {
