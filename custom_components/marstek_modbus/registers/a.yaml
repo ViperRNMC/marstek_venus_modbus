@@ -659,7 +659,49 @@ SENSOR_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         scan_interval: medium
-
+    schedule_1:
+        register: 43100
+        count: 5
+        data_type: schedule
+        packed_schedule: true
+        enabled_by_default: false
+        scan_interval: high
+    schedule_2:
+        register: 43105
+        count: 5
+        data_type: schedule
+        packed_schedule: true
+        enabled_by_default: false
+        scan_interval: high
+    schedule_3:
+        register: 43110
+        count: 5
+        data_type: schedule
+        packed_schedule: true
+        enabled_by_default: false
+        scan_interval: very_low
+    schedule_4:
+        register: 43115
+        count: 5
+        data_type: schedule
+        packed_schedule: true
+        enabled_by_default: false
+        scan_interval: very_low
+    schedule_5:
+        register: 43120
+        count: 5
+        data_type: schedule
+        packed_schedule: true
+        enabled_by_default: false
+        scan_interval: very_low
+    schedule_6:
+        register: 43125
+        count: 5
+        data_type: schedule
+        packed_schedule: true
+        enabled_by_default: false
+        scan_interval: very_low
+        
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:
         register: 30300
