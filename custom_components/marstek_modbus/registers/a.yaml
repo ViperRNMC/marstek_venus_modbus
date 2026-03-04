@@ -76,8 +76,8 @@ SENSOR_DEFINITIONS:
         precision: 0
         scan_interval: very_low
     battery_soc:
-        register: 34002
-        scale: 0.1
+        register: 32104
+        scale: 1
         unit: "%"
         category: diagnostic
         device_class: battery
