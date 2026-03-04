@@ -78,6 +78,12 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         coordinator = MarstekCoordinator(hass, entry)
         hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
+        # Load register definitions off the event loop to avoid blocking
+        try:
+            await coordinator.async_load_registers(entry.data.get("device_version"))
+        except Exception as err:
+            _LOGGER.warning("Failed loading register definitions for entry %s: %s", entry.entry_id, err)
+
         # Forward setup to all platforms defined in PLATFORMS
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
