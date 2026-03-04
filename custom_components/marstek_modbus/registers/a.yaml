@@ -852,7 +852,7 @@ NUMBER_DEFINITIONS:
         enabled_by_default: false
         icon: "mdi:battery-arrow-up-outline"
         min: 0
-        max: 2500
+        max: 1200
         step: 50
         unit: W
         data_type: uint16
@@ -862,7 +862,7 @@ NUMBER_DEFINITIONS:
         enabled_by_default: false
         icon: "mdi:battery-arrow-down-outline"
         min: 0
-        max: 2500
+        max: 1200
         step: 50
         unit: W
         data_type: uint16
@@ -872,7 +872,7 @@ NUMBER_DEFINITIONS:
         enabled_by_default: false
         icon: "mdi:battery-arrow-up-outline"
         min: 0
-        max: 2500
+        max: 1200
         step: 50
         unit: W
         data_type: uint16
@@ -882,7 +882,7 @@ NUMBER_DEFINITIONS:
         enabled_by_default: false
         icon: "mdi:battery-arrow-down-outline"
         min: 0
-        max: 2500
+        max: 1200
         step: 50
         unit: W
         data_type: uint16

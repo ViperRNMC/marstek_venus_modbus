@@ -83,10 +83,8 @@ The Marstek Venus Modbus integration has been tested with the following hardware
 
 
 ## 📘 Modbus Registers Used
-## 📘 Modbus Registers Used
 
 Register definitions live in `custom_components/marstek_modbus/registers/`.
-
 
 Below is a per-key table showing descriptive fields and the register defined in each YAML file. Columns `Type`, `Bytes`, `Scale` and `Unit` are taken from the YAML definitions when present.
 
