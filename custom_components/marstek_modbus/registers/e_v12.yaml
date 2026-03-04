@@ -440,9 +440,6 @@ SENSOR_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         scan_interval: medium
-# Packed schedule blocks (Venus v1/v2) - each schedule is 5 registers
-# Expose each schedule as a single binary_sensor whose state is the
-# enabled flag and whose attributes contain the unpacked schedule fields.
     schedule_1:
         register: 43100
         count: 5
