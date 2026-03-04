@@ -251,24 +251,6 @@
           "3": "Actief",
           "4": "Locked"
         }
-      },
-      "schedule_1": {
-        "name": "Schema 1"
-      },
-      "schedule_2": {
-        "name": "Schema 2"
-      },
-      "schedule_3": {
-        "name": "Schema 3"
-      },
-      "schedule_4": {
-        "name": "Schema 4"
-      },
-      "schedule_5": {
-        "name": "Schema 5"
-      },
-      "schedule_6": {
-        "name": "Schema 6"
       }
     },
     "binary_sensor": {
@@ -313,6 +295,78 @@
           "Italy": "Italië",
           "China": "China"
         }
+      },
+      "schedule_1_days": {
+        "name": "Schema 1 Dagen",
+        "state": {
+          "sunday": "zondag",
+          "monday": "maandag",
+          "tuesday": "dinsdag",
+          "wednesday": "woensdag",
+          "thursday": "donderdag",
+          "friday": "vrijdag",
+          "saturday": "zaterdag"
+        }
+      },
+      "schedule_2_days": {
+        "name": "Schema 2 Dagen",
+        "state": {
+          "sunday": "zondag",
+          "monday": "maandag",
+          "tuesday": "dinsdag",
+          "wednesday": "woensdag",
+          "thursday": "donderdag",
+          "friday": "vrijdag",
+          "saturday": "zaterdag"
+        }
+      },
+      "schedule_3_days": {
+        "name": "Schema 3 Dagen",
+        "state": {
+          "sunday": "zondag",
+          "monday": "maandag",
+          "tuesday": "dinsdag",
+          "wednesday": "woensdag",
+          "thursday": "donderdag",
+          "friday": "vrijdag",
+          "saturday": "zaterdag"
+        }
+      },
+      "schedule_4_days": {
+        "name": "Schema 4 Dagen",
+        "state": {
+          "sunday": "zondag",
+          "monday": "maandag",
+          "tuesday": "dinsdag",
+          "wednesday": "woensdag",
+          "thursday": "donderdag",
+          "friday": "vrijdag",
+          "saturday": "zaterdag"
+        }
+      },
+      "schedule_5_days": {
+        "name": "Schema 5 Dagen",
+        "state": {
+          "sunday": "zondag",
+          "monday": "maandag",
+          "tuesday": "dinsdag",
+          "wednesday": "woensdag",
+          "thursday": "donderdag",
+          "friday": "vrijdag",
+          "saturday": "zaterdag"
+        }
+      },
+      "schedule_6_days": {
+        "name": "Schema 6 Dagen",
+        "state": {
+          "sunday": "zondag",
+          "monday": "maandag",
+          "tuesday": "dinsdag",
+          "wednesday": "woensdag",
+          "thursday": "donderdag",
+          "friday": "vrijdag",
+          "saturday": "zaterdag"
+        }
       }
     },
     "switch": {
@@ -321,6 +375,25 @@
       },
       "rs485_control_mode": {
         "name": "RS485 Besturingsmodus"
+      },
+      "schedule_1_enabled": {
+        "name": "Schema 1 inschakelen"
+      }
+      ,
+      "schedule_2_enabled": {
+        "name": "Schema 2 inschakelen"
+      },
+      "schedule_3_enabled": {
+        "name": "Schema 3 inschakelen"
+      },
+      "schedule_4_enabled": {
+        "name": "Schema 4 inschakelen"
+      },
+      "schedule_5_enabled": {
+        "name": "Schema 5 inschakelen"
+      },
+      "schedule_6_enabled": {
+        "name": "Schema 6 inschakelen"
       }
     },
     "number": {
@@ -344,6 +417,61 @@
       },
       "charge_to_soc": {
         "name": "Opladen tot SOC"
+      },
+      "schedule_1_start": {
+        "name": "Schema 1 Start"
+      },
+      "schedule_2_start": {
+        "name": "Schema 2 Start"
+      },
+      "schedule_3_start": {
+        "name": "Schema 3 Start"
+      },
+      "schedule_4_start": {
+        "name": "Schema 4 Start"
+      },
+      "schedule_5_start": {
+        "name": "Schema 5 Start"
+      },
+      "schedule_6_start": {
+        "name": "Schema 6 Start"
+      },
+      "schedule_1_end": {
+        "name": "Schema 1 Eind"
+      },
+      "schedule_2_end": {
+        "name": "Schema 2 Eind"
+      },
+      "schedule_3_end": {
+        "name": "Schema 3 Eind"
+      },
+      "schedule_4_end": {
+        "name": "Schema 4 Eind"
+      },
+      "schedule_5_end": {
+        "name": "Schema 5 Eind"
+      },
+      "schedule_6_end": {
+        "name": "Schema 6 Eind"
+      },
+      "schedule_1_mode": {
+        "name": "Schema 1 Modus"
+      }
+      ,
+      "schedule_2_mode": {
+        "name": "Schema 2 Modus"
+      },
+      "schedule_3_mode": {
+        "name": "Schema 3 Modus"
+      },
+      "schedule_4_mode": {
+        "name": "Schema 4 Modus"
+      },
+      "schedule_5_mode": {
+        "name": "Schema 5 Modus"
+      },
+      "schedule_6_mode": {
+        "name": "Schema 6 Modus"
       }
     },
     "button": {

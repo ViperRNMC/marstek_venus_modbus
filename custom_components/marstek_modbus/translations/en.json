@@ -245,24 +245,6 @@
           "3": "Active",
           "4": "Locked"
         }
-      },
-      "schedule_1": {
-        "name": "Schedule 1"
-      },
-      "schedule_2": {
-        "name": "Schedule 2"
-      },
-      "schedule_3": {
-        "name": "Schedule 3"
-      },
-      "schedule_4": {
-        "name": "Schedule 4"
-      },
-      "schedule_5": {
-        "name": "Schedule 5"
-      },
-      "schedule_6": {
-        "name": "Schedule 6"
       }
     },
     "binary_sensor": {
@@ -307,6 +289,78 @@
           "Italy": "Italy",
           "China": "China"
         }
+      },
+      "schedule_1_days": {
+        "name": "Schedule 1 Days",
+        "state": {
+          "sunday": "Sunday",
+          "monday": "Monday",
+          "tuesday": "Tuesday",
+          "wednesday": "Wednesday",
+          "thursday": "Thursday",
+          "friday": "Friday",
+          "saturday": "Saturday"
+        }
+      },
+      "schedule_2_days": {
+        "name": "Schedule 2 Days",
+        "state": {
+          "sunday": "Sunday",
+          "monday": "Monday",
+          "tuesday": "Tuesday",
+          "wednesday": "Wednesday",
+          "thursday": "Thursday",
+          "friday": "Friday",
+          "saturday": "Saturday"
+        }
+      },
+      "schedule_3_days": {
+        "name": "Schedule 3 Days",
+        "state": {
+          "sunday": "Sunday",
+          "monday": "Monday",
+          "tuesday": "Tuesday",
+          "wednesday": "Wednesday",
+          "thursday": "Thursday",
+          "friday": "Friday",
+          "saturday": "Saturday"
+        }
+      },
+      "schedule_4_days": {
+        "name": "Schedule 4 Days",
+        "state": {
+          "sunday": "Sunday",
+          "monday": "Monday",
+          "tuesday": "Tuesday",
+          "wednesday": "Wednesday",
+          "thursday": "Thursday",
+          "friday": "Friday",
+          "saturday": "Saturday"
+        }
+      },
+      "schedule_5_days": {
+        "name": "Schedule 5 Days",
+        "state": {
+          "sunday": "Sunday",
+          "monday": "Monday",
+          "tuesday": "Tuesday",
+          "wednesday": "Wednesday",
+          "thursday": "Thursday",
+          "friday": "Friday",
+          "saturday": "Saturday"
+        }
+      },
+      "schedule_6_days": {
+        "name": "Schedule 6 Days",
+        "state": {
+          "sunday": "Sunday",
+          "monday": "Monday",
+          "tuesday": "Tuesday",
+          "wednesday": "Wednesday",
+          "thursday": "Thursday",
+          "friday": "Friday",
+          "saturday": "Saturday"
+        }
       }
     },
     "switch": {
@@ -315,6 +369,26 @@
       },
       "rs485_control_mode": {
         "name": "RS485 Control Mode"
+      }
+      ,
+      "schedule_1_enabled": {
+        "name": "Schedule 1 Enabled"
+      }
+      ,
+      "schedule_2_enabled": {
+        "name": "Schedule 2 Enabled"
+      },
+      "schedule_3_enabled": {
+        "name": "Schedule 3 Enabled"
+      },
+      "schedule_4_enabled": {
+        "name": "Schedule 4 Enabled"
+      },
+      "schedule_5_enabled": {
+        "name": "Schedule 5 Enabled"
+      },
+      "schedule_6_enabled": {
+        "name": "Schedule 6 Enabled"
       }
     },
     "number": {
@@ -338,6 +412,62 @@
       },
       "charge_to_soc": {
         "name": "Charge to SOC"
+      }
+      ,
+      "schedule_1_start": {
+        "name": "Schedule 1 Start"
+      },
+      "schedule_2_start": {
+        "name": "Schedule 2 Start"
+      },
+      "schedule_3_start": {
+        "name": "Schedule 3 Start"
+      },
+      "schedule_4_start": {
+        "name": "Schedule 4 Start"
+      },
+      "schedule_5_start": {
+        "name": "Schedule 5 Start"
+      },
+      "schedule_6_start": {
+        "name": "Schedule 6 Start"
+      },
+      "schedule_1_end": {
+        "name": "Schedule 1 End"
+      },
+      "schedule_2_end": {
+        "name": "Schedule 2 End"
+      },
+      "schedule_3_end": {
+        "name": "Schedule 3 End"
+      },
+      "schedule_4_end": {
+        "name": "Schedule 4 End"
+      },
+      "schedule_5_end": {
+        "name": "Schedule 5 End"
+      },
+      "schedule_6_end": {
+        "name": "Schedule 6 End"
+      },
+      "schedule_1_mode": {
+        "name": "Schedule 1 Mode"
+      }
+      ,
+      "schedule_2_mode": {
+        "name": "Schedule 2 Mode"
+      },
+      "schedule_3_mode": {
+        "name": "Schedule 3 Mode"
+      },
+      "schedule_4_mode": {
+        "name": "Schedule 4 Mode"
+      },
+      "schedule_5_mode": {
+        "name": "Schedule 5 Mode"
+      },
+      "schedule_6_mode": {
+        "name": "Schedule 6 Mode"
       }
     },
     "button": {

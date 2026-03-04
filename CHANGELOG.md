@@ -1,4 +1,39 @@
 # Changelog
+# [2026.3.3] - 2026-03-04
+
+### Added
+
+- Per-field schedule support: split packed schedule blocks into individual registers and expose `schedule_1..6` as separate entities (`*_days`, `*_start`, `*_end`, `*_mode`, `*_enabled`) in the register maps for `a.yaml`, `d.yaml`, `e_v3.yaml` and `e_v12.yaml`.
+
+### Changed
+
+- Schedule entities set to `category: config` and `scan_interval: very_low` (default 300s); README updated with schedule rows and notes about HHMM time input and day-selection limitations.
+- Device-specific `schedule_*_mode` limits applied (A / E-v3: -2500..2500 W, D: -2200..2200 W).
+- Load YAML register definitions off the Home Assistant event loop to avoid blocking (async-safe coordinator changes).
+
+### Fixed
+
+- Decoding and signed `int16` handling for schedule mode values and writes improved.
+
+# [2026.3.2] - 2026-03-03
+
+### Added
+
+- Schedule support: read/write packed schedule blocks (6 schedules × 5 registers) exposed as aggregated sensors with enriched attributes and enable switches.
+- Expose raw schedule registers in entity attributes for easier debugging.
+- Translations for schedule sensors added (en/nl/de).
+
+### Changed
+
+- Avoid blocking YAML I/O on the Home Assistant event loop when loading register definitions.
+- Sensor state for schedules now represents the enabled flag; full decoded schedule is available in attributes (days_list, start_time, end_time, mode, power, enabled_bool, raw).
+- Modbus client returns raw register lists for schedule blocks; coordinator persists raw + decoded attrs; sensor performs decoding and formatting.
+
+### Fixed
+
+- Handle signed int16 mode values correctly when writing schedules (two's-complement conversion).
+- Fixed import/indentation issues and improved debug logging for Modbus reads/writes.
+
 # [2025.11.1] - 2025-11-17
 
 ### Added 

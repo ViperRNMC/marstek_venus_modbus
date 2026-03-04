@@ -53,44 +53,19 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # can pick the correct device version via a popup in the UI. Use a safe default
         # to initialize the coordinator so the integration does not crash while waiting
         # for the user to respond.
-        raw_device_version = entry.data.get("device_version", "") or ""
-        if not str(raw_device_version).strip():
-            # Start a reauth flow so Home Assistant prompts the user to provide the missing value
-            try:
-                _LOGGER.info(
-                    "Config entry %s missing device_version; starting reauth flow",
-                    entry.entry_id,
-                )
-                # Use async_create_task to avoid awaiting in __init__
-                self.hass.async_create_task(
-                    self.hass.config_entries.async_start_reauth(entry.entry_id)
-                )
-            except Exception:
-                _LOGGER.debug("Failed to start reauth for entry %s", entry.entry_id)
-
-            # Fallback to the first supported version to allow initialization to proceed
-            used_version = SUPPORTED_VERSIONS[0]
-        else:
-            used_version = raw_device_version
-
-        registers = get_registers(used_version)
-        self.SENSOR_DEFINITIONS = registers.get("SENSOR_DEFINITIONS", [])
-        self.BINARY_SENSOR_DEFINITIONS = registers.get("BINARY_SENSOR_DEFINITIONS", [])
-        self.SELECT_DEFINITIONS = registers.get("SELECT_DEFINITIONS", [])
-        self.SWITCH_DEFINITIONS = registers.get("SWITCH_DEFINITIONS", [])
-        self.NUMBER_DEFINITIONS = registers.get("NUMBER_DEFINITIONS", [])
-        self.BUTTON_DEFINITIONS = registers.get("BUTTON_DEFINITIONS", [])
-        self.EFFICIENCY_SENSOR_DEFINITIONS = registers.get("EFFICIENCY_SENSOR_DEFINITIONS", [])
-        self.STORED_ENERGY_SENSOR_DEFINITIONS = registers.get("STORED_ENERGY_SENSOR_DEFINITIONS", [])
+        # Placeholder definitions — actual register definitions are loaded
+        # asynchronously to avoid blocking the event loop during __init__.
+        self.SENSOR_DEFINITIONS = []
+        self.BINARY_SENSOR_DEFINITIONS = []
+        self.SELECT_DEFINITIONS = []
+        self.SWITCH_DEFINITIONS = []
+        self.NUMBER_DEFINITIONS = []
+        self.BUTTON_DEFINITIONS = []
+        self.EFFICIENCY_SENSOR_DEFINITIONS = []
+        self.STORED_ENERGY_SENSOR_DEFINITIONS = []
 
         # Combine all sensor definitions for polling
-        self._all_definitions = (
-            self.SENSOR_DEFINITIONS
-            + self.BINARY_SENSOR_DEFINITIONS
-            + self.SELECT_DEFINITIONS
-            + self.NUMBER_DEFINITIONS
-            + self.SWITCH_DEFINITIONS
-        )
+        self._all_definitions = []
 
         # Initialize Modbus client for communication
         self.client = MarstekModbusClient(
@@ -219,6 +194,46 @@ class MarstekCoordinator(DataUpdateCoordinator):
             self._connection_established_at = utcnow()
             _LOGGER.info("Successfully connected to Modbus device at %s:%d", self.host, self.port)
         return connected
+
+
+    async def async_load_registers(self, version: str | None = None):
+        """Load register definitions from YAML (off the event loop) and populate coordinator attributes.
+
+        This method must be called from async context (and will run the blocking
+        YAML load in the executor) to avoid performing file I/O inside __init__.
+        """
+        # Determine used version and handle legacy/missing tokens the same way
+        raw_device_version = (version or "") or ""
+        if not str(raw_device_version).strip():
+            # No device_version configured; use default first supported version
+            used_version = SUPPORTED_VERSIONS[0]
+        else:
+            used_version = raw_device_version
+
+        try:
+            data = await self.hass.async_add_executor_job(get_registers, used_version)
+            self.SENSOR_DEFINITIONS = data.get("SENSOR_DEFINITIONS", [])
+            self.BINARY_SENSOR_DEFINITIONS = data.get("BINARY_SENSOR_DEFINITIONS", [])
+            self.SELECT_DEFINITIONS = data.get("SELECT_DEFINITIONS", [])
+            self.SWITCH_DEFINITIONS = data.get("SWITCH_DEFINITIONS", [])
+            self.NUMBER_DEFINITIONS = data.get("NUMBER_DEFINITIONS", [])
+            self.BUTTON_DEFINITIONS = data.get("BUTTON_DEFINITIONS", [])
+            self.EFFICIENCY_SENSOR_DEFINITIONS = data.get("EFFICIENCY_SENSOR_DEFINITIONS", [])
+            self.STORED_ENERGY_SENSOR_DEFINITIONS = data.get("STORED_ENERGY_SENSOR_DEFINITIONS", [])
+
+            # Combine into a single list for polling
+            self._all_definitions = (
+                self.SENSOR_DEFINITIONS
+                + self.BINARY_SENSOR_DEFINITIONS
+                + self.SELECT_DEFINITIONS
+                + self.NUMBER_DEFINITIONS
+                + self.SWITCH_DEFINITIONS
+            )
+            _LOGGER.debug("Loaded register definitions for version '%s' (%d entries)", used_version, len(self._all_definitions))
+        except Exception as e:
+            _LOGGER.warning("Failed to load register definitions for version '%s': %s", used_version, e)
+            # Keep empty definitions as fallback; platforms will see no entities
+            self._all_definitions = []
 
     async def async_read_value(self, sensor: dict, key: str, track_failure: bool = True):
         """Helper to read a single sensor value from Modbus with logging and type checking.

@@ -657,49 +657,6 @@ SENSOR_DEFINITIONS:
         icon: "mdi:bluetooth"
         category: diagnostic
         enabled_by_default: false
-        scan_interval: medium
-    schedule_1:
-        register: 43100
-        count: 5
-        data_type: schedule
-        packed_schedule: true
-        enabled_by_default: false
-        scan_interval: high
-    schedule_2:
-        register: 43105
-        count: 5
-        data_type: schedule
-        packed_schedule: true
-        enabled_by_default: false
-        scan_interval: high
-    schedule_3:
-        register: 43110
-        count: 5
-        data_type: schedule
-        packed_schedule: true
-        enabled_by_default: false
-        scan_interval: very_low
-    schedule_4:
-        register: 43115
-        count: 5
-        data_type: schedule
-        packed_schedule: true
-        enabled_by_default: false
-        scan_interval: very_low
-    schedule_5:
-        register: 43120
-        count: 5
-        data_type: schedule
-        packed_schedule: true
-        enabled_by_default: false
-        scan_interval: very_low
-    schedule_6:
-        register: 43125
-        count: 5
-        data_type: schedule
-        packed_schedule: true
-        enabled_by_default: false
-        scan_interval: very_low
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:
@@ -738,6 +695,84 @@ SELECT_DEFINITIONS:
             standby: 0
             charge: 1
             discharge: 2
+    schedule_1_days:
+        register: 43100
+        enabled_by_default: false
+        scan_interval: high
+        category: config
+        options:
+            sunday: 64
+            monday: 1
+            tuesday: 2
+            wednesday: 4
+            thursday: 8
+            friday: 16
+            saturday: 32
+    schedule_2_days:
+        register: 43105
+        enabled_by_default: false
+        scan_interval: high
+        category: config
+        options:
+            sunday: 64
+            monday: 1
+            tuesday: 2
+            wednesday: 4
+            thursday: 8
+            friday: 16
+            saturday: 32
+    schedule_3_days:
+        register: 43110
+        enabled_by_default: false
+        scan_interval: very_low
+        category: config
+        options:
+            sunday: 64
+            monday: 1
+            tuesday: 2
+            wednesday: 4
+            thursday: 8
+            friday: 16
+            saturday: 32
+    schedule_4_days:
+        register: 43115
+        enabled_by_default: false
+        scan_interval: very_low
+        category: config
+        options:
+            sunday: 64
+            monday: 1
+            tuesday: 2
+            wednesday: 4
+            thursday: 8
+            friday: 16
+            saturday: 32
+    schedule_5_days:
+        register: 43120
+        enabled_by_default: false
+        scan_interval: very_low
+        category: config
+        options:
+            sunday: 64
+            monday: 1
+            tuesday: 2
+            wednesday: 4
+            thursday: 8
+            friday: 16
+            saturday: 32
+    schedule_6_days:
+        register: 43125
+        enabled_by_default: false
+        scan_interval: very_low
+        category: config
+        options:
+            sunday: 64
+            monday: 1
+            tuesday: 2
+            wednesday: 4
+            thursday: 8
+            friday: 16
+            saturday: 32
 
 SWITCH_DEFINITIONS:
     backup_function:
@@ -754,6 +789,60 @@ SWITCH_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
         scan_interval: high
+    schedule_1_enabled:
+        register: 43104
+        command_on: 1
+        command_off: 0
+        icon: "mdi:power"
+        enabled_by_default: false
+        data_type: uint16
+        category: config
+        scan_interval: high
+    schedule_2_enabled:
+        register: 43109
+        command_on: 1
+        command_off: 0
+        icon: "mdi:power"
+        enabled_by_default: false
+        data_type: uint16
+        category: config
+        scan_interval: high
+    schedule_3_enabled:
+        register: 43114
+        command_on: 1
+        command_off: 0
+        icon: "mdi:power"
+        enabled_by_default: false
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_4_enabled:
+        register: 43119
+        command_on: 1
+        command_off: 0
+        icon: "mdi:power"
+        enabled_by_default: false
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_5_enabled:
+        register: 43124
+        command_on: 1
+        command_off: 0
+        icon: "mdi:power"
+        enabled_by_default: false
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_6_enabled:
+        register: 43129
+        command_on: 1
+        command_off: 0
+        icon: "mdi:power"
+        enabled_by_default: false
+        data_type: uint16
+        category: config
+        scan_interval: very_low
 
 NUMBER_DEFINITIONS:
     set_charge_power:
@@ -808,6 +897,205 @@ NUMBER_DEFINITIONS:
         data_type: uint16
         scan_interval: high
 
+    schedule_1_start:
+        register: 43101
+        enabled_by_default: false
+        icon: "mdi:clock-start"
+        min: 0
+        max: 2358
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: high
+    schedule_2_start:
+        register: 43106
+        enabled_by_default: false
+        icon: "mdi:clock-start"
+        min: 0
+        max: 2358
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: high
+    schedule_3_start:
+        register: 43111
+        enabled_by_default: false
+        icon: "mdi:clock-start"
+        min: 0
+        max: 2358
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_4_start:
+        register: 43116
+        enabled_by_default: false
+        icon: "mdi:clock-start"
+        min: 0
+        max: 2358
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_5_start:
+        register: 43121
+        enabled_by_default: false
+        icon: "mdi:clock-start"
+        min: 0
+        max: 2358
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_6_start:
+        register: 43126
+        enabled_by_default: false
+        icon: "mdi:clock-start"
+        min: 0
+        max: 2358
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_1_end:
+        register: 43102
+        enabled_by_default: false
+        icon: "mdi:clock-end"
+        min: 1
+        max: 2359
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: high
+    schedule_2_end:
+        register: 43107
+        enabled_by_default: false
+        icon: "mdi:clock-end"
+        min: 1
+        max: 2359
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: high
+    schedule_3_end:
+        register: 43112
+        enabled_by_default: false
+        icon: "mdi:clock-end"
+        min: 1
+        max: 2359
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_4_end:
+        register: 43117
+        enabled_by_default: false
+        icon: "mdi:clock-end"
+        min: 1
+        max: 2359
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_5_end:
+        register: 43122
+        enabled_by_default: false
+        icon: "mdi:clock-end"
+        min: 1
+        max: 2359
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_6_end:
+        register: 43127
+        enabled_by_default: false
+        icon: "mdi:clock-end"
+        min: 1
+        max: 2359
+        step: 1
+        unit: "min"
+        data_type: uint16
+        category: config
+        scan_interval: very_low
+    schedule_1_mode:
+        register: 43103
+        enabled_by_default: false
+        icon: "mdi:cog"
+        min: -2200
+        max: 2200
+        step: 1
+        unit: W
+        data_type: int16
+        category: config
+        scan_interval: high
+    schedule_2_mode:
+        register: 43108
+        enabled_by_default: false
+        icon: "mdi:cog"
+        min: -2200
+        max: 2200
+        step: 1
+        unit: W
+        data_type: int16
+        category: config
+        scan_interval: high
+    schedule_3_mode:
+        register: 43113
+        enabled_by_default: false
+        icon: "mdi:cog"
+        min: -2200
+        max: 2200
+        step: 1
+        unit: W
+        data_type: int16
+        category: config
+        scan_interval: very_low
+    schedule_4_mode:
+        register: 43118
+        enabled_by_default: false
+        icon: "mdi:cog"
+        min: -2200
+        max: 2200
+        step: 1
+        unit: W
+        data_type: int16
+        category: config
+        scan_interval: very_low
+    schedule_5_mode:
+        register: 43123
+        enabled_by_default: false
+        icon: "mdi:cog"
+        min: -2200
+        max: 2200
+        step: 1
+        unit: W
+        data_type: int16
+        category: config
+        scan_interval: very_low
+    schedule_6_mode:
+        register: 43128
+        enabled_by_default: false
+        icon: "mdi:cog"
+        min: -2200
+        max: 2200
+        step: 1
+        unit: W
+        data_type: int16
+        category: config
+        scan_interval: very_low
+
 BUTTON_DEFINITIONS:
     reset_device:
         register: 41000
@@ -829,7 +1117,7 @@ EFFICIENCY_SENSOR_DEFINITIONS:
         key: round_trip_efficiency_total
         unit: "%"
         device_class: battery
-            icon: "mdi:percent"
+        icon: "mdi:percent"
         state_class: measurement
         mode: round_trip
         dependency_keys:
@@ -839,7 +1127,7 @@ EFFICIENCY_SENSOR_DEFINITIONS:
         key: round_trip_efficiency_monthly
         unit: "%"
         device_class: battery
-            icon: "mdi:percent"
+        icon: "mdi:percent"
         state_class: measurement
         mode: round_trip
         dependency_keys:
