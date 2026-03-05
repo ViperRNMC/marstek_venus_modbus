@@ -79,7 +79,6 @@ SENSOR_DEFINITIONS:
         register: 32104
         scale: 1
         unit: "%"
-        category: diagnostic
         device_class: battery
         state_class: measurement
         enabled_by_default: true

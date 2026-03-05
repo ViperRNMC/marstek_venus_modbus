@@ -10,6 +10,12 @@ MISSING:
         - software_version
         - fault_status
         - alarm_status
+        - battery_soc_unit_1
+        - battery_soc_unit_2
+        - battery_soc_unit_3
+        - battery_soc_unit_4
+        - battery_soc_unit_5
+        - battery_soc_unit_6
     binary:
         - discharge_limit_mode
     select:
@@ -79,12 +85,11 @@ SENSOR_DEFINITIONS:
         register: 32104
         scale: 1
         unit: "%"
-        category: diagnostic
         device_class: battery
         state_class: measurement
         enabled_by_default: true
         data_type: uint16
-        precision: 2
+        precision: 1
         scan_interval: medium
     battery_total_energy:
         register: 32105
