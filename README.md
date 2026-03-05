@@ -216,3 +216,7 @@ _Notes:_
 - For access to registers in the 42000–42999 range, the battery must be set to RS485 control mode.
 - Schedule Time format: `start` and `end` are entered as HHMM 24-hour integers (for example `0830` = 08:30). Use values within the valid range shown in the YAML for each device; ensure `start` is earlier than `end` for a single active period.
 - Schedule Day selection: the underlying `schedule_*_days` register uses a bitmask to represent multiple days, but the integration currently exposes it as a single-select option in Home Assistant. Due to this limitation you cannot select multiple days from the integration UI.
+- Schedule Mode values: `schedule_*_mode` accepts the following ranges:
+  - `-1` = Self consumption mode
+  - `100` to `2500` = Charge power (W)
+  - `-100` to `-2500` = Discharge power (W)
