@@ -79,7 +79,6 @@ SENSOR_DEFINITIONS:
         register: 34002
         scale: 0.1
         unit: "%"
-        category: diagnostic
         device_class: battery
         state_class: measurement
         enabled_by_default: true
