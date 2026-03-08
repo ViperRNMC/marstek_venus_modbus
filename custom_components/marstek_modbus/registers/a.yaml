@@ -699,7 +699,7 @@ SELECT_DEFINITIONS:
         enabled_by_default: false
         scan_interval: high
         options:
-            standby: 0
+            stop: 0
             charge: 1
             discharge: 2
     schedule_1_days:
