@@ -691,17 +691,17 @@ SELECT_DEFINITIONS:
         enabled_by_default: true
         scan_interval: high
         options:
-        manual: 0
-        anti_feed: 1
-        trade_mode: 2
+            manual: 0
+            anti_feed: 1
+            trade_mode: 2
     force_mode:
         register: 42010
         enabled_by_default: false
         scan_interval: high
         options:
-        stop: 0
-        charge: 1
-        discharge: 2
+            stop: 0
+            charge: 1
+            discharge: 2
     schedule_1_days:
         register: 43100
         enabled_by_default: false
