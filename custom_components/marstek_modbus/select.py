@@ -37,12 +37,23 @@ async def async_setup_entry(
         async_add_entities: Callback to add entities.
     """
     # Retrieve the coordinator instance from hass data and add entities
+    async def async_setup_entry(hass, entry, async_add_entities) -> None:
     coordinator = hass.data[DOMAIN][entry.entry_id]
+
+    sel_defs = getattr(coordinator, "SELECT_DEFINITIONS", {}) or {}
+    if not isinstance(sel_defs, dict):
+        _LOGGER.error("SELECT_DEFINITIONS ist kein dict: %r", type(sel_defs))
+        return
+
     entities = [
-        MarstekSelect(coordinator, definition)
-        for definition in coordinator.SELECT_DEFINITIONS
+        MarstekSelect(coordinator, {**definition, "key": key})
+        for key, definition in sel_defs.items()
     ]
-    async_add_entities(entities)
+
+    _LOGGER.debug("Setting up %d select entities: %s", len(entities), [e._key for e in entities])
+
+    # Damit sofort ein erster Status gelesen wird
+    async_add_entities(entities, update_before_add=True)
 
 
 class MarstekSelect(CoordinatorEntity, SelectEntity):
