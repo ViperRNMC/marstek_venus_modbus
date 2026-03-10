@@ -677,7 +677,11 @@ def get_registers(version: str):
     # Normalize incoming version value and accept legacy tokens.
     version_raw = (version or "").strip()
     version = version_raw.lower()
-
+    _LOGGER.info(
+        "Version '%s' mapped to '%s'" ,
+        version_raw,
+        version,
+    )
     # Accept legacy tokens 'v1/v2' and 'v3' and automatically map them
     # to the new tokens used by the integration ('e v1/v2', 'e v3').
     legacy_to_new = {
@@ -750,41 +754,3 @@ def get_registers(version: str):
             except Exception as e:
                 _LOGGER.warning("Failed to load YAML registers %s: %s", yaml_path, e)
 
-    # Fall back to legacy Python modules if YAML not present or failed to load
-    if version == "e v1/v2":
-        from . import registers_v12 as registers
-    elif version == "e v3":
-        from . import registers_v3 as registers
-    elif version == "d":
-        from . import registers_d as registers
-    elif version == "a":
-        # No legacy Python module for A exists; return empty definitions as fallback
-        registers = None
-
-    if registers:
-        return {
-            "SENSOR_DEFINITIONS": getattr(registers, "SENSOR_DEFINITIONS", []),
-            "BINARY_SENSOR_DEFINITIONS": getattr(registers, "BINARY_SENSOR_DEFINITIONS", []),
-            "SELECT_DEFINITIONS": getattr(registers, "SELECT_DEFINITIONS", []),
-            "SWITCH_DEFINITIONS": getattr(registers, "SWITCH_DEFINITIONS", []),
-            "NUMBER_DEFINITIONS": getattr(registers, "NUMBER_DEFINITIONS", []),
-            "BUTTON_DEFINITIONS": getattr(registers, "BUTTON_DEFINITIONS", []),
-            "EFFICIENCY_SENSOR_DEFINITIONS": getattr(
-                registers, "EFFICIENCY_SENSOR_DEFINITIONS", []
-            ),
-            "STORED_ENERGY_SENSOR_DEFINITIONS": getattr(
-                registers, "STORED_ENERGY_SENSOR_DEFINITIONS", []
-            ),
-        }
-
-    # Default empty return if nothing found
-    return {
-        "SENSOR_DEFINITIONS": [],
-        "BINARY_SENSOR_DEFINITIONS": [],
-        "SELECT_DEFINITIONS": [],
-        "SWITCH_DEFINITIONS": [],
-        "NUMBER_DEFINITIONS": [],
-        "BUTTON_DEFINITIONS": [],
-        "EFFICIENCY_SENSOR_DEFINITIONS": [],
-        "STORED_ENERGY_SENSOR_DEFINITIONS": [],
-    }
