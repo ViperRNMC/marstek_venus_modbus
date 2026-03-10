@@ -260,8 +260,8 @@
         "name": "Benutzer-Modus",
         "state": {
           "manual": "Manuell",
-          "anti_feed": "Anti-Feed",
-          "trade_mode": "Trade Mode"
+          "anti_feed": "Nulleinspeisung",
+          "trade_mode": "AI-Optimierung (Dynamischer Stromtarif)"
         }
       },
       "force_mode": {
