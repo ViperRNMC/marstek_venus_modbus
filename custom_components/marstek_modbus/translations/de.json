@@ -87,7 +87,25 @@
         "name": "MAC-Adresse"
       },
       "battery_soc": {
-        "name": "Batterie-Ladezustand"
+        "name": "SoC alle Batterien"
+      },
+      "battery_soc_1": {
+        "name": "SoC Batterie 1"
+      },
+      "battery_soc_2": {
+        "name": "SoC Batterie 2"
+      },
+      "battery_soc_3": {
+        "name": "SoC Batterie 3"
+      },
+      "battery_soc_4": {
+        "name": "SoC Batterie 4"
+      },
+      "battery_soc_5": {
+        "name": "SoC Batterie 5"
+      },
+      "battery_soc_6": {
+        "name": "SoC Batterie 6"
       },
       "battery_total_energy": {
         "name": "Batterie-Gesamtenergie"
