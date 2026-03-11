@@ -439,36 +439,6 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 3
         scan_interval: medium
-    cell_14_voltage:
-        register: 34031
-        scale: 0.001
-        unit: V
-        device_class: voltage
-        state_class: measurement
-        enabled_by_default: false
-        data_type: int16
-        precision: 3
-        scan_interval: medium
-    cell_15_voltage:
-        register: 34032
-        scale: 0.001
-        unit: V
-        device_class: voltage
-        state_class: measurement
-        enabled_by_default: false
-        data_type: int16
-        precision: 3
-        scan_interval: medium
-    cell_16_voltage:
-        register: 34033
-        scale: 0.001
-        unit: V
-        device_class: voltage
-        state_class: measurement
-        enabled_by_default: false
-        data_type: int16
-        precision: 3
-        scan_interval: medium
     inverter_state:
         register: 35100
         scale: 1
@@ -478,13 +448,13 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         precision: 0
         states:
-        0: Sleep
-        1: Standby
-        2: Charge
-        3: Discharge
-        4: Backup Mode
-        5: OTA Upgrade
-        6: Bypass
+            0: Sleep
+            1: Standby
+            2: Charge
+            3: Discharge
+            4: Backup Mode
+            5: OTA Upgrade
+            6: Bypass
         scan_interval: high
     modbus_address:
         register: 41100
@@ -691,17 +661,17 @@ SELECT_DEFINITIONS:
         enabled_by_default: true
         scan_interval: high
         options:
-        manual: 0
-        anti_feed: 1
-        trade_mode: 2
+            manual: 0
+            anti_feed: 1
+            trade_mode: 2
     force_mode:
         register: 42010
         enabled_by_default: false
         scan_interval: high
         options:
-        stop: 0
-        charge: 1
-        discharge: 2
+            stop: 0
+            charge: 1
+            discharge: 2
     schedule_1_days:
         register: 43100
         enabled_by_default: false

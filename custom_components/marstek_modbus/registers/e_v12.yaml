@@ -439,14 +439,6 @@ SENSOR_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         scan_interval: medium
-    # Schedule 1 broken out into individual registers for clarity:
-    # 43100: days bitmask (use a SelectEntity mapping bit values to day names)
-    # 43101: start time - exposed as NumberEntity
-    # 43102: end time - exposed as NumberEntity
-    # 43103: mode (numeric) - exposed as NumberEntity
-    # 43104: enabled (0/1) - exposed as SwitchEntity
-    # The following schedules (2..6) are broken out similarly to schedule_1
-    # and therefore are not defined as packed schedules here.
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:
