@@ -98,6 +98,24 @@
       "battery_soc": {
         "name": "Batterij SOC"
       },
+      "battery_soc_1": {
+        "name": "Batterij pack 1 SOC"
+      },
+      "battery_soc_2": {
+        "name": "Batterij pack 2 SOC"
+      },
+      "battery_soc_3": {
+        "name": "Batterij pack 3 SOC"
+      },
+      "battery_soc_4": {
+        "name": "Batterij pack 4 SOC"
+      },
+      "battery_soc_5": {
+        "name": "Batterij pack 5 SOC"
+      },
+      "battery_soc_6": {
+        "name": "Batterij pack 6 SOC"
+      },
       "battery_total_energy": {
         "name": "Batterij Totale Energie"
       },
@@ -161,6 +179,240 @@
       "min_cell_voltage": {
         "name": "Min. Celspanning"
       },
+      "battery_1_cell_1_voltage": {
+        "name": "Batterij pack 1 Cel 1 Spanning"
+      },
+      "battery_1_cell_2_voltage": {
+        "name": "Batterij pack 1 Cel 2 Spanning"
+      },
+      "battery_1_cell_3_voltage": {
+        "name": "Batterij pack 1 Cel 3 Spanning"
+      },
+      "battery_1_cell_4_voltage": {
+        "name": "Batterij pack 1 Cel 4 Spanning"
+      },
+      "battery_1_cell_5_voltage": {
+        "name": "Batterij pack 1 Cel 5 Spanning"
+      },
+      "battery_1_cell_6_voltage": {
+        "name": "Batterij pack 1 Cel 6 Spanning"
+      },
+      "battery_1_cell_7_voltage": {
+        "name": "Batterij pack 1 Cel 7 Spanning"
+      },
+      "battery_1_cell_8_voltage": {
+        "name": "Batterij pack 1 Cel 8 Spanning"
+      },
+      "battery_1_cell_9_voltage": {
+        "name": "Batterij pack 1 Cel 9 Spanning"
+      },
+      "battery_1_cell_10_voltage": {
+        "name": "Batterij pack 1 Cel 10 Spanning"
+      },
+      "battery_1_cell_11_voltage": {
+        "name": "Batterij pack 1 Cel 11 Spanning"
+      },
+      "battery_1_cell_12_voltage": {
+        "name": "Batterij pack 1 Cel 12 Spanning"
+      },
+      "battery_1_cell_13_voltage": {
+        "name": "Batterij pack 1 Cel 13 Spanning"
+      }
+      "battery_2_cell_1_voltage": {
+        "name": "Batterij pack 2 Cel 1 Spanning"
+      },
+      "battery_2_cell_2_voltage": {
+        "name": "Batterij pack 2 Cel 2 Spanning"
+      },
+      "battery_2_cell_3_voltage": {
+        "name": "Batterij pack 2 Cel 3 Spanning"
+      },
+      "battery_2_cell_4_voltage": {
+        "name": "Batterij pack 2 Cel 4 Spanning"
+      },
+      "battery_2_cell_5_voltage": {
+        "name": "Batterij pack 2 Cel 5 Spanning"
+      },
+      "battery_2_cell_6_voltage": {
+        "name": "Batterij pack 2 Cel 6 Spanning"
+      },
+      "battery_2_cell_7_voltage": {
+        "name": "Batterij pack 2 Cel 7 Spanning"
+      },
+      "battery_2_cell_8_voltage": {
+        "name": "Batterij pack 2 Cel 8 Spanning"
+      },
+      "battery_2_cell_9_voltage": {
+        "name": "Batterij pack 2 Cel 9 Spanning"
+      },
+      "battery_2_cell_10_voltage": {
+        "name": "Batterij pack 2 Cel 10 Spanning"
+      },
+      "battery_2_cell_11_voltage": {
+        "name": "Batterij pack 2 Cel 11 Spanning"
+      },
+      "battery_2_cell_12_voltage": {
+        "name": "Batterij pack 2 Cel 12 Spanning"
+      },
+      "battery_2_cell_13_voltage": {
+        "name": "Batterij pack 2 Cel 13 Spanning"
+      },
+      "battery_3_cell_1_voltage": {
+        "name": "Batterij pack 3 Cel 1 Spanning"
+      },
+      "battery_3_cell_2_voltage": {
+        "name": "Batterij pack 3 Cel 2 Spanning"
+      },
+      "battery_3_cell_3_voltage": {
+        "name": "Batterij pack 3 Cel 3 Spanning"
+      },
+      "battery_3_cell_4_voltage": {
+        "name": "Batterij pack 3 Cel 4 Spanning"
+      },
+      "battery_3_cell_5_voltage": {
+        "name": "Batterij pack 3 Cel 5 Spanning"
+      },
+      "battery_3_cell_6_voltage": {
+        "name": "Batterij pack 3 Cel 6 Spanning"
+      },
+      "battery_3_cell_7_voltage": {
+        "name": "Batterij pack 3 Cel 7 Spanning"
+      },
+      "battery_3_cell_8_voltage": {
+        "name": "Batterij pack 3 Cel 8 Spanning"
+      },
+      "battery_3_cell_9_voltage": {
+        "name": "Batterij pack 3 Cel 9 Spanning"
+      },
+      "battery_3_cell_10_voltage": {
+        "name": "Batterij pack 3 Cel 10 Spanning"
+      },
+      "battery_3_cell_11_voltage": {
+        "name": "Batterij pack 3 Cel 11 Spanning"
+      },
+      "battery_3_cell_12_voltage": {
+        "name": "Batterij pack 3 Cel 12 Spanning"
+      },
+      "battery_3_cell_13_voltage": {
+        "name": "Batterij pack 3 Cel 13 Spanning"
+      },
+      "battery_4_cell_1_voltage": {
+        "name": "Batterij pack 4 Cel 1 Spanning"
+      },
+      "battery_4_cell_2_voltage": {
+        "name": "Batterij pack 4 Cel 2 Spanning"
+      },
+      "battery_4_cell_3_voltage": {
+        "name": "Batterij pack 4 Cel 3 Spanning"
+      },
+      "battery_4_cell_4_voltage": {
+        "name": "Batterij pack 4 Cel 4 Spanning"
+      },
+      "battery_4_cell_5_voltage": {
+        "name": "Batterij pack 4 Cel 5 Spanning"
+      },
+      "battery_4_cell_6_voltage": {
+        "name": "Batterij pack 4 Cel 6 Spanning"
+      },
+      "battery_4_cell_7_voltage": {
+        "name": "Batterij pack 4 Cel 7 Spanning"
+      },
+      "battery_4_cell_8_voltage": {
+        "name": "Batterij pack 4 Cel 8 Spanning"
+      },
+      "battery_4_cell_9_voltage": {
+        "name": "Batterij pack 4 Cel 9 Spanning"
+      },
+      "battery_4_cell_10_voltage": {
+        "name": "Batterij pack 4 Cel 10 Spanning"
+      },
+      "battery_4_cell_11_voltage": {
+        "name": "Batterij pack 4 Cel 11 Spanning"
+      },
+      "battery_4_cell_12_voltage": {
+        "name": "Batterij pack 4 Cel 12 Spanning"
+      },
+      "battery_4_cell_13_voltage": {
+        "name": "Batterij pack 4 Cel 13 Spanning"
+      },
+      "battery_5_cell_1_voltage": {
+        "name": "Batterij pack 5 Cel 1 Spanning"
+      },
+      "battery_5_cell_2_voltage": {
+        "name": "Batterij pack 5 Cel 2 Spanning"
+      },
+      "battery_5_cell_3_voltage": {
+        "name": "Batterij pack 5 Cel 3 Spanning"
+      },
+      "battery_5_cell_4_voltage": {
+        "name": "Batterij pack 5 Cel 4 Spanning"
+      },
+      "battery_5_cell_5_voltage": {
+        "name": "Batterij pack 5 Cel 5 Spanning"
+      },
+      "battery_5_cell_6_voltage": {
+        "name": "Batterij pack 5 Cel 6 Spanning"
+      },
+      "battery_5_cell_7_voltage": {
+        "name": "Batterij pack 5 Cel 7 Spanning"
+      },
+      "battery_5_cell_8_voltage": {
+        "name": "Batterij pack 5 Cel 8 Spanning"
+      },
+      "battery_5_cell_9_voltage": {
+        "name": "Batterij pack 5 Cel 9 Spanning"
+      },
+      "battery_5_cell_10_voltage": {
+        "name": "Batterij pack 5 Cel 10 Spanning"
+      },
+      "battery_5_cell_11_voltage": {
+        "name": "Batterij pack 5 Cel 11 Spanning"
+      },
+      "battery_5_cell_12_voltage": {
+        "name": "Batterij pack 5 Cel 12 Spanning"
+      },
+      "battery_5_cell_13_voltage": {
+        "name": "Batterij pack 5 Cel 13 Spanning"
+      },
+      "battery_6_cell_1_voltage": {
+        "name": "Batterij pack 6 Cel 1 Spanning"
+      },
+      "battery_6_cell_2_voltage": {
+        "name": "Batterij pack 6 Cel 2 Spanning"
+      },
+      "battery_6_cell_3_voltage": {
+        "name": "Batterij pack 6 Cel 3 Spanning"
+      },
+      "battery_6_cell_4_voltage": {
+        "name": "Batterij pack 6 Cel 4 Spanning"
+      },
+      "battery_6_cell_5_voltage": {
+        "name": "Batterij pack 6 Cel 5 Spanning"
+      },
+      "battery_6_cell_6_voltage": {
+        "name": "Batterij pack 6 Cel 6 Spanning"
+      },
+      "battery_6_cell_7_voltage": {
+        "name": "Batterij pack 6 Cel 7 Spanning"
+      },
+      "battery_6_cell_8_voltage": {
+        "name": "Batterij pack 6 Cel 8 Spanning"
+      },
+      "battery_6_cell_9_voltage": {
+        "name": "Batterij pack 6 Cel 9 Spanning"
+      },
+      "battery_6_cell_10_voltage": {
+        "name": "Batterij pack 6 Cel 10 Spanning"
+      },
+      "battery_6_cell_11_voltage": {
+        "name": "Batterij pack 6 Cel 11 Spanning"
+      },
+      "battery_6_cell_12_voltage": {
+        "name": "Batterij pack 6 Cel 12 Spanning"
+      },
+      "battery_6_cell_13_voltage": {
+        "name": "Batterij pack 6 Cel 13 Spanning"
+      },
       "inverter_state": {
         "name": "Omvormer Status",
         "state": {
@@ -169,7 +421,7 @@
           "2": "Laden",
           "3": "Ontladen",
           "4": "Backup-modus",
-          "5": "OTA Upgrade",
+          "5": "OTA-upgrade",
           "6": "Bypass"
         }
       },
@@ -179,51 +431,28 @@
       "alarm_status": {
         "name": "Alarmstatus"
       },
+
       "modbus_address": {
         "name": "Modbus-adres"
       },
-      "ac_offgrid_voltage": {
-        "name": "AC Off-grid Spanning"
-      },
-      "ac_offgrid_current": {
-        "name": "AC Off-grid Stroom"
-      },
-      "ac_offgrid_power": {
-        "name": "AC Off-grid Vermogen"
-      },
+
       "wifi_signal_strength": {
         "name": "WiFi-signaalsterkte"
       },
+
       "round_trip_efficiency_total": {
-        "name": "Totaal Rendement"
+        "name": "Totaal rondrendement"
       },
       "round_trip_efficiency_monthly": {
-        "name": "Maandelijks Rendement"
+        "name": "Maandelijks rondrendement"
       },
       "conversion_efficiency": {
         "name": "Conversierendement"
       },
       "stored_energy": {
-        "name": "Opgeslagen Energie"
+        "name": "Opgeslagen energie"
       },
-      "mppt1_voltage": {
-        "name": "MPPT1 Spanning"
-      },
-      "mppt1_current": {
-        "name": "MPPT1 Stroom"
-      },
-      "mppt1_power": {
-        "name": "MPPT1 Vermogen"
-      },
-      "mppt2_voltage": {
-        "name": "MPPT2 Spanning"
-      },
-      "mppt2_current": {
-        "name": "MPPT2 Stroom"
-      },
-      "mppt2_power": {
-        "name": "MPPT2 Vermogen"
-      },
+
       "mppt3_voltage": {
         "name": "MPPT3 Spanning"
       },
@@ -242,6 +471,7 @@
       "mppt4_power": {
         "name": "MPPT4 Vermogen"
       },
+
       "bluetooth_status": {
         "name": "Bluetooth-status",
         "state": {
@@ -249,10 +479,11 @@
           "1": "Verbonden na herstart",
           "2": "Verbonden",
           "3": "Actief",
-          "4": "Locked"
+          "4": "Vergrendeld"
         }
       }
     },
+
     "binary_sensor": {
       "wifi_status": {
         "name": "WiFi-status"
@@ -264,12 +495,13 @@
         "name": "Ontlaadlimiet"
       }
     },
+
     "select": {
       "user_work_mode": {
-        "name": "Gebruiker modus",
+        "name": "Gebruikersmodus",
         "state": {
           "manual": "Handmatig",
-          "anti_feed": "Anti-Teruglevering",
+          "anti_feed": "Anti-teruglevering",
           "trade_mode": "Handelsmodus"
         }
       },
@@ -296,104 +528,104 @@
           "China": "China"
         }
       },
+
       "schedule_1_days": {
         "name": "Schema 1 Dagen",
         "state": {
-          "sunday": "zondag",
-          "monday": "maandag",
-          "tuesday": "dinsdag",
-          "wednesday": "woensdag",
-          "thursday": "donderdag",
-          "friday": "vrijdag",
-          "saturday": "zaterdag"
+          "sunday": "Zondag",
+          "monday": "Maandag",
+          "tuesday": "Dinsdag",
+          "wednesday": "Woensdag",
+          "thursday": "Donderdag",
+          "friday": "Vrijdag",
+          "saturday": "Zaterdag"
         }
       },
       "schedule_2_days": {
         "name": "Schema 2 Dagen",
         "state": {
-          "sunday": "zondag",
-          "monday": "maandag",
-          "tuesday": "dinsdag",
-          "wednesday": "woensdag",
-          "thursday": "donderdag",
-          "friday": "vrijdag",
-          "saturday": "zaterdag"
+          "sunday": "Zondag",
+          "monday": "Maandag",
+          "tuesday": "Dinsdag",
+          "wednesday": "Woensdag",
+          "thursday": "Donderdag",
+          "friday": "Vrijdag",
+          "saturday": "Zaterdag"
         }
       },
       "schedule_3_days": {
         "name": "Schema 3 Dagen",
         "state": {
-          "sunday": "zondag",
-          "monday": "maandag",
-          "tuesday": "dinsdag",
-          "wednesday": "woensdag",
-          "thursday": "donderdag",
-          "friday": "vrijdag",
-          "saturday": "zaterdag"
+          "sunday": "Zondag",
+          "monday": "Maandag",
+          "tuesday": "Dinsdag",
+          "wednesday": "Woensdag",
+          "thursday": "Donderdag",
+          "friday": "Vrijdag",
+          "saturday": "Zaterdag"
         }
       },
       "schedule_4_days": {
         "name": "Schema 4 Dagen",
         "state": {
-          "sunday": "zondag",
-          "monday": "maandag",
-          "tuesday": "dinsdag",
-          "wednesday": "woensdag",
-          "thursday": "donderdag",
-          "friday": "vrijdag",
-          "saturday": "zaterdag"
+          "sunday": "Zondag",
+          "monday": "Maandag",
+          "tuesday": "Dinsdag",
+          "wednesday": "Woensdag",
+          "thursday": "Donderdag",
+          "friday": "Vrijdag",
+          "saturday": "Zaterdag"
         }
       },
       "schedule_5_days": {
         "name": "Schema 5 Dagen",
         "state": {
-          "sunday": "zondag",
-          "monday": "maandag",
-          "tuesday": "dinsdag",
-          "wednesday": "woensdag",
-          "thursday": "donderdag",
-          "friday": "vrijdag",
-          "saturday": "zaterdag"
+          "sunday": "Zondag",
+          "monday": "Maandag",
+          "tuesday": "Dinsdag",
+          "wednesday": "Woensdag",
+          "thursday": "Donderdag",
+          "friday": "Vrijdag",
+          "saturday": "Zaterdag"
         }
       },
       "schedule_6_days": {
         "name": "Schema 6 Dagen",
         "state": {
-          "sunday": "zondag",
-          "monday": "maandag",
-          "tuesday": "dinsdag",
-          "wednesday": "woensdag",
-          "thursday": "donderdag",
-          "friday": "vrijdag",
-          "saturday": "zaterdag"
+          "sunday": "Zondag",
+          "monday": "Maandag",
+          "tuesday": "Dinsdag",
+          "wednesday": "Woensdag",
+          "thursday": "Donderdag",
+          "friday": "Vrijdag",
+          "saturday": "Zaterdag"
         }
       }
     },
     "switch": {
       "backup_function": {
-        "name": "Backup-functie"
+        "name": "Back-up functie"
       },
       "rs485_control_mode": {
-        "name": "RS485 Besturingsmodus"
+        "name": "RS485 Bedrijfsmodus"
       },
       "schedule_1_enabled": {
-        "name": "Schema 1 inschakelen"
-      }
-      ,
+        "name": "Schema 1 Ingeschakeld"
+      },
       "schedule_2_enabled": {
-        "name": "Schema 2 inschakelen"
+        "name": "Schema 2 Ingeschakeld"
       },
       "schedule_3_enabled": {
-        "name": "Schema 3 inschakelen"
+        "name": "Schema 3 Ingeschakeld"
       },
       "schedule_4_enabled": {
-        "name": "Schema 4 inschakelen"
+        "name": "Schema 4 Ingeschakeld"
       },
       "schedule_5_enabled": {
-        "name": "Schema 5 inschakelen"
+        "name": "Schema 5 Ingeschakeld"
       },
       "schedule_6_enabled": {
-        "name": "Schema 6 inschakelen"
+        "name": "Schema 6 Ingeschakeld"
       }
     },
     "number": {
@@ -410,13 +642,13 @@
         "name": "Max. Ontlaadvermogen"
       },
       "charging_cutoff_capacity": {
-        "name": "Laadstop Capaciteit"
+        "name": "Laadstopcapaciteit"
       },
       "discharging_cutoff_capacity": {
-        "name": "Ontlaadstop Capaciteit"
+        "name": "Ontlaadstopcapaciteit"
       },
       "charge_to_soc": {
-        "name": "Opladen tot SOC"
+        "name": "Laden tot SOC"
       },
       "schedule_1_start": {
         "name": "Schema 1 Start"
@@ -437,27 +669,26 @@
         "name": "Schema 6 Start"
       },
       "schedule_1_end": {
-        "name": "Schema 1 Eind"
+        "name": "Schema 1 Einde"
       },
       "schedule_2_end": {
-        "name": "Schema 2 Eind"
+        "name": "Schema 2 Einde"
       },
       "schedule_3_end": {
-        "name": "Schema 3 Eind"
+        "name": "Schema 3 Einde"
       },
       "schedule_4_end": {
-        "name": "Schema 4 Eind"
+        "name": "Schema 4 Einde"
       },
       "schedule_5_end": {
-        "name": "Schema 5 Eind"
+        "name": "Schema 5 Einde"
       },
       "schedule_6_end": {
-        "name": "Schema 6 Eind"
+        "name": "Schema 6 Einde"
       },
       "schedule_1_mode": {
         "name": "Schema 1 Modus"
-      }
-      ,
+      },
       "schedule_2_mode": {
         "name": "Schema 2 Modus"
       },
