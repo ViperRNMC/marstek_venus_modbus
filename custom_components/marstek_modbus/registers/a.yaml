@@ -93,7 +93,7 @@ SENSOR_DEFINITIONS:
         scan_interval: medium
     battery_soc_1:
         register: 34002
-        scale: 1
+        scale: 0.1
         unit: "%"
         device_class: battery
         state_class: measurement
@@ -103,7 +103,7 @@ SENSOR_DEFINITIONS:
         scan_interval: medium
     battery_soc_2:
         register: 34102
-        scale: 1
+        scale: 0.1
         unit: "%"
         device_class: battery
         state_class: measurement
@@ -113,7 +113,7 @@ SENSOR_DEFINITIONS:
         scan_interval: medium
     battery_soc_3:
         register: 34202
-        scale: 1
+        scale: 0.1
         unit: "%"
         device_class: battery
         state_class: measurement
@@ -123,7 +123,7 @@ SENSOR_DEFINITIONS:
         scan_interval: medium
     battery_soc_4:
         register: 34302
-        scale: 1
+        scale: 0.1
         unit: "%"
         device_class: battery
         state_class: measurement
@@ -133,7 +133,7 @@ SENSOR_DEFINITIONS:
         scan_interval: medium
     battery_soc_5:
         register: 34402
-        scale: 1
+        scale: 0.1
         unit: "%"
         device_class: battery
         state_class: measurement
@@ -143,7 +143,7 @@ SENSOR_DEFINITIONS:
         scan_interval: medium
     battery_soc_6:
         register: 34502
-        scale: 1
+        scale: 0.1
         unit: "%"
         device_class: battery
         state_class: measurement
