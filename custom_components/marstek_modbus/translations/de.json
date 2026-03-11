@@ -403,7 +403,7 @@
       },
       "battery_6_cell_13_voltage": {
         "name": "Batteriepack 6 Zelle 13 Spannung"
-      }
+      },
       "inverter_state": {
         "name": "Wechselrichter-Status",
         "state": {
@@ -699,8 +699,7 @@
       },
       "schedule_1_mode": {
         "name": "Zeitplan 1 Modus"
-      }
-      ,
+      },
       "schedule_2_mode": {
         "name": "Zeitplan 2 Modus"
       },
