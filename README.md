@@ -139,9 +139,9 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | cell_11_voltage                   | Cell 11 voltage                            | int16   | 2    | 0.001  | V    | 34028 | 34028 |       | 34028 |
 | cell_12_voltage                   | Cell 12 voltage                            | int16   | 2    | 0.001  | V    | 34029 | 34029 |       | 34029 |
 | cell_13_voltage                   | Cell 13 voltage                            | int16   | 2    | 0.001  | V    | 34030 | 34030 |       | 34030 |
-| cell_14_voltage                   | Cell 14 voltage                            | int16   | 2    | 0.001  | V    | 34031 | 34031 |       | 34031 |
-| cell_15_voltage                   | Cell 15 voltage                            | int16   | 2    | 0.001  | V    | 34032 | 34032 |       | 34032 |
-| cell_16_voltage                   | Cell 16 voltage                            | int16   | 2    | 0.001  | V    | 34033 | 34033 |       | 34033 |
+| cell_14_voltage                   | Cell 14 voltage                            | int16   | 2    | 0.001  | V    |       | 34031 |       | 34031 |
+| cell_15_voltage                   | Cell 15 voltage                            | int16   | 2    | 0.001  | V    |       | 34032 |       | 34032 |
+| cell_16_voltage                   | Cell 16 voltage                            | int16   | 2    | 0.001  | V    |       | 34033 |       | 34033 |
 | mppt1_voltage                     | MPPT1 array voltage                        | uint16  | 2    | 0.1    | V    | 30020 | 30020 |       |       |
 | mppt1_current                     | MPPT1 array current                        | uint16  | 2    | 0.1    | A    | 30024 | 30024 |       |       |
 | mppt1_power                       | MPPT1 array power                          | uint16  | 2    | 0.1    | W    | 30037 | 30037 |       |       |
