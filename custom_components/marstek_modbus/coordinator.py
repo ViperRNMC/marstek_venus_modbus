@@ -94,6 +94,13 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self._last_successful_read = None
         self._connection_established_at = None
 
+        # Per-register failure tracking for exponential backoff.
+        # Counts consecutive failed reads per key; resets to 0 on first success.
+        # Effective poll interval = base_interval * 2^min(failures, 6), capped at 3600s.
+        self._register_failures: dict[str, int] = {}
+        # Tracks last *attempt* time (success or failure) for backoff interval calculation.
+        self._last_attempt_times: dict = {}
+
         # Prepare scan intervals (from config_entry.options or default)
         options = entry.options or {}
         self._update_scan_intervals(options)
@@ -493,17 +500,23 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 )
                 continue
 
-            # Check when this sensor was last updated and skip if within interval
-            last_update = self._last_update_times.get(key)
-            elapsed = (now - last_update).total_seconds() if last_update else None
+            # Apply per-register exponential backoff based on consecutive failures.
+            # This prevents hammering dead/removed registers at full poll rate.
+            failures = self._register_failures.get(key, 0)
+            backoff = min(2 ** failures, 64)  # max 64x base interval
+            effective_interval = min(interval * backoff, 3600)
 
-            if elapsed is not None and elapsed < interval:
+            last_attempt = self._last_attempt_times.get(key)
+            elapsed = (now - last_attempt).total_seconds() if last_attempt else None
+
+            if elapsed is not None and elapsed < effective_interval:
                 _LOGGER.debug(
-                    "Skipping %s '%s', last update %.1fs ago (%ds)",
+                    "Skipping %s '%s', last attempt %.1fs ago (effective interval %ds, failures=%d)",
                     entity_type,
                     key,
                     elapsed,
-                    interval,
+                    effective_interval,
+                    failures,
                 )
                 continue
 
@@ -561,10 +574,34 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     updated_data[key] = value
 
                 self._last_update_times[key] = now
+                self._last_attempt_times[key] = now
+                prev_failures = self._register_failures.get(key, 0)
+                if prev_failures > 0:
+                    _LOGGER.info(
+                        "%s '%s' recovered after %d consecutive failure(s)",
+                        entity_type, key, prev_failures,
+                    )
+                self._register_failures[key] = 0
                 successful_reads += 1
             else:
-                # Individual sensor read failed
-                _LOGGER.warning("Failed to read %s '%s' - value is None", entity_type, key)
+                # Individual sensor read failed — increment backoff counter
+                self._last_attempt_times[key] = now
+                new_failures = self._register_failures.get(key, 0) + 1
+                self._register_failures[key] = new_failures
+                next_backoff = min(2 ** new_failures, 64)
+                next_interval = min(interval * next_backoff, 3600)
+                # Log verbosely on first few failures and then only at milestones
+                if new_failures <= 3 or new_failures % 10 == 0:
+                    _LOGGER.warning(
+                        "Failed to read %s '%s' - value is None "
+                        "(consecutive failures: %d, next poll in %ds)",
+                        entity_type, key, new_failures, next_interval,
+                    )
+                else:
+                    _LOGGER.debug(
+                        "Failed to read %s '%s' - value is None (failure #%d)",
+                        entity_type, key, new_failures,
+                    )
 
         # Connection retry logic: only track failures if we actually attempted reads
         if attempted_reads > 0:
