@@ -79,6 +79,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Data storage for sensor values and timestamps of last updates
         self.data: dict = {}
         self._last_update_times: dict = {}
+        # Timestamps of last successful writes per key (for post-write read suppression)
+        self._last_write_times: dict = {}
         
         # Connection throttling to prevent endless retry attempts after repeated failures
         self._consecutive_failures = 0
@@ -382,6 +384,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     scale if scale is not None else 1,
                     unit if unit is not None else "N/A",
                 )
+                from homeassistant.util.dt import utcnow as _utcnow
+                self._last_write_times[key] = _utcnow()
                 return True
             else:
                 _LOGGER.warning(
@@ -498,6 +502,12 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     entity_type,
                     key,
                 )
+                continue
+
+            # Skip read for 3s after a write to avoid reading back stale device state
+            last_write = self._last_write_times.get(key)
+            if last_write is not None and (now - last_write).total_seconds() < 3:
+                _LOGGER.debug("Suppressing read of '%s' after recent write", key)
                 continue
 
             # Apply per-register exponential backoff based on consecutive failures.
