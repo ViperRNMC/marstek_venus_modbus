@@ -59,6 +59,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.BINARY_SENSOR_DEFINITIONS = []
         self.SELECT_DEFINITIONS = []
         self.SWITCH_DEFINITIONS = []
+        self.VIRTUAL_SWITCH_DEFINITIONS = []
         self.NUMBER_DEFINITIONS = []
         self.BUTTON_DEFINITIONS = []
         self.EFFICIENCY_SENSOR_DEFINITIONS = []
@@ -185,6 +186,54 @@ class MarstekCoordinator(DataUpdateCoordinator):
         
         return diagnostics
 
+    async def async_set_virtual_switch_state(self, key: str, state: bool) -> None:
+        """
+        Set the state of a virtual switch and trigger related actions.
+        
+        Args:
+            key: The key of the virtual switch
+            state: The new state of the virtual switch
+        """
+        # Set the state in data
+        self.data[key] = state
+        
+        # Trigger actions based on the switch state
+        if key == "lock_charge" and state:
+            # When lock_charge is turned on, set set_charge_power to 0
+            if "set_charge_power" in self.data:
+                self.data["set_charge_power"] = 0
+                _LOGGER.info("Lock charge activated - set_charge_power set to 0")
+        
+        if key == "lock_discharge" and state:
+            # When lock_discharge is turned on, set set_discharge_power to 0
+            if "set_discharge_power" in self.data:
+                self.data["set_discharge_power"] = 0
+                _LOGGER.info("Lock discharge activated - set_discharge_power set to 0")
+
+    def get_modified_value(self, entity_key: str, original_value: int) -> int:
+        """
+        Get the modified value to send for an entity, considering virtual switch states.
+        
+        Args:
+            entity_key: The key of the entity
+            original_value: The original value that would be sent
+            
+        Returns:
+            The modified value to actually send (e.g., 0 if blocked, original_value otherwise)
+        """
+        # Modify set_charge_power if lock_charge is active
+        if entity_key == "set_charge_power":
+            if self.data.get("lock_charge", False):
+                return 0
+        
+        # Modify set_discharge_power if lock_discharge is active
+        if entity_key == "set_discharge_power":
+            if self.data.get("lock_discharge", False):
+                return 0
+        
+        # Return original value if not modified
+        return original_value
+     
     async def async_init(self):
         """Asynchronously initialize the Modbus connection."""
         from homeassistant.util.dt import utcnow
@@ -217,6 +266,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             self.BINARY_SENSOR_DEFINITIONS = data.get("BINARY_SENSOR_DEFINITIONS", [])
             self.SELECT_DEFINITIONS = data.get("SELECT_DEFINITIONS", [])
             self.SWITCH_DEFINITIONS = data.get("SWITCH_DEFINITIONS", [])
+            self.VIRTUAL_SWITCH_DEFINITIONS = data.get("VIRTUAL_SWITCH_DEFINITIONS", [])
             self.NUMBER_DEFINITIONS = data.get("NUMBER_DEFINITIONS", [])
             self.BUTTON_DEFINITIONS = data.get("BUTTON_DEFINITIONS", [])
             self.EFFICIENCY_SENSOR_DEFINITIONS = data.get("EFFICIENCY_SENSOR_DEFINITIONS", [])

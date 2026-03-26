@@ -38,7 +38,14 @@ async def async_setup_entry(
     """
     # Retrieve the coordinator instance from hass data and add entities
     coordinator = hass.data[DOMAIN][entry.entry_id]
+    
+    # Create real switch entities
     entities = [MarstekSwitch(coordinator, definition) for definition in coordinator.SWITCH_DEFINITIONS]
+    
+    # Create virtual switch entities
+    virtual_entities = [MarstekVirtualSwitch(coordinator, definition) for definition in coordinator.VIRTUAL_SWITCH_DEFINITIONS]
+    entities.extend(virtual_entities)
+    
     async_add_entities(entities)
 
 
@@ -167,6 +174,99 @@ class MarstekSwitch(CoordinatorEntity, SwitchEntity):
             unit=self.definition.get("unit"),
             entity_type=self.entity_type,
         )
+
+    @property
+    def device_info(self) -> dict:
+        """
+        Return device information for Home Assistant's device registry.
+        Includes identifiers, name, manufacturer, model, and entry type.
+        """
+        return {
+            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
+            "name": self.coordinator.config_entry.title,
+            "manufacturer": MANUFACTURER,
+            "model": MODEL,
+            "entry_type": "service",
+        }
+
+
+class MarstekVirtualSwitch(CoordinatorEntity, SwitchEntity):
+    """
+    Representation of a virtual switch entity for Marstek Venus.
+    
+    Virtual switches are not based on Modbus registers but are managed
+    internally by the coordinator for decision-making purposes.
+    """
+
+    def __init__(self, coordinator: MarstekCoordinator, definition: dict):
+        """
+        Initialize the virtual switch entity.
+
+        Args:
+            coordinator: The data update coordinator instance.
+            definition: Dictionary containing virtual switch configuration.
+        """
+        super().__init__(coordinator)
+
+        # Store the key and definition
+        self._key = definition["key"]
+        self.definition = definition
+
+        # Assign the entity type to the coordinator mapping
+        self.coordinator._entity_types[self._key] = self.entity_type
+
+        # Set entity attributes from definition
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self._key}"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = self._key
+
+        # Internal state (default to False)
+        self._state = False
+
+        # Set optional attributes
+        if "category" in self.definition:
+            self._attr_entity_category = EntityCategory(self.definition.get("category"))
+        if "icon" in self.definition:
+            self._attr_icon = self.definition.get("icon")
+        if definition.get("enabled_by_default") is False:
+            self._attr_entity_registry_enabled_default = False
+
+    @property
+    def entity_type(self) -> str:
+        """
+        Return the type of this entity for logging purposes.
+        This allows the coordinator to show more descriptive messages.
+        """
+        return "virtual_switch"
+
+    @property
+    def available(self) -> bool:
+        """
+        Return True if the coordinator has successfully fetched data.
+        Used by Home Assistant to determine entity availability.
+        """
+        return self.coordinator.last_update_success
+
+    @property
+    def is_on(self) -> bool:
+        """Return the current state of the virtual switch."""
+        return self._state
+
+    async def async_turn_on(self, **kwargs) -> None:
+        """Turn the virtual switch on."""
+        self._state = True
+        self.async_write_ha_state()
+        
+        # Notify coordinator about state change and trigger actions
+        await self.coordinator.async_set_virtual_switch_state(self._key, True)
+
+    async def async_turn_off(self, **kwargs) -> None:
+        """Turn the virtual switch off."""
+        self._state = False
+        self.async_write_ha_state()
+        
+        # Notify coordinator about state change and trigger actions
+        await self.coordinator.async_set_virtual_switch_state(self._key, False)
 
     @property
     def device_info(self) -> dict:

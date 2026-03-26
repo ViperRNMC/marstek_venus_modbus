@@ -131,14 +131,21 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         # Convert the float value to an integer for Modbus
         raw_value = int(value / self._scale)
         
+        # Get the modified value, considering virtual switch states
+        value_to_send = self.coordinator.get_modified_value(self._key, raw_value)
+        
+        # Log if value was modified
+        if value_to_send != raw_value:
+            _LOGGER.debug("Entity '%s' was modified by coordinator. Sending %d instead of %d.", self._key, value_to_send, raw_value)
+        
         # Optimistically update the coordinator data so HA shows the new state immediately
-        self.coordinator.data[self._key] = raw_value
+        self.coordinator.data[self._key] = value_to_send
         self.async_write_ha_state()
 
         # Write the value using the coordinator's async_write_value method
         success = await self.coordinator.async_write_value(
             register=self._register,
-            value=raw_value,
+            value=value_to_send,
             key=self._key,
             scale=self._scale,
             unit=self._unit,

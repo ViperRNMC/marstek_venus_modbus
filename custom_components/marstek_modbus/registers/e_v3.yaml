@@ -735,6 +735,18 @@ SWITCH_DEFINITIONS:
         category: config
         scan_interval: very_low
 
+VIRTUAL_SWITCH_DEFINITIONS:
+    lock_charge:
+        key: lock_charge
+        enabled_by_default: true
+        icon: "mdi:lock"
+        # category: diagnostic
+    lock_discharge:
+        key: lock_discharge
+        enabled_by_default: true
+        icon: "mdi:lock"
+        # category: diagnostic
+
 NUMBER_DEFINITIONS:
     set_charge_power:
         register: 42020
