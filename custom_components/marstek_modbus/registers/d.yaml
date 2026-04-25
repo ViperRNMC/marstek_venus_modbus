@@ -656,6 +656,7 @@ SENSOR_DEFINITIONS:
         icon: "mdi:bluetooth"
         category: diagnostic
         enabled_by_default: false
+        scan_interval: medium
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:
