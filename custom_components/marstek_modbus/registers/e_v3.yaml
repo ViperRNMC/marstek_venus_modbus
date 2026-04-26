@@ -6,6 +6,8 @@ MISSING:
     sensor:
         - sn_code
         - software_version
+        - fault_status
+        - alarm_status
     binary:
         - discharge_limit_mode
     select:
@@ -639,28 +641,6 @@ SENSOR_DEFINITIONS:
             2: Connected
             3: Active
             4: Locked
-    alarm_status:
-        register: 36000
-        count: 2
-        scale: 1
-        unit: null
-        icon: "mdi:alert"
-        category: diagnostic
-        enabled_by_default: false
-        data_type: uint32
-        precision: 0
-        scan_interval: medium
-    fault_status:
-        register: 36100
-        count: 2
-        scale: 1
-        unit: null
-        icon: "mdi:alert-circle"
-        category: diagnostic
-        enabled_by_default: false
-        data_type: uint32
-        precision: 0
-        scan_interval: medium
     bms_online:
         register: 37000
         scale: 1
