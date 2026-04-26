@@ -468,16 +468,7 @@
       "gateway_ip": {
         "name": "Gateway-IP-adres"
       },
-      "bluetooth_status": {
-        "name": "Bluetooth-status",
-        "state": {
-          "0": "Niet verbonden",
-          "1": "Verbonden na herstart",
-          "2": "Verbonden",
-          "3": "Actief",
-          "4": "Vergrendeld"
-        }
-      },
+
       "bms_temperature_1": {
         "name": "BMS-temperatuur 1"
       },

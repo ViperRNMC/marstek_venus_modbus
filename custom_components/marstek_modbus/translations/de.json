@@ -461,16 +461,6 @@
       "gateway_ip": {
         "name": "Gateway-IP-Adresse"
       },
-      "bluetooth_status": {
-        "name": "Bluetooth-Status",
-        "state": {
-          "0": "Getrennt",
-          "1": "Nach dem Neustart verbunden",
-          "2": "Verbunden",
-          "3": "Aktiv",
-          "4": "Gesperrt"
-        }
-      },
       "bms_temperature_1": {
         "name": "BMS-Temperatur 1"
       },
