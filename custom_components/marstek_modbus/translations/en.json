@@ -82,8 +82,12 @@
       },
       "vms_version": {
         "name": "VMS Version"
+      },      "ems_sub_version": {
+        "name": "EMS Sub-Version"
       },
-      "comm_module_firmware": {
+      "vns_version": {
+        "name": "VNS Version"
+      },      "comm_module_firmware": {
         "name": "Communication Module Firmware"
       },
       "mac_address": {
@@ -455,6 +459,58 @@
       "wifi_signal_strength": {
         "name": "WiFi Signal Strength"
       },
+      "wifi_ssid": {
+        "name": "WiFi SSID"
+      },
+      "device_ip": {
+        "name": "Device IP Address"
+      },
+      "gateway_ip": {
+        "name": "Gateway IP Address"
+      },
+      "bluetooth_status": {
+        "name": "Bluetooth Status",
+        "state": {
+          "0": "Disconnected",
+          "1": "Connected after reboot",
+          "2": "Connected",
+          "3": "Active",
+          "4": "Locked"
+        }
+      },
+      "alarm_status": {
+        "name": "Alarm Status"
+      },
+      "fault_status": {
+        "name": "Fault Status"
+      },
+      "bms_temperature_1": {
+        "name": "BMS Temperature 1"
+      },
+      "bms_temperature_2": {
+        "name": "BMS Temperature 2"
+      },
+      "cell_temperature_1": {
+        "name": "Cell Temperature 1"
+      },
+      "cell_temperature_2": {
+        "name": "Cell Temperature 2"
+      },
+      "cell_temperature_3": {
+        "name": "Cell Temperature 3"
+      },
+      "cell_temperature_4": {
+        "name": "Cell Temperature 4"
+      },
+      "bms_online": {
+        "name": "BMS Online"
+      },
+      "bms_code": {
+        "name": "BMS Code"
+      },
+      "bms_status": {
+        "name": "BMS Status"
+      },
       "round_trip_efficiency_total": {
         "name": "Round Trip Efficiency Total"
       },
@@ -502,17 +558,6 @@
       },
       "mppt4_power": {
         "name": "MPPT4 Power"
-      },
-
-      "bluetooth_status": {
-        "name": "Bluetooth Status",
-        "state": {
-          "0": "Disconnected",
-          "1": "Connected after reboot",
-          "2": "Connected",
-          "3": "Active",
-          "4": "Locked"
-        }
       }
     },
     "binary_sensor": {
