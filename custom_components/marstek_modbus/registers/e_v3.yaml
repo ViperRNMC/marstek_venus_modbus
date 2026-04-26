@@ -8,6 +8,9 @@ MISSING:
         - software_version
         - fault_status
         - alarm_status
+        - bms_online
+        - bms_code
+        - bms_status
     binary:
         - discharge_limit_mode
     select:
@@ -641,36 +644,6 @@ SENSOR_DEFINITIONS:
             2: Connected
             3: Active
             4: Locked
-    bms_online:
-        register: 37000
-        scale: 1
-        unit: null
-        icon: "mdi:chip"
-        category: diagnostic
-        enabled_by_default: false
-        data_type: uint16
-        precision: 0
-        scan_interval: low
-    bms_code:
-        register: 34004
-        scale: 1
-        unit: null
-        icon: "mdi:battery-charging"
-        category: diagnostic
-        enabled_by_default: false
-        data_type: uint16
-        precision: 0
-        scan_interval: low
-    bms_status:
-        register: 30106
-        scale: 1
-        unit: null
-        icon: "mdi:flag"
-        category: diagnostic
-        enabled_by_default: false
-        data_type: uint16
-        precision: 0
-        scan_interval: medium
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:

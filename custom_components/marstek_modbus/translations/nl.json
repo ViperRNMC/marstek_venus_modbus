@@ -496,15 +496,7 @@
       "cell_temperature_4": {
         "name": "Celtemperatuur 4"
       },
-      "bms_online": {
-        "name": "BMS Online"
-      },
-      "bms_code": {
-        "name": "BMS-code"
-      },
-      "bms_status": {
-        "name": "BMS-status"
-      },
+
       "round_trip_efficiency_total": {
         "name": "Totaal rendement"
       },

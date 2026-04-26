@@ -489,15 +489,6 @@
       "cell_temperature_4": {
         "name": "Zelltemperatur 4"
       },
-      "bms_online": {
-        "name": "BMS Online"
-      },
-      "bms_code": {
-        "name": "BMS-Code"
-      },
-      "bms_status": {
-        "name": "BMS-Status"
-      },
       "round_trip_efficiency_total": {
         "name": "Gesamt-Roundtrip-Effizienz"
       },
