@@ -478,12 +478,6 @@
           "4": "Locked"
         }
       },
-      "alarm_status": {
-        "name": "Alarm Status"
-      },
-      "fault_status": {
-        "name": "Fault Status"
-      },
       "bms_temperature_1": {
         "name": "BMS Temperature 1"
       },

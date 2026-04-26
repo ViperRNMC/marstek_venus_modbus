@@ -477,12 +477,6 @@
           "4": "Gesperrt"
         }
       },
-      "alarm_status": {
-        "name": "Alarmstatus"
-      },
-      "fault_status": {
-        "name": "Fehlerstatus"
-      },
       "bms_temperature_1": {
         "name": "BMS-Temperatur 1"
       },

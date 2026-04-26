@@ -484,12 +484,6 @@
           "4": "Vergrendeld"
         }
       },
-      "alarm_status": {
-        "name": "Alarmstatus"
-      },
-      "fault_status": {
-        "name": "Foutstatus"
-      },
       "bms_temperature_1": {
         "name": "BMS-temperatuur 1"
       },
