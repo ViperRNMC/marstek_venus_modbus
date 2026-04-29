@@ -24,7 +24,8 @@ SENSOR_DEFINITIONS:
         register: 31000
         count: 10
         data_type: char
-        enabled_by_default: true
+        category: diagnostic
+        enabled_by_default: false
         icon: "mdi:package-variant-closed"
         scan_interval: very_low
     bms_version:
