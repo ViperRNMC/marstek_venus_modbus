@@ -526,6 +526,16 @@
       },
       "mppt4_power": {
         "name": "MPPT4 Leistung"
+      },
+      "bluetooth_status": {
+        "name": "Bluetooth-Status",
+        "state": {
+          "0": "Getrennt",
+          "1": "Nach dem Neustart verbunden",
+          "2": "Verbunden",
+          "3": "Aktiv",
+          "4": "Gesperrt"
+        }
       }
     },
     "binary_sensor": {
