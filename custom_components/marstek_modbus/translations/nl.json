@@ -538,7 +538,7 @@
       "bluetooth_status": {
         "name": "Bluetooth-status",
         "state": {
-          "0": "Losgekoppeld",
+          "0": "Niet verbonden",
           "1": "Verbonden na herstart",
           "2": "Verbonden",
           "3": "Actief",

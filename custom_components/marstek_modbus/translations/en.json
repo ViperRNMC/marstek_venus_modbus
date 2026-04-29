@@ -531,7 +531,7 @@
       "mppt4_power": {
         "name": "MPPT4 Power"      },
       "bluetooth_status": {
-        "name": "Bluetooth status",
+        "name": "Bluetooth Status",
         "state": {
           "0": "Disconnected",
           "1": "Connected after reboot",
