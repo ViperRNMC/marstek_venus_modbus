@@ -82,12 +82,14 @@
       },
       "vms_version": {
         "name": "VMS Version"
-      },      "ems_sub_version": {
+      },
+      "ems_sub_version": {
         "name": "EMS Sub-Version"
       },
       "vns_version": {
         "name": "VNS Version"
-      },      "comm_module_firmware": {
+      },
+      "comm_module_firmware": {
         "name": "Communication Module Firmware"
       },
       "mac_address": {
@@ -535,7 +537,8 @@
         "name": "MPPT4 Current"
       },
       "mppt4_power": {
-        "name": "MPPT4 Power"      },
+        "name": "MPPT4 Power"
+      },
       "bluetooth_status": {
         "name": "Bluetooth Status",
         "state": {
@@ -544,10 +547,11 @@
           "2": "Connected",
           "3": "Active",
           "4": "Locked"
-        }      }
+        }
+      }
     },
     "binary_sensor": {
-      "wifi_status": { 
+      "wifi_status": {
         "name": "WiFi Status" 
       },
       "cloud_status": { 
