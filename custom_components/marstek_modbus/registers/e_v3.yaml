@@ -31,21 +31,21 @@ SENSOR_DEFINITIONS:
         register: 30204
         icon: "mdi:battery-check-outline"
         category: diagnostic
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         scan_interval: very_low
     vms_version:
         register: 30202
         icon: "mdi:battery-check-outline"
         category: diagnostic
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         scan_interval: very_low
     ems_version:
         register: 30200
         category: diagnostic
         icon: "mdi:ticket-confirmation-outline"
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         scale: 1
         scan_interval: very_low
@@ -171,7 +171,7 @@ SENSOR_DEFINITIONS:
         unit: V
         device_class: voltage
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: medium
@@ -202,7 +202,7 @@ SENSOR_DEFINITIONS:
         unit: Hz
         device_class: frequency
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: int16
         precision: 2
         scan_interval: medium
