@@ -438,6 +438,12 @@
           "6": "Bypass"
         }
       },
+      "fault_status": {
+        "name": "Fault Status"
+      },
+      "alarm_status": {
+        "name": "Alarm Status"
+      },
 
       "modbus_address": {
         "name": "Modbus Address"
