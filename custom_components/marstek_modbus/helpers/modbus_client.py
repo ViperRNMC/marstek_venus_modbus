@@ -353,7 +353,11 @@ class MarstekModbusClient:
                         for reg in regs:
                             byte_array.append((reg >> 8) & 0xFF)
                             byte_array.append(reg & 0xFF)
-                        return byte_array.decode("ascii", errors="ignore").rstrip('\x00')
+                        # Truncate at first null byte (C-string semantics), then decode
+                        null_pos = byte_array.find(0)
+                        if null_pos >= 0:
+                            byte_array = byte_array[:null_pos]
+                        return byte_array.decode("ascii", errors="ignore")
 
                     elif data_type == "schedule":
                         # Return a decoded dict for schedule blocks.
