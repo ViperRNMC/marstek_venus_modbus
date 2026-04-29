@@ -101,8 +101,8 @@
       "comm_module_firmware": {
         "name": "Communicatiemodule Firmware"
       },
-      "mac_address": {
-        "name": "MAC-adres"
+      "ble_mac_address": {
+        "name": "Bluetooth-MAC-adres"
       },
       "battery_soc": {
         "name": "Batterij SoC"
