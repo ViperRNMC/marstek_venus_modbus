@@ -65,6 +65,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.EFFICIENCY_SENSOR_DEFINITIONS = []
         self.STORED_ENERGY_SENSOR_DEFINITIONS = []
         self.CYCLE_SENSOR_DEFINITIONS = []
+        self.VERSION_SENSOR_DEFINITIONS = []
 
         # Combine all sensor definitions for polling
         self._all_definitions = []
@@ -234,6 +235,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             self.EFFICIENCY_SENSOR_DEFINITIONS = data.get("EFFICIENCY_SENSOR_DEFINITIONS", [])
             self.STORED_ENERGY_SENSOR_DEFINITIONS = data.get("STORED_ENERGY_SENSOR_DEFINITIONS", [])
             self.CYCLE_SENSOR_DEFINITIONS = data.get("CYCLE_SENSOR_DEFINITIONS", [])
+            self.VERSION_SENSOR_DEFINITIONS = data.get("VERSION_SENSOR_DEFINITIONS", [])
 
             # Combine into a single list for polling
             self._all_definitions = (
@@ -475,6 +477,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             self.EFFICIENCY_SENSOR_DEFINITIONS
             + self.STORED_ENERGY_SENSOR_DEFINITIONS
             + self.CYCLE_SENSOR_DEFINITIONS
+            + self.VERSION_SENSOR_DEFINITIONS
         )
         dependency_keys_set = {
             dep_key
@@ -834,6 +837,9 @@ def get_registers(version: str):
                     ),
                     "CYCLE_SENSOR_DEFINITIONS": _normalize_section(
                         data.get("CYCLE_SENSOR_DEFINITIONS")
+                    ),
+                    "VERSION_SENSOR_DEFINITIONS": _normalize_section(
+                        data.get("VERSION_SENSOR_DEFINITIONS")
                     ),
                 }
             except Exception as e:

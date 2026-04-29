@@ -86,6 +86,9 @@
       "vns_version": {
         "name": "VNS-Version"
       },
+      "firmware_version": {
+        "name": "Firmware-Version"
+      },
       "comm_module_firmware": {
         "name": "Kommunikationsmodul-Firmware"
       },
