@@ -33,7 +33,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: uint16
         scan_interval: very_low
-    vms_version:
+    vms_version:  # Venus Management System: main firmware (overall control)
         register: 30202
         icon: "mdi:battery-check-outline"
         category: diagnostic
@@ -48,7 +48,7 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         scale: 1
         scan_interval: very_low
-    ems_sub_version:
+    ems_sub_version:  # Energy Management Sub: energy logic, charge/discharge algorithms
         register: 30201
         scale: 1
         unit: null
@@ -58,7 +58,7 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         precision: 0
         scan_interval: very_low
-    vns_version:
+    vns_version:  # Venus Network System: WiFi/BT chip module, connectivity, Local API
         register: 30203
         scale: 1
         unit: null
