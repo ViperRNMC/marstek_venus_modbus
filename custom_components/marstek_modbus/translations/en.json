@@ -134,14 +134,23 @@
       "ac_voltage": {
         "name": "AC Voltage"
       },
-      "ac_current": {
-        "name": "AC Current"
+      "inverter_voltage": {
+        "name": "Inverter Voltage"
+      },
+      "inverter_current": {
+        "name": "Inverter Current"
+      },
+      "inverter_power": {
+        "name": "Inverter Power"
+      },
+      "inverter_frequency": {
+        "name": "Inverter Frequency"
       },
       "ac_power": {
         "name": "AC Power"
       },
-      "ac_frequency": {
-        "name": "AC Frequency"
+      "ac_current": {
+        "name": "AC Current"
       },
       "total_charging_energy": {
         "name": "Total Charging Energy"
