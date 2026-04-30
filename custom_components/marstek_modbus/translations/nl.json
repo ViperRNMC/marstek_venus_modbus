@@ -473,12 +473,6 @@
       "wifi_ssid": {
         "name": "WiFi SSID"
       },
-      "device_ip": {
-        "name": "Apparaat-IP-adres"
-      },
-      "gateway_ip": {
-        "name": "Gateway-IP-adres"
-      },
 
       "bms_temperature_1": {
         "name": "BMS-temperatuur 1"

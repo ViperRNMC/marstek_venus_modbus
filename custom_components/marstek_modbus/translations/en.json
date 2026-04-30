@@ -468,12 +468,6 @@
       "wifi_ssid": {
         "name": "WiFi SSID"
       },
-      "device_ip": {
-        "name": "Device IP Address"
-      },
-      "gateway_ip": {
-        "name": "Gateway IP Address"
-      },
 
       "bms_temperature_1": {
         "name": "BMS Temperature 1"

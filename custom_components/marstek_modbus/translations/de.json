@@ -464,12 +464,6 @@
       "wifi_ssid": {
         "name": "WLAN SSID"
       },
-      "device_ip": {
-        "name": "Geräte-IP-Adresse"
-      },
-      "gateway_ip": {
-        "name": "Gateway-IP-Adresse"
-      },
       "bms_temperature_1": {
         "name": "BMS-Temperatur 1"
       },
