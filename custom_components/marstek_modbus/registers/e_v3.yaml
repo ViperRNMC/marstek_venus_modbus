@@ -56,11 +56,12 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: char
         scan_interval: very_low
-    mac_address:
+    ble_mac_address:
         register: 30304
         count: 6
-        enabled_by_default: true
-        icon: "mdi:ethernet"
+        category: diagnostic
+        enabled_by_default: false
+        icon: "mdi:bluetooth"
         data_type: char
         scan_interval: very_low
     battery_soc:
