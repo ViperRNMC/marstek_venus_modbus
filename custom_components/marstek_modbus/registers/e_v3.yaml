@@ -524,6 +524,20 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         precision: 0
         scan_interval: high
+    device_ip:
+        register: 30400
+        data_type: ipv4
+        icon: "mdi:ip-network"
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: very_low
+    gateway_ip:
+        register: 30402
+        data_type: ipv4
+        icon: "mdi:ip-network-outline"
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: very_low
     bluetooth_status:
         register: 30301
         data_type: uint16

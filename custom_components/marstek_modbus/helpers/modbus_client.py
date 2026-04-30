@@ -220,7 +220,7 @@ class MarstekModbusClient:
         """
 
         if count is None:
-            count = 2 if data_type in ["int32", "uint32"] else 1
+            count = 2 if data_type in ["int32", "uint32", "ipv4"] else 1
 
         if not (0 <= register <= 0xFFFF):
             _LOGGER.error(
@@ -375,6 +375,21 @@ class MarstekModbusClient:
                             "mode": mode_signed,
                             "enabled": int(regs[4]),
                         }
+
+                    elif data_type == "ipv4":
+                        if len(regs) < 2:
+                            _LOGGER.warning(
+                                "Expected 2 registers for ipv4 at register %d (0x%04X), got %s",
+                                register,
+                                register,
+                                len(regs),
+                            )
+                            return None
+                        b1 = (regs[0] >> 8) & 0xFF
+                        b2 = regs[0] & 0xFF
+                        b3 = (regs[1] >> 8) & 0xFF
+                        b4 = regs[1] & 0xFF
+                        return f"{b1}.{b2}.{b3}.{b4}"
 
                     elif data_type == "bit":
                         if bit_index is None or not (0 <= bit_index < 16):

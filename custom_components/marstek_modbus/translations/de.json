@@ -452,6 +452,12 @@
       "wifi_signal_strength": {
         "name": "WLAN-Signalstärke"
       },
+      "device_ip": {
+        "name": "Geräte-IP-Adresse"
+      },
+      "gateway_ip": {
+        "name": "Gateway-IP-Adresse"
+      },
       "round_trip_efficiency_total": {
         "name": "Gesamt-Roundtrip-Effizienz"
       },
