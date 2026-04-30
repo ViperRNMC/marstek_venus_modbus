@@ -10,9 +10,6 @@ MISSING:
         - software_version
         - fault_status
         - alarm_status
-        - bms_online
-        - bms_code
-        - bms_status
     binary:
         - discharge_limit_mode
     select:
