@@ -1,6 +1,8 @@
-# Venus E v3 register map is partially validated on real hardware.
-# Verify addresses, names, and mappings against live device behavior before production use.
-# Some entries may still be incorrect, duplicated, or incomplete.
+# Venus E v3 registers are untested.
+# Base register map generated from CSV (v3 Description).
+# Verify all addresses, names, and mappings on real hardware before use.
+# Some entries may be incorrect, duplicated, or unmatched.
+# See `# UNMATCHED_CSV_ENTRIES` at the end of this file.
 
 MISSING:
     sensor:
@@ -105,14 +107,14 @@ SENSOR_DEFINITIONS:
         precision: 3
         scan_interval: low
     battery_voltage:
-        register: 32100
+        register: 30100
         scale: 0.01
         unit: V
         device_class: voltage
         state_class: measurement
         enabled_by_default: true
         data_type: uint16
-        precision: 2
+        precision: 1
         scan_interval: medium
     battery_current:
         register: 30101
@@ -598,7 +600,7 @@ SENSOR_DEFINITIONS:
         register: 30303
         scale: -1
         data_type: uint16
-        device_class: signal_strength
+        device_class: diagnostic
         unit: dBm
         icon: "mdi:wifi"
         category: diagnostic
