@@ -476,17 +476,17 @@
       "bms_temperature_2": {
         "name": "BMS-Temperatur 2"
       },
-      "cell_temperature_1": {
-        "name": "Zelltemperatur 1"
+      "cell_pack_temperature_1": {
+        "name": "Zellpack-Temperatur 1"
       },
-      "cell_temperature_2": {
-        "name": "Zelltemperatur 2"
+      "cell_pack_temperature_2": {
+        "name": "Zellpack-Temperatur 2"
       },
-      "cell_temperature_3": {
-        "name": "Zelltemperatur 3"
+      "cell_pack_temperature_3": {
+        "name": "Zellpack-Temperatur 3"
       },
-      "cell_temperature_4": {
-        "name": "Zelltemperatur 4"
+      "cell_pack_temperature_4": {
+        "name": "Zellpack-Temperatur 4"
       },
       "round_trip_efficiency_total": {
         "name": "Gesamt-Roundtrip-Effizienz"

@@ -341,7 +341,7 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 1
         scan_interval: medium
-    cell_temperature_1:
+    cell_pack_temperature_1:
         register: 34013
         scale: 0.1
         unit: "°C"
@@ -351,7 +351,7 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 1
         scan_interval: medium
-    cell_temperature_2:
+    cell_pack_temperature_2:
         register: 34014
         scale: 0.1
         unit: "°C"
@@ -361,7 +361,7 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 1
         scan_interval: medium
-    cell_temperature_3:
+    cell_pack_temperature_3:
         register: 34015
         scale: 0.1
         unit: "°C"
@@ -371,7 +371,7 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 1
         scan_interval: medium
-    cell_temperature_4:
+    cell_pack_temperature_4:
         register: 34016
         scale: 0.1
         unit: "°C"

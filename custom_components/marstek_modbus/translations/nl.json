@@ -486,17 +486,17 @@
       "bms_temperature_2": {
         "name": "BMS-temperatuur 2"
       },
-      "cell_temperature_1": {
-        "name": "Celtemperatuur 1"
+      "cell_pack_temperature_1": {
+        "name": "Celpakket temperatuur 1"
       },
-      "cell_temperature_2": {
-        "name": "Celtemperatuur 2"
+      "cell_pack_temperature_2": {
+        "name": "Celpakket temperatuur 2"
       },
-      "cell_temperature_3": {
-        "name": "Celtemperatuur 3"
+      "cell_pack_temperature_3": {
+        "name": "Celpakket temperatuur 3"
       },
-      "cell_temperature_4": {
-        "name": "Celtemperatuur 4"
+      "cell_pack_temperature_4": {
+        "name": "Celpakket temperatuur 4"
       },
 
       "round_trip_efficiency_total": {

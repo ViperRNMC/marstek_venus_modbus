@@ -481,17 +481,17 @@
       "bms_temperature_2": {
         "name": "BMS Temperature 2"
       },
-      "cell_temperature_1": {
-        "name": "Cell Temperature 1"
+      "cell_pack_temperature_1": {
+        "name": "Cell Pack Temperature 1"
       },
-      "cell_temperature_2": {
-        "name": "Cell Temperature 2"
+      "cell_pack_temperature_2": {
+        "name": "Cell Pack Temperature 2"
       },
-      "cell_temperature_3": {
-        "name": "Cell Temperature 3"
+      "cell_pack_temperature_3": {
+        "name": "Cell Pack Temperature 3"
       },
-      "cell_temperature_4": {
-        "name": "Cell Temperature 4"
+      "cell_pack_temperature_4": {
+        "name": "Cell Pack Temperature 4"
       },
 
       "round_trip_efficiency_total": {
