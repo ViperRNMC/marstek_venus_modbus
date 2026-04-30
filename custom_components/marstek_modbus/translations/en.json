@@ -554,13 +554,13 @@
       }
     },
     "binary_sensor": {
-      "wifi_status": {
+      "wifi_status": { 
         "name": "WiFi Status" 
       },
-      "cloud_status": {
+      "cloud_status": { 
         "name": "Cloud Status" 
       },
-      "discharge_limit_mode": {
+      "discharge_limit_mode": { 
         "name": "Discharge Limit" 
       }
     },
