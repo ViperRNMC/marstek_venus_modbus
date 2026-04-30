@@ -515,6 +515,7 @@ SENSOR_DEFINITIONS:
         scan_interval: high
     device_ip:
         register: 30400
+        count: 2
         data_type: ipv4
         icon: "mdi:ip-network"
         category: diagnostic
@@ -522,6 +523,7 @@ SENSOR_DEFINITIONS:
         scan_interval: very_low
     gateway_ip:
         register: 30402
+        count: 2
         data_type: ipv4
         icon: "mdi:ip-network-outline"
         category: diagnostic
