@@ -455,12 +455,6 @@
       "wifi_signal_strength": {
         "name": "WiFi Signal Strength"
       },
-      "device_ip": {
-        "name": "Device IP Address"
-      },
-      "gateway_ip": {
-        "name": "Gateway IP Address"
-      },
       "round_trip_efficiency_total": {
         "name": "Round Trip Efficiency Total"
       },
@@ -519,6 +513,12 @@
           "3": "Active",
           "4": "Locked"
         }
+      },
+      "device_ip": {
+        "name": "Device IP Address"
+      },
+      "gateway_ip": {
+        "name": "Gateway IP Address"
       }
     },
     "binary_sensor": {

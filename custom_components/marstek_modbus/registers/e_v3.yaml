@@ -524,6 +524,13 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         precision: 0
         scan_interval: high
+    bluetooth_status:
+        register: 30301
+        data_type: uint16
+        icon: "mdi:bluetooth"
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: medium
     device_ip:
         register: 30400
         data_type: ipv4
@@ -538,13 +545,6 @@ SENSOR_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         scan_interval: very_low
-    bluetooth_status:
-        register: 30301
-        data_type: uint16
-        icon: "mdi:bluetooth"
-        category: diagnostic
-        enabled_by_default: false
-        scan_interval: medium
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:

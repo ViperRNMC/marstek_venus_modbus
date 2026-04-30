@@ -461,12 +461,6 @@
       "wifi_signal_strength": {
         "name": "WiFi-signaalsterkte"
       },
-      "device_ip": {
-        "name": "Apparaat IP-adres"
-      },
-      "gateway_ip": {
-        "name": "Gateway IP-adres"
-      },
       "round_trip_efficiency_total": {
         "name": "Totaal rendement"
       },
@@ -524,6 +518,12 @@
           "3": "Actief",
           "4": "Vergrendeld"
         }
+      },
+      "device_ip": {
+        "name": "Apparaat IP-adres"
+      },
+      "gateway_ip": {
+        "name": "Gateway IP-adres"
       }
     },
     "binary_sensor": {
