@@ -480,17 +480,17 @@
       "bms_temperature_2": {
         "name": "BMS-temperatuur 2"
       },
-      "pack_1_temperature": {
-        "name": "Pak 1 temperatuur"
+      "battery_1_temperature": {
+        "name": "Batterijpakket 1 temperatuur"
       },
-      "pack_2_temperature": {
-        "name": "Pak 2 temperatuur"
+      "battery_2_temperature": {
+        "name": "Batterijpakket 2 temperatuur"
       },
-      "pack_3_temperature": {
-        "name": "Pak 3 temperatuur"
+      "battery_3_temperature": {
+        "name": "Batterijpakket 3 temperatuur"
       },
-      "pack_4_temperature": {
-        "name": "Pak 4 temperatuur"
+      "battery_4_temperature": {
+        "name": "Batterijpakket 4 temperatuur"
       },
 
       "round_trip_efficiency_total": {

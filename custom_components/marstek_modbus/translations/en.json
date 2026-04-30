@@ -475,17 +475,17 @@
       "bms_temperature_2": {
         "name": "BMS Temperature 2"
       },
-      "pack_1_temperature": {
-        "name": "Pack 1 Temperature"
+      "battery_1_temperature": {
+        "name": "Battery Pack 1 Temperature"
       },
-      "pack_2_temperature": {
-        "name": "Pack 2 Temperature"
+      "battery_2_temperature": {
+        "name": "Battery Pack 2 Temperature"
       },
-      "pack_3_temperature": {
-        "name": "Pack 3 Temperature"
+      "battery_3_temperature": {
+        "name": "Battery Pack 3 Temperature"
       },
-      "pack_4_temperature": {
-        "name": "Pack 4 Temperature"
+      "battery_4_temperature": {
+        "name": "Battery Pack 4 Temperature"
       },
 
       "round_trip_efficiency_total": {
