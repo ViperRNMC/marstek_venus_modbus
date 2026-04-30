@@ -513,6 +513,20 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 0
         scan_interval: high
+    device_ip:
+        register: 30400
+        data_type: ipv4
+        icon: "mdi:ip-network"
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: very_low
+    gateway_ip:
+        register: 30402
+        data_type: ipv4
+        icon: "mdi:ip-network-outline"
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: very_low
     wifi_signal_strength:
         register: 30303
         scale: -1
@@ -531,20 +545,6 @@ SENSOR_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         scan_interval: medium
-    device_ip:
-        register: 30400
-        data_type: ipv4
-        icon: "mdi:ip-network"
-        category: diagnostic
-        enabled_by_default: false
-        scan_interval: very_low
-    gateway_ip:
-        register: 30402
-        data_type: ipv4
-        icon: "mdi:ip-network-outline"
-        category: diagnostic
-        enabled_by_default: false
-        scan_interval: very_low
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:

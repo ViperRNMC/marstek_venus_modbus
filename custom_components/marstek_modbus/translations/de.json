@@ -449,6 +449,12 @@
       "ac_offgrid_power": {
         "name": "AC-Offgrid-Leistung"
       },
+      "device_ip": {
+        "name": "Geräte-IP-Adresse"
+      },
+      "gateway_ip": {
+        "name": "Gateway-IP-Adresse"
+      },
       "wifi_signal_strength": {
         "name": "WLAN-Signalstärke"
       },
@@ -509,12 +515,6 @@
           "3": "Aktiv",
           "4": "Gesperrt"
         }
-      },
-      "device_ip": {
-        "name": "Geräte-IP-Adresse"
-      },
-      "gateway_ip": {
-        "name": "Gateway-IP-Adresse"
       }
     },
     "binary_sensor": {
