@@ -512,3 +512,4 @@ class MarstekBatteryCycleSensor(MarstekCalculatedSensor):
 
         cycles = round(discharge / capacity, 2)
         self._attr_native_value = cycles
+        return cycles
