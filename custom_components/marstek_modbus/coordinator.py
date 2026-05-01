@@ -833,9 +833,7 @@ def get_registers(version: str):
                     "EFFICIENCY_SENSOR_DEFINITIONS": _normalize_section(
                         data.get("EFFICIENCY_SENSOR_DEFINITIONS")
                     ),
-                    "PRODUCT_SENSOR_DEFINITIONS": _normalize_section(
-                        data.get("PRODUCT_SENSOR_DEFINITIONS")
-                    ),
+                    "PRODUCT_SENSOR_DEFINITIONS": _normalize_section(data.get("PRODUCT_SENSOR_DEFINITIONS")),
                     "STORED_ENERGY_SENSOR_DEFINITIONS": _normalize_section(
                         data.get("STORED_ENERGY_SENSOR_DEFINITIONS")
                     ),
