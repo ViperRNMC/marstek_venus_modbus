@@ -1127,4 +1127,3 @@ CYCLE_SENSOR_DEFINITIONS:
         dependency_keys:
             discharge: total_discharging_energy
             capacity: battery_total_energy
-
