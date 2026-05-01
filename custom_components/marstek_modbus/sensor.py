@@ -33,8 +33,8 @@ async def async_setup_entry(
     sensor_groups = (
         (MarstekSensor, coordinator.SENSOR_DEFINITIONS),
         (MarstekEfficiencySensor, coordinator.EFFICIENCY_SENSOR_DEFINITIONS),
-        (MarstekStoredEnergySensor, coordinator.STORED_ENERGY_SENSOR_DEFINITIONS),
         (MarstekVersionSensor, coordinator.VERSION_SENSOR_DEFINITIONS),
+        (MarstekStoredEnergySensor, coordinator.STORED_ENERGY_SENSOR_DEFINITIONS),
         (MarstekBatteryCycleSensor, coordinator.CYCLE_SENSOR_DEFINITIONS),
     )
     for entity_cls, definitions in sensor_groups:
