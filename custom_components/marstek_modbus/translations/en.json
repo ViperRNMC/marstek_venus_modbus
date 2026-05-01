@@ -446,7 +446,6 @@
       "alarm_status": {
         "name": "Alarm Status"
       },
-
       "modbus_address": {
         "name": "Modbus Address"
       },
@@ -465,7 +464,6 @@
       "wifi_ssid": {
         "name": "WiFi SSID"
       },
-
       "bms_temperature_1": {
         "name": "BMS Temperature 1"
       },
@@ -484,7 +482,6 @@
       "battery_4_temperature": {
         "name": "Battery Pack 4 Temperature"
       },
-
       "round_trip_efficiency_total": {
         "name": "Round Trip Efficiency Total"
       },
@@ -533,6 +530,7 @@
       "mppt4_power": {
         "name": "MPPT4 Power"
       },
+
       "bluetooth_status": {
         "name": "Bluetooth Status",
         "state": {
