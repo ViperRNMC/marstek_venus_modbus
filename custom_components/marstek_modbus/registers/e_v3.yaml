@@ -476,6 +476,30 @@ SENSOR_DEFINITIONS:
             5: OTA Upgrade
             6: Bypass
         scan_interval: high
+    bms_charge_current_limit:
+        register: 35111
+        scale: 0.1
+        unit: A
+        device_class: current
+        state_class: measurement
+        category: diagnostic
+        enabled_by_default: false
+        icon: "mdi:current-dc"
+        data_type: uint16
+        precision: 1
+        scan_interval: very_low
+    bms_discharge_current_limit:
+        register: 35112
+        scale: 0.1
+        unit: A
+        device_class: current
+        state_class: measurement
+        category: diagnostic
+        enabled_by_default: false
+        icon: "mdi:current-dc"
+        data_type: uint16
+        precision: 1
+        scan_interval: very_low
     modbus_address:
         register: 41100
         data_type: uint16
@@ -1013,6 +1037,32 @@ EFFICIENCY_SENSOR_DEFINITIONS:
         dependency_keys:
             battery_power: battery_power
             ac_power: ac_power
+
+PRODUCT_SENSOR_DEFINITIONS:
+    charge_power_limit:
+        key: charge_power_limit
+        unit: W
+        device_class: power
+        state_class: measurement
+        category: diagnostic
+        enabled_by_default: false
+        icon: "mdi:battery-arrow-up"
+        max_value: 2500
+        dependency_keys:
+            factor_a: bms_charge_current_limit
+            factor_b: battery_voltage
+    discharge_power_limit:
+        key: discharge_power_limit
+        unit: W
+        device_class: power
+        state_class: measurement
+        category: diagnostic
+        enabled_by_default: false
+        icon: "mdi:battery-arrow-down"
+        max_value: 2500
+        dependency_keys:
+            factor_a: bms_discharge_current_limit
+            factor_b: battery_voltage
 
 STORED_ENERGY_SENSOR_DEFINITIONS:
     stored_energy:

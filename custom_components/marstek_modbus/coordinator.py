@@ -63,6 +63,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.NUMBER_DEFINITIONS = []
         self.BUTTON_DEFINITIONS = []
         self.EFFICIENCY_SENSOR_DEFINITIONS = []
+        self.PRODUCT_SENSOR_DEFINITIONS = []
         self.STORED_ENERGY_SENSOR_DEFINITIONS = []
         self.CYCLE_SENSOR_DEFINITIONS = []
 
@@ -232,6 +233,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             self.NUMBER_DEFINITIONS = data.get("NUMBER_DEFINITIONS", [])
             self.BUTTON_DEFINITIONS = data.get("BUTTON_DEFINITIONS", [])
             self.EFFICIENCY_SENSOR_DEFINITIONS = data.get("EFFICIENCY_SENSOR_DEFINITIONS", [])
+            self.PRODUCT_SENSOR_DEFINITIONS = data.get("PRODUCT_SENSOR_DEFINITIONS", [])
             self.STORED_ENERGY_SENSOR_DEFINITIONS = data.get("STORED_ENERGY_SENSOR_DEFINITIONS", [])
             self.CYCLE_SENSOR_DEFINITIONS = data.get("CYCLE_SENSOR_DEFINITIONS", [])
 
@@ -473,6 +475,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Collect all dependency keys from all definitions
         all_definitions_for_deps = (
             self.EFFICIENCY_SENSOR_DEFINITIONS
+            + self.PRODUCT_SENSOR_DEFINITIONS
             + self.STORED_ENERGY_SENSOR_DEFINITIONS
             + self.CYCLE_SENSOR_DEFINITIONS
         )
@@ -750,6 +753,7 @@ def get_registers(version: str):
       - NUMBER_DEFINITIONS
       - BUTTON_DEFINITIONS
       - EFFICIENCY_SENSOR_DEFINITIONS
+      - PRODUCT_SENSOR_DEFINITIONS
       - STORED_ENERGY_SENSOR_DEFINITIONS
     - CYCLE_SENSOR_DEFINITIONS
 
@@ -828,6 +832,9 @@ def get_registers(version: str):
                     "BUTTON_DEFINITIONS": _normalize_section(data.get("BUTTON_DEFINITIONS")),
                     "EFFICIENCY_SENSOR_DEFINITIONS": _normalize_section(
                         data.get("EFFICIENCY_SENSOR_DEFINITIONS")
+                    ),
+                    "PRODUCT_SENSOR_DEFINITIONS": _normalize_section(
+                        data.get("PRODUCT_SENSOR_DEFINITIONS")
                     ),
                     "STORED_ENERGY_SENSOR_DEFINITIONS": _normalize_section(
                         data.get("STORED_ENERGY_SENSOR_DEFINITIONS")

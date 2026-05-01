@@ -467,6 +467,18 @@
       "stored_energy": {
         "name": "Stored Energy"
       },
+      "bms_charge_current_limit": {
+        "name": "BMS Charge Current Limit"
+      },
+      "bms_discharge_current_limit": {
+        "name": "BMS Discharge Current Limit"
+      },
+      "charge_power_limit": {
+        "name": "Charge Power Limit"
+      },
+      "discharge_power_limit": {
+        "name": "Discharge Power Limit"
+      },
       "mppt1_voltage": {
         "name": "MPPT1 Voltage"
       },

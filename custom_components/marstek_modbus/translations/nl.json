@@ -473,6 +473,18 @@
       "stored_energy": {
         "name": "Opgeslagen Energie"
       },
+      "bms_charge_current_limit": {
+        "name": "BMS laadstroom limiet"
+      },
+      "bms_discharge_current_limit": {
+        "name": "BMS ontlaadstroom limiet"
+      },
+      "charge_power_limit": {
+        "name": "Laadvermogen limiet"
+      },
+      "discharge_power_limit": {
+        "name": "Ontlaadvermogen limiet"
+      },
       "mppt1_voltage": {
         "name": "MPPT1 Spanning"
       },
