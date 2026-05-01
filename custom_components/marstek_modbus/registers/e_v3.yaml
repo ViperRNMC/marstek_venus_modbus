@@ -983,6 +983,24 @@ BUTTON_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
 
+VERSION_SENSOR_DEFINITIONS:
+    firmware_version:
+        key: firmware_version
+        unit: null
+        icon: "mdi:chip"
+        category: diagnostic
+        enabled_by_default: true
+        mode: ems_bms_version
+        # App shows: "EMS:147.6, VNS:117, BMS:112"
+        # ems_version (30200): 1476 -> "147.6" (4-digit = tenths)
+        # vns_version (30203): 117
+        # bms_version (30204): 112
+        # Result: "V147.6.117.112" (matches app display)
+        dependency_keys:
+            ems: ems_version
+            bms_sub: vns_version
+            bms: bms_version
+
 EFFICIENCY_SENSOR_DEFINITIONS:
     round_trip_efficiency_total:
         key: round_trip_efficiency_total
@@ -1033,21 +1051,3 @@ CYCLE_SENSOR_DEFINITIONS:
         dependency_keys:
             discharge: total_discharging_energy
             capacity: battery_total_energy
-
-VERSION_SENSOR_DEFINITIONS:
-    firmware_version:
-        key: firmware_version
-        unit: null
-        icon: "mdi:chip"
-        category: diagnostic
-        enabled_by_default: true
-        mode: ems_bms_version
-        # App shows: "EMS:147.6, VNS:117, BMS:112"
-        # ems_version (30200): 1476 -> "147.6" (4-digit = tenths)
-        # vns_version (30203): 117
-        # bms_version (30204): 112
-        # Result: "V147.6.117.112" (matches app display)
-        dependency_keys:
-            ems: ems_version
-            bms_sub: vns_version
-            bms: bms_version
