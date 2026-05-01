@@ -86,9 +86,6 @@
       "ems_version": {
         "name": "EMS-versie"
       },
-      "firmware_version": {
-        "name": "Firmwareversie"
-      },
       "vms_version": {
         "name": "VMS-versie"
       },
