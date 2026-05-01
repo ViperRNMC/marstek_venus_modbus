@@ -502,16 +502,6 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         precision: 1
         scan_interval: medium
-    ac_offgrid_current:
-        register: 32301
-        scale: 0.01
-        unit: A
-        device_class: current
-        state_class: measurement
-        enabled_by_default: false
-        data_type: uint16
-        precision: 1
-        scan_interval: medium
     ac_offgrid_power:
         register: 32302
         count: 1
