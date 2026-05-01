@@ -9,7 +9,7 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers import entity_registry as er
+from homeassistant.helpers import entity_registry
 
 from .const import DOMAIN
 from .coordinator import MarstekCoordinator
@@ -102,7 +102,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
 
         # Remove stale entities from previous versions
-        ent_reg = er.async_get(hass)
+        ent_reg = entity_registry.async_get(hass)
         for suffix in REMOVED_ENTITY_UNIQUE_ID_SUFFIXES:
             unique_id = f"{entry.entry_id}_{suffix}"
             if entity_id := ent_reg.async_get_entity_id("sensor", DOMAIN, unique_id):
