@@ -760,7 +760,6 @@ def get_registers(version: str):
       - QUOTIENT_SENSOR_DEFINITIONS
       - DIFFERENCE_SENSOR_DEFINITIONS
       - DIFFERENCE_QUOTIENT_SENSOR_DEFINITIONS
-      - VERSION_SENSOR_DEFINITIONS
 
     If an unknown version is requested, the function falls back to the v1/v2
     register set (because v1 and v2 share the same registers in this integration).
