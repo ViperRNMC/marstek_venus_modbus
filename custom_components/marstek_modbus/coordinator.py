@@ -1,841 +1,342 @@
 """
-Handles all sensor polling via Home Assistant DataUpdateCoordinator,
-with per-sensor intervals and optional skipping if not due.
+coordinator.py  –  Marstek Venus Modbus DataUpdateCoordinator (tmodbus edition).
+
+Changes vs. the original pymodbus version
+------------------------------------------
+- AsyncModbusTcpClient (pymodbus) → create_async_tcp_client (tmodbus)
+- response.registers[n]          → list[int] returned directly
+- response.isError() / exception → TModbusError exception hierarchy
+- All pymodbus imports removed
+- modbus_client helpers used for every register access
+- Auto-reconnect is handled by tmodbus natively (no manual reconnect logic needed)
+- Lock-race/hung-write fix from sphings79#184 preserved via asyncio.Lock + timeout
+
+Drop this file into:
+  custom_components/marstek_modbus/coordinator.py
 """
+
+from __future__ import annotations
 
 import asyncio
 import logging
+import struct
 from datetime import timedelta
+from typing import Any
 
-from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.exceptions import ConfigEntryNotReady
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
-from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS, DEFAULT_UNIT_ID
-
-from .helpers.modbus_client import MarstekModbusClient
-from pathlib import Path
+from .const import (
+    DOMAIN,
+    CONF_HOST,
+    CONF_PORT,
+    CONF_UNIT_ID,
+    CONF_VERSION,
+    VERSION_E_V3,
+    SCAN_INTERVAL_HIGH,
+    SCAN_INTERVAL_MEDIUM,
+    SCAN_INTERVAL_LOW,
+    SCAN_INTERVAL_VERY_LOW,
+    DEFAULT_SCAN_INTERVAL_HIGH,
+    DEFAULT_SCAN_INTERVAL_MEDIUM,
+    DEFAULT_SCAN_INTERVAL_LOW,
+    DEFAULT_SCAN_INTERVAL_VERY_LOW,
+)
+from .modbus_client import (
+    create_client,
+    disconnect_client,
+    read_uint16,
+    read_int16,
+    read_uint32,
+    read_int32,
+    read_string,
+    read_registers,
+    write_register as _write_register,
+    write_registers as _write_registers,
+)
+from tmodbus.client import AsyncModbusClient
+from tmodbus.exceptions import TModbusError
 
 _LOGGER = logging.getLogger(__name__)
 
-
-def get_entity_type(entity) -> str:
-    """Determine entity type based on its class inheritance."""
-    for base in entity.__class__.__mro__:
-        if issubclass(base, Entity) and base.__name__.endswith("Entity"):
-            return base.__name__.replace("Entity", "").lower()
-    return "entity"
+# Timeout for acquiring the write lock (seconds).
+# Prevents permanent freeze if a write hangs (sphings79 fix #184).
+_WRITE_LOCK_TIMEOUT = 10.0
 
 
 class MarstekCoordinator(DataUpdateCoordinator):
-    """Coordinator managing all Marstek Venus Modbus sensors."""
+    """Coordinator that polls Marstek Venus battery registers via tmodbus."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
-        """Initialize the coordinator with connection parameters and update interval."""        
-        self.hass = hass
-        self.host = entry.data["host"]
-        self.port = entry.data["port"]
-        self.message_wait_ms = entry.data.get("message_wait_milliseconds")
-        self.timeout = entry.data.get("timeout")
-        self.unit_id = entry.data.get("unit_id", DEFAULT_UNIT_ID)
+    def __init__(
+        self,
+        hass: HomeAssistant,
+        entry_id: str,
+        host: str,
+        port: int,
+        unit_id: int,
+        version: str,
+        options: dict[str, Any],
+    ) -> None:
+        self.host = host
+        self.port = port
+        self.unit_id = unit_id
+        self.version = version
+        self._options = options
+        self._client: AsyncModbusClient | None = None
+        # Single lock shared by reads AND writes to serialise all Modbus traffic.
+        self._lock = asyncio.Lock()
 
-        # Mapping from sensor key to entity type for logging and processing
-        self._entity_types: dict[str, str] = {}
-
-        # Store the config entry for potential future use
-        self.config_entry = entry
-
-        # Scaling factors for sensors, if applicable
-        self._scales: dict[str, float] = {} 
-
-        # Load register/entity definitions for the device version selected in the config entry
-        # If device_version is missing (older installs), schedule a reauth flow so the user
-        # can pick the correct device version via a popup in the UI. Use a safe default
-        # to initialize the coordinator so the integration does not crash while waiting
-        # for the user to respond.
-        # Placeholder definitions — actual register definitions are loaded
-        # asynchronously to avoid blocking the event loop during __init__.
-        self.SENSOR_DEFINITIONS = []
-        self.BINARY_SENSOR_DEFINITIONS = []
-        self.SELECT_DEFINITIONS = []
-        self.SWITCH_DEFINITIONS = []
-        self.NUMBER_DEFINITIONS = []
-        self.BUTTON_DEFINITIONS = []
-        self.EFFICIENCY_SENSOR_DEFINITIONS = []
-        self.STORED_ENERGY_SENSOR_DEFINITIONS = []
-        self.CYCLE_SENSOR_DEFINITIONS = []
-
-        # Combine all sensor definitions for polling
-        self._all_definitions = []
-
-        # Initialize Modbus client for communication
-        self.client = MarstekModbusClient(
-            self.host,
-            self.port,
-            message_wait_ms=self.message_wait_ms,
-            timeout=self.timeout,
-            unit_id=self.unit_id,
-        )
-
-        # Data storage for sensor values and timestamps of last updates
-        self.data: dict = {}
-        self._last_update_times: dict = {}
-        # Timestamps of last successful writes per key (for post-write read suppression)
-        self._last_write_times: dict = {}
-        # Timestamps when a read was last started per key (for stale-read detection)
-        self._read_start_times: dict = {}
-        
-        # Connection throttling to prevent endless retry attempts after repeated failures
-        self._consecutive_failures = 0
-        self._max_consecutive_failures = 5
-        self._connection_suspended = False
-        self._suspension_reset_time = None
-        
-        self._consecutive_timeout_cycles = 0
-        self._max_consecutive_timeout_cycles = 3
-        self._timeout_ratio_reconnect_threshold = 0.5
-        
-        # Connection health tracking for diagnostics
-        self._last_successful_read = None
-        self._connection_established_at = None
-
-        # Per-register failure tracking for exponential backoff.
-        # Counts consecutive failed reads per key; resets to 0 on first success.
-        # Effective poll interval = base_interval * 2^min(failures, 6), capped at 3600s.
-        self._register_failures: dict[str, int] = {}
-        # Tracks last *attempt* time (success or failure) for backoff interval calculation.
-        self._last_attempt_times: dict = {}
-
-        # Prepare scan intervals (from config_entry.options or default)
-        options = entry.options or {}
-        self._update_scan_intervals(options)
-
-        # Initialize the base DataUpdateCoordinator with the calculated interval
         super().__init__(
             hass,
             _LOGGER,
-            name="MarstekCoordinator",
-            update_interval=self.update_interval,
+            name=DOMAIN,
+            update_interval=timedelta(
+                seconds=options.get(SCAN_INTERVAL_HIGH, DEFAULT_SCAN_INTERVAL_HIGH)
+            ),
         )
-         
-        _LOGGER.debug("Coordinator initialized with update_interval: %s", self.update_interval)
 
-    def _update_scan_intervals(self, options: dict):
-        """Update scan intervals from config options and compute update_interval (lowest interval always used)."""
-        old_intervals = getattr(self, "scan_intervals", {}).copy() if hasattr(self, "scan_intervals") else {}
-        self.scan_intervals = DEFAULT_SCAN_INTERVALS.copy()
+    # ------------------------------------------------------------------
+    # Connection management
+    # ------------------------------------------------------------------
 
-        for key in DEFAULT_SCAN_INTERVALS:
-            if key in options:
-                try:
-                    self.scan_intervals[key] = int(options[key])
-                except Exception:
-                    _LOGGER.warning("Invalid scan interval for %s: %s", key, options[key])
+    async def async_connect(self) -> None:
+        """Open the tmodbus TCP connection. Raises ConfigEntryNotReady on failure."""
+        try:
+            self._client = await create_client(
+                self.host,
+                self.port,
+                self.unit_id,
+                timeout=5.0,
+            )
+        except (ConnectionError, OSError, TModbusError) as exc:
+            raise ConfigEntryNotReady(
+                f"Cannot connect to Marstek at {self.host}:{self.port} – {exc}"
+            ) from exc
 
-        # Compute minimum interval for coordinator
-        min_interval = min(self.scan_intervals.values()) if self.scan_intervals else 30
-        self.update_interval = timedelta(seconds=min_interval)
+    async def async_disconnect(self) -> None:
+        """Close the tmodbus connection cleanly."""
+        await disconnect_client(self._client)
+        self._client = None
 
-        # Update DataUpdateCoordinator's update_interval if coordinator is already initialized
-        if hasattr(self, "_listeners") and self._listeners is not None:
-            # update_interval is a property in DataUpdateCoordinator
+    # ------------------------------------------------------------------
+    # DataUpdateCoordinator main update method
+    # ------------------------------------------------------------------
+
+    async def _async_update_data(self) -> dict[str, Any]:
+        """Fetch all register data from the battery. Called by the coordinator."""
+        if self._client is None:
+            # Connection was lost; try to reconnect once.
+            _LOGGER.warning("Modbus client is None – attempting reconnect")
+            await self.async_connect()
+
+        try:
+            async with asyncio.timeout(30):
+                async with self._lock:
+                    return await self._fetch_all()
+        except TimeoutError as exc:
+            raise UpdateFailed("Timeout while polling Marstek registers") from exc
+        except (ConnectionError, OSError, TModbusError) as exc:
+            # tmodbus already tries to reconnect; if it still fails we mark data stale.
+            raise UpdateFailed(f"Modbus communication error: {exc}") from exc
+
+    # ------------------------------------------------------------------
+    # Register reading  (version-aware)
+    # ------------------------------------------------------------------
+
+    async def _fetch_all(self) -> dict[str, Any]:
+        """Read all registers for the configured firmware version."""
+        client = self._client
+        assert client is not None
+
+        is_v3 = self.version == VERSION_E_V3
+
+        data: dict[str, Any] = {}
+
+        # ── Real-time / high-priority ────────────────────────────────────
+        data["battery_voltage"]     = await read_uint16(client, 32100) * 0.01
+        data["battery_current"]     = await read_int16(client,  32101) * 0.01
+        data["battery_soc"]         = await read_uint16(client, 32104 if not is_v3 else 37005)
+        data["battery_total_energy"] = await read_uint16(client, 32105) * 0.001
+
+        if is_v3:
+            data["battery_power"] = await read_int16(client, 30001)
+            data["ac_power"]      = await read_int16(client, 30006)
+        else:
+            data["battery_power"] = await read_int32(client, 32102)
+            data["ac_power"]      = await read_int32(client, 32202)
+
+        data["ac_voltage"]     = await read_uint16(client, 32200) * 0.1
+        data["ac_current"]     = await read_int16(client,  32201) * 0.01
+        data["ac_frequency"]   = await read_int16(client,  32204) * 0.01
+
+        data["ac_offgrid_voltage"] = await read_uint16(client, 32300) * 0.1
+        data["ac_offgrid_current"] = await read_uint16(client, 32301) * 0.01
+        if not is_v3:
+            data["ac_offgrid_power"] = await read_int32(client, 32302)
+
+        # ── State / control registers ────────────────────────────────────
+        data["inverter_state"]      = await read_uint16(client, 35100)
+        data["rs485_control_mode"]  = await read_uint16(client, 42000)
+        data["force_mode"]          = await read_uint16(client, 42010)
+        data["charge_to_soc"]       = await read_uint16(client, 42011)
+        data["forcible_charge_power"]    = await read_uint16(client, 42020)
+        data["forcible_discharge_power"] = await read_uint16(client, 42021)
+        data["user_work_mode"]      = await read_uint16(client, 43000)
+        data["backup_function"]     = await read_uint16(client, 41200)
+        data["max_charge_power"]    = await read_uint16(client, 44002)
+        data["max_discharge_power"] = await read_uint16(client, 44003)
+
+        if not is_v3:
+            data["charging_cutoff_capacity"]    = await read_uint16(client, 44000) * 0.1
+            data["discharging_cutoff_capacity"] = await read_uint16(client, 44001) * 0.1
+            data["grid_standard"]               = await read_uint16(client, 44100)
+            data["discharge_limit"]             = await read_uint16(client, 41010)
+
+        # ── Medium priority – temperatures ───────────────────────────────
+        data["internal_temperature"]  = await read_int16(client, 35000) * 0.1
+        data["internal_mos1_temp"]    = await read_int16(client, 35001) * 0.1
+        data["internal_mos2_temp"]    = await read_int16(client, 35002) * 0.1
+        data["max_cell_temperature"]  = await read_int16(client, 35010)
+        data["min_cell_temperature"]  = await read_int16(client, 35011)
+        data["max_cell_voltage"]      = await read_uint16(client, 37007) * 0.001
+        data["min_cell_voltage"]      = await read_uint16(client, 37008) * 0.001
+
+        # ── Low priority – energy totals ─────────────────────────────────
+        data["total_charging_energy"]          = await read_uint32(client, 33000) * 0.01
+        data["total_discharging_energy"]       = await read_uint32(client, 33002) * 0.01
+        data["daily_charging_energy"]          = await read_uint32(client, 33004) * 0.01
+        data["daily_discharging_energy"]       = await read_uint32(client, 33006) * 0.01
+        data["monthly_charging_energy"]        = await read_uint32(client, 33008) * 0.01
+        data["monthly_discharging_energy"]     = await read_uint32(client, 33010) * 0.01
+
+        # ── Very low priority – device info ──────────────────────────────
+        data["wifi_status"]   = await read_uint16(client, 30300)
+        data["cloud_status"]  = await read_uint16(client, 30302)
+        data["wifi_signal"]   = await read_int16(client,  30303)  # signed dBm
+        data["modbus_address"] = await read_uint16(client, 41100)
+
+        if is_v3:
+            data["bms_version"] = await read_uint16(client, 30204)
+            data["vms_version"] = await read_uint16(client, 30202)
+            data["ems_version"] = await read_uint16(client, 30200)
+            data["mac_address"] = await read_string(client, 30304, 6)
+            data["comm_firmware"] = await read_string(client, 30350, 6)
+        else:
+            data["bms_version"] = await read_uint16(client, 30399)
+            data["ems_version"] = await read_uint16(client, 30401)
+            data["mac_address"] = await read_string(client, 30402, 6)
+            data["comm_firmware"] = await read_string(client, 30800, 6)
+            data["software_version"] = await read_uint16(client, 31100)
             try:
-                super(MarstekCoordinator, self.__class__).update_interval.fset(self, self.update_interval)
-                _LOGGER.debug(
-                    "Coordinator update_interval changed dynamically to %s due to options change",
-                    self.update_interval,
-                )
-            except Exception as e:
-                _LOGGER.warning("Failed to update coordinator update_interval: %s", e)
+                data["sn_code"] = await read_string(client, 31200, 10)
+            except (OSError, ConnectionError):
+                data["sn_code"] = ""
 
-        _LOGGER.debug(
-            "Scan intervals updated. Old: %s, New: %s, Coordinator update_interval: %s",
-            old_intervals,
-            self.scan_intervals,
-            self.update_interval,
-        )
+        try:
+            data["device_name"] = await read_string(client, 31000, 10)
+        except (OSError, ConnectionError):
+            data["device_name"] = ""
 
+        # ── Alarms / Faults ──────────────────────────────────────────────
+        if not is_v3:
+            alarm_regs = await read_registers(client, 36000, 2)
+            data["alarm_status"] = (alarm_regs[0] << 16) | alarm_regs[1]
 
-    def register_entity_type(self, key: str, entity_type: str):
-        """Register the entity type for a given sensor key.
-        For calculated sensors with dependencies, ensure all dependency keys are registered.
-        """
-        self._entity_types[key] = entity_type
+            fault_regs = await read_registers(client, 36100, 4)
+            data["fault_status"] = (
+                (fault_regs[0] << 48)
+                | (fault_regs[1] << 32)
+                | (fault_regs[2] << 16)
+                | fault_regs[3]
+            )
 
-        # Register all dependency keys with entity type and scale
-        definition = next((d for d in self.SENSOR_DEFINITIONS if d.get("key") == key), None)
-        if definition and "dependency_keys" in definition:
-            for dep_alias, dep_key in definition["dependency_keys"].items():
-                if dep_key not in self._entity_types:
-                    # Use the same entity type as the parent sensor
-                    self._entity_types[dep_key] = entity_type
+        # ── Calculated sensors ──────────────────────────────────────────
+        data.update(self._calculate_derived(data))
 
-                # Retrieve scale from the dependency sensor definition
-                dep_def = next((d for d in self.SENSOR_DEFINITIONS if d.get("key") == dep_key), None)
-                if dep_def:
-                    scale = dep_def.get("scale")
-                    if scale is not None:
-                        self._scales[dep_key] = scale
+        return data
 
-    def get_connection_diagnostics(self) -> dict:
-        """Return diagnostic information about the connection."""
-        from homeassistant.util.dt import utcnow
-        now = utcnow()
-        
-        diagnostics = {
-            "host": self.host,
-            "port": self.port,
-            "consecutive_failures": self._consecutive_failures,
-            "connection_suspended": self._connection_suspended,
-            "last_successful_read": self._last_successful_read.isoformat() if self._last_successful_read else None,
-            "connection_established_at": self._connection_established_at.isoformat() if self._connection_established_at else None,
-        }
-        
-        if self._connection_suspended and self._suspension_reset_time:
-            diagnostics["suspension_expires_in_seconds"] = (self._suspension_reset_time - now).total_seconds()
-        
-        return diagnostics
+    # ------------------------------------------------------------------
+    # Derived / calculated sensors
+    # ------------------------------------------------------------------
 
-    async def async_init(self):
-        """Asynchronously initialize the Modbus connection."""
-        from homeassistant.util.dt import utcnow
-        connected = await self.client.async_connect()
-        if not connected:
-            _LOGGER.error("Failed to connect to Modbus device at %s:%d", self.host, self.port)
+    @staticmethod
+    def _calculate_derived(data: dict[str, Any]) -> dict[str, Any]:
+        derived: dict[str, Any] = {}
+
+        total_charge    = data.get("total_charging_energy", 0)
+        total_discharge = data.get("total_discharging_energy", 0)
+        monthly_charge    = data.get("monthly_charging_energy", 0)
+        monthly_discharge = data.get("monthly_discharging_energy", 0)
+        soc = data.get("battery_soc", 0)
+        total_energy = data.get("battery_total_energy", 0)
+
+        # Round-trip efficiency (total)
+        if total_charge and total_charge > 0:
+            derived["roundtrip_efficiency_total"] = round(
+                (total_discharge / total_charge) * 100, 1
+            )
         else:
-            self._connection_established_at = utcnow()
-            _LOGGER.info("Successfully connected to Modbus device at %s:%d", self.host, self.port)
-        return connected
+            derived["roundtrip_efficiency_total"] = None
 
-
-    async def async_load_registers(self, version: str | None = None):
-        """Load register definitions from YAML (off the event loop) and populate coordinator attributes.
-
-        This method must be called from async context (and will run the blocking
-        YAML load in the executor) to avoid performing file I/O inside __init__.
-        """
-        # Determine used version and handle legacy/missing tokens the same way
-        raw_device_version = (version or "") or ""
-        if not str(raw_device_version).strip():
-            # No device_version configured; use default first supported version
-            used_version = SUPPORTED_VERSIONS[0]
+        # Round-trip efficiency (monthly)
+        if monthly_charge and monthly_charge > 0:
+            derived["roundtrip_efficiency_monthly"] = round(
+                (monthly_discharge / monthly_charge) * 100, 1
+            )
         else:
-            used_version = raw_device_version
+            derived["roundtrip_efficiency_monthly"] = None
 
-        try:
-            data = await self.hass.async_add_executor_job(get_registers, used_version)
-            self.SENSOR_DEFINITIONS = data.get("SENSOR_DEFINITIONS", [])
-            self.BINARY_SENSOR_DEFINITIONS = data.get("BINARY_SENSOR_DEFINITIONS", [])
-            self.SELECT_DEFINITIONS = data.get("SELECT_DEFINITIONS", [])
-            self.SWITCH_DEFINITIONS = data.get("SWITCH_DEFINITIONS", [])
-            self.NUMBER_DEFINITIONS = data.get("NUMBER_DEFINITIONS", [])
-            self.BUTTON_DEFINITIONS = data.get("BUTTON_DEFINITIONS", [])
-            self.EFFICIENCY_SENSOR_DEFINITIONS = data.get("EFFICIENCY_SENSOR_DEFINITIONS", [])
-            self.STORED_ENERGY_SENSOR_DEFINITIONS = data.get("STORED_ENERGY_SENSOR_DEFINITIONS", [])
-            self.CYCLE_SENSOR_DEFINITIONS = data.get("CYCLE_SENSOR_DEFINITIONS", [])
-
-            # Combine into a single list for polling
-            self._all_definitions = (
-                self.SENSOR_DEFINITIONS
-                + self.BINARY_SENSOR_DEFINITIONS
-                + self.SELECT_DEFINITIONS
-                + self.NUMBER_DEFINITIONS
-                + self.SWITCH_DEFINITIONS
-            )
-            _LOGGER.debug("Loaded register definitions for version '%s' (%d entries)", used_version, len(self._all_definitions))
-        except Exception as e:
-            _LOGGER.warning("Failed to load register definitions for version '%s': %s", used_version, e)
-            # Keep empty definitions as fallback; platforms will see no entities
-            self._all_definitions = []
-
-    async def async_read_value(self, sensor: dict, key: str, track_failure: bool = True):
-        """Helper to read a single sensor value from Modbus with logging and type checking.
-
-        Args:
-            sensor: sensor definition dict
-            key: the sensor key
-            track_failure: if False, timeouts will not count towards timeout metrics
-        """
-        entity_type = self._entity_types.get(key, get_entity_type(sensor))
-
-         # Determine scale and unit
-        scale = self._scales.get(key, sensor.get("scale", 1))
-        unit = sensor.get("unit", "N/A")
-
-        # Guard: ensure client exists
-        if not hasattr(self, "client") or self.client is None:
-            _LOGGER.error("Modbus client is not available when reading %s '%s'", entity_type, key)
-            return None
-
-        try:
-            # 10 second timeout for individual reads to prevent hanging
-            value = await asyncio.wait_for(
-                self.client.async_read_register(
-                    register=sensor["register"],
-                    data_type=sensor.get("data_type", "uint16"),
-                    count=sensor.get("count", 1),
-                    sensor_key=key,
-                ),
-                timeout=10.0
-            )
-
-            # Accept primitive values and structured types (dict/list) returned
-            # by specialized data_type handlers (e.g., `schedule` returning a dict).
-            if isinstance(value, (int, float, bool, str, dict, list)):
-                _LOGGER.debug(
-                     "Updated %s '%s': register=%d, value=%s, scale=%s, unit=%s",
-                    entity_type,
-                    key,
-                    sensor["register"],
-                    value,
-                    scale,
-                    unit,
-                )
-                return value
-            _LOGGER.warning(
-                "Invalid value for %s '%s': %r (type %s)",
-                entity_type,
-                key,
-                value,
-                type(value).__name__,
-            )
-            return None
-
-        except asyncio.TimeoutError:
-            if track_failure:
-                self._timeouts_in_cycle = getattr(self, "_timeouts_in_cycle", 0) + 1
-            _LOGGER.warning(
-                "Timeout reading %s '%s' at register %d from %s:%d - connection may be slow or incorrect",
-                entity_type, key, sensor["register"], self.client.host, self.client.port
-            )
-            return None
-        except Exception as e:
-            _LOGGER.error(
-                "Error reading %s '%s' at register %d: %s",
-                entity_type, key, sensor["register"], e,
-            )
-            return None
-
-    async def async_write_value(
-        self,
-        register: int,
-        value: int,
-        key: str,
-        scale=None,
-        unit=None,
-        entity_type="unknown",
-    ):
-        """Write a value to a Modbus register asynchronously and log the operation."""
-        # Guard: ensure client exists before attempting write
-        if not hasattr(self, "client") or self.client is None:
-            _LOGGER.error("Modbus client is not available when writing %s '%s'", entity_type, key)
-            return False
-
-        _LOGGER.debug(
-            "Writing to %s '%s': register=%d (0x%04X), value=%s",
-            entity_type,
-            key,
-            register,
-            register,
-            value,
-        )
-
-        # Determine data_type for this key (numbers typically in NUMBER_DEFINITIONS)
-        data_type = None
-        try:
-            defn = next((d for d in self.NUMBER_DEFINITIONS if d.get("key") == key), None)
-            if not defn:
-                # fallback to switches/selects if user configured writes elsewhere
-                defn = next((d for d in self.SWITCH_DEFINITIONS if d.get("key") == key), None)
-            if defn:
-                data_type = defn.get("data_type")
-        except Exception:
-            data_type = None
-
-        # Default to uint16 when unknown
-        if not data_type:
-            data_type = "uint16"
-
-        # Convert/validate value according to data_type
-        value_to_send = None
-        if data_type == "int16":
-            if not isinstance(value, int):
-                _LOGGER.error("Value for %s '%s' must be int for data_type int16", entity_type, key)
-                return False
-            value_to_send = value & 0xFFFF
-        elif data_type == "uint16":
-            if not isinstance(value, int) or not (0 <= value <= 0xFFFF):
-                _LOGGER.error("Value for %s '%s' must be 0..65535 for data_type uint16", entity_type, key)
-                return False
-            value_to_send = value
+        # Stored energy
+        if soc and total_energy:
+            derived["stored_energy"] = round(soc / 100 * total_energy, 3)
         else:
-            # Not implemented conversion for 32-bit types here
-            _LOGGER.error("Unsupported data_type '%s' for key '%s' on write", data_type, key)
-            return False
+            derived["stored_energy"] = None
 
-        try:
-            import asyncio as _asyncio
-            try:
-                success = await _asyncio.wait_for(
-                    self.client.async_write_register(register=register, value=value_to_send),
-                    timeout=10.0,
-                )
-            except _asyncio.TimeoutError:
-                _LOGGER.error(
-                    "Timeout writing to register 0x%X for %s '%s' - connection may be half-open",
-                    register,
-                    entity_type,
-                    key,
-                )
-                return False
+        return derived
 
-            if success:
-                _LOGGER.debug(
-                    "Successfully wrote to %s '%s': register=%d (0x%04X), value=%s, scale=%s, unit=%s",
-                    entity_type,
-                    key,
-                    register,
-                    register,
-                    value_to_send,
-                    scale if scale is not None else 1,
-                    unit if unit is not None else "N/A",
-                )
-                from homeassistant.util.dt import utcnow as _utcnow
-                self._last_write_times[key] = _utcnow()
-                return True
-            else:
-                _LOGGER.warning(
-                    "Write operation failed for %s '%s': register=%d (0x%04X), value=%s",
-                    entity_type,
-                    key,
-                    register,
-                    register,
-                    value,
-                )
-                return False
-                
-        except Exception as e:
-            _LOGGER.error(
-                "Failed to write value %s to register 0x%X for %s '%s': %s",
-                value,
-                register,
-                entity_type,
-                key,
-                e
-            )
-            return False
+    # ------------------------------------------------------------------
+    # Write interface  (used by switches, numbers, selects, buttons)
+    # ------------------------------------------------------------------
 
-    async def _async_update_data(self):
-        """Update all sensors asynchronously with per-sensor interval skipping.
-
-        Buttons are excluded as they are not polled.
-        Sensors disabled in Home Assistant are skipped, except dependencies which are always fetched.
+    async def async_write_register(self, address: int, value: int) -> None:
         """
-        from homeassistant.util.dt import utcnow
-        from homeassistant.helpers import entity_registry as er
+        Write a single Modbus register.
 
-        now = utcnow()
-        updated_data = {}
-        
-        # Track if we actually attempted any reads (not just skipped due to intervals)
-        attempted_reads = 0
-        successful_reads = 0
-        self._timeouts_in_cycle = 0
+        Uses the same shared lock as the polling cycle.
+        Lock acquisition is time-bounded to avoid permanent freezes
+        (sphings79 fix for issue #184).
+        """
+        if self._client is None:
+            raise UpdateFailed("Cannot write – Modbus client is not connected")
 
-        # Connection throttling: if too many failures, temporarily stop attempting connections
-        if self._connection_suspended:
-            if self._suspension_reset_time and now > self._suspension_reset_time:
-                _LOGGER.info("Connection suspension expired - attempting reconnection")
-                self._connection_suspended = False
-                self._consecutive_failures = 0
-                
-                # Force reconnect after suspension
-                try:
-                    connected = await self.client.async_reconnect()
-                    if connected:
-                        _LOGGER.info("Successfully reconnected after suspension")
-                    else:
-                        _LOGGER.warning("Failed to reconnect after suspension - will retry next cycle")
-                        return self.data or {}
-                except Exception as exc:
-                    _LOGGER.error("Exception during reconnect: %s", exc)
-                    return self.data or {}
-            else:
-                _LOGGER.debug("Connection suspended - skipping update to prevent resource exhaustion")
-                return self.data or {}
-
-        _LOGGER.debug("Coordinator poll tick at %s", now.isoformat())
-
-        # Get the entity registry to check for disabled entities
-        entity_registry = er.async_get(self.hass)
-
-        # Collect all dependency keys from all definitions
-        all_definitions_for_deps = (
-            self.EFFICIENCY_SENSOR_DEFINITIONS
-            + self.STORED_ENERGY_SENSOR_DEFINITIONS
-            + self.CYCLE_SENSOR_DEFINITIONS
-        )
-        dependency_keys_set = {
-            dep_key
-            for defn in all_definitions_for_deps
-            for dep_key in defn.get("dependency_keys", {}).values()
-            if dep_key
-        }
-
-        # Debug logging
-        for dep_key in dependency_keys_set:
-            _LOGGER.debug("Dependency key '%s'", dep_key)
-
-        # Iterate over each sensor definition to poll if due
-        for sensor in self._all_definitions:
-            key = sensor["key"]
-            entity_type = self._entity_types.get(key, get_entity_type(sensor))
-            unique_id = f"{self.config_entry.entry_id}_{sensor['key']}"
-            registry_entry = entity_registry.async_get_entity_id(entity_type, self.config_entry.domain, unique_id)
-
-            # Determine if the entity is disabled in Home Assistant
-            is_disabled = False
-            entry = entity_registry.entities.get(registry_entry) if registry_entry else None
-            if entry:
-                is_disabled = entry.disabled or entry.disabled_by is not None
-
-            # Check if this key is a dependency key for any sensor
-            is_dependency = key in dependency_keys_set
-
-            # Skip polling if entity is disabled unless it is a dependency key
-            if is_disabled:
-                if is_dependency:
-                    _LOGGER.debug("Fetching disabled dependency key '%s'", key)
-                else:
-                    _LOGGER.debug("Skipping disabled entity '%s'", sensor.get("name", key))
-                    continue
-
-            # Determine polling interval for this sensor, using self.scan_intervals
-            interval_name = sensor.get("scan_interval")
-            interval = None
-            if interval_name:
-                interval = self.scan_intervals.get(interval_name)
-
-            if interval is None:
-                _LOGGER.warning(
-                    "%s '%s' has no scan_interval defined, skipping this poll",
-                    entity_type,
-                    key,
-                )
-                continue
-
-            # Skip read for 3s after a write to avoid reading back stale device state
-            last_write = self._last_write_times.get(key)
-            if last_write is not None and (now - last_write).total_seconds() < 3:
-                _LOGGER.debug("Suppressing read of '%s' after recent write", key)
-                continue
-
-            # Apply per-register exponential backoff based on consecutive failures.
-            # This prevents hammering dead/removed registers at full poll rate.
-            failures = self._register_failures.get(key, 0)
-            backoff = min(2 ** failures, 64)  # max 64x base interval
-            effective_interval = min(interval * backoff, 3600)
-
-            last_attempt = self._last_attempt_times.get(key)
-            elapsed = (now - last_attempt).total_seconds() if last_attempt else None
-
-            if elapsed is not None and elapsed < effective_interval:
-                _LOGGER.debug(
-                    "Skipping %s '%s', last attempt %.1fs ago (effective interval %ds, failures=%d)",
-                    entity_type,
-                    key,
-                    elapsed,
-                    effective_interval,
-                    failures,
-                )
-                continue
-
-            # Track that we're attempting a read
-            attempted_reads += 1
-            self._read_start_times[key] = now
-
-            # Attempt to read the sensor value from Modbus using helper function
-            value = await self.async_read_value(sensor, key)
-
-            if value is not None:
-                # Special-case: for packed schedule sensors, store both the
-                # raw 5-register list as the main `data[key]` and the decoded
-                # dict under `data["<key>_attrs"]` so sensors can expose
-                # attributes while the state remains the raw registers.
-                if sensor.get("data_type") == "schedule" and isinstance(value, dict):
-                    try:
-                        days = int(value.get("days") or 0)
-                    except Exception:
-                        days = value.get("days")
-                    try:
-                        start = int(value.get("start") or 0)
-                    except Exception:
-                        start = value.get("start")
-                    try:
-                        end = int(value.get("end") or 0)
-                    except Exception:
-                        end = value.get("end")
-                    try:
-                        enabled = int(value.get("enabled") or 0)
-                    except Exception:
-                        enabled = value.get("enabled")
-
-                    # Mode in attrs is signed; convert to unsigned 16-bit for raw register
-                    try:
-                        mode_signed = int(value.get("mode") or 0)
-                        mode_raw = mode_signed & 0xFFFF
-                    except Exception:
-                        mode_raw = value.get("mode")
-
-                    raw_regs = [days, start, end, mode_raw, enabled]
-
-                    updated_data[key] = raw_regs
-                    try:
-                        updated_data[f"{key}_attrs"] = value
-                    except Exception:
-                        _LOGGER.exception("Failed to populate %s_attrs", key)
-
-                    _LOGGER.debug(
-                        "Stored raw schedule for %s: %s and attrs: %s",
-                        key,
-                        raw_regs,
-                        value,
-                    )
-                else:
-                    updated_data[key] = value
-
-                self._last_update_times[key] = now
-                self._last_attempt_times[key] = now
-                prev_failures = self._register_failures.get(key, 0)
-                if prev_failures > 0:
-                    _LOGGER.info(
-                        "%s '%s' recovered after %d consecutive failure(s)",
-                        entity_type, key, prev_failures,
-                    )
-                self._register_failures[key] = 0
-                successful_reads += 1
-            else:
-                # Individual sensor read failed — increment backoff counter
-                self._last_attempt_times[key] = now
-                new_failures = self._register_failures.get(key, 0) + 1
-                self._register_failures[key] = new_failures
-                next_backoff = min(2 ** new_failures, 64)
-                next_interval = min(interval * next_backoff, 3600)
-                # Log verbosely on first few failures and then only at milestones
-                if new_failures <= 3 or new_failures % 10 == 0:
-                    _LOGGER.warning(
-                        "Failed to read %s '%s' - value is None "
-                        "(consecutive failures: %d, next poll in %ds)",
-                        entity_type, key, new_failures, next_interval,
-                    )
-                else:
-                    _LOGGER.debug(
-                        "Failed to read %s '%s' - value is None (failure #%d)",
-                        entity_type, key, new_failures,
-                    )
-
-        # Connection retry logic: only track failures if we actually attempted reads
-        if attempted_reads > 0:
-            timeout_reads = int(getattr(self, "_timeouts_in_cycle", 0) or 0)
-            if successful_reads > 0:
-                # At least some data successfully retrieved - reset failure counter
-                if self._consecutive_failures > 0:
-                    _LOGGER.info("Connection recovered after %d failures (successful reads: %d/%d)", 
-                               self._consecutive_failures, successful_reads, attempted_reads)
-                self._consecutive_failures = 0
-                self._connection_suspended = False
-                self._last_successful_read = now
-                
-                if timeout_reads and (timeout_reads / attempted_reads) >= self._timeout_ratio_reconnect_threshold:
-                    self._consecutive_timeout_cycles += 1
-                    _LOGGER.warning(
-                        "High timeout rate detected (%d/%d) - consecutive timeout cycles: %d/%d",
-                        timeout_reads,
-                        attempted_reads,
-                        self._consecutive_timeout_cycles,
-                        self._max_consecutive_timeout_cycles,
-                    )
-                else:
-                    self._consecutive_timeout_cycles = 0
-                
-                if self._consecutive_timeout_cycles >= self._max_consecutive_timeout_cycles:
-                    try:
-                        _LOGGER.info(
-                            "Attempting reconnect due to repeated timeouts (%d/%d cycles)",
-                            self._consecutive_timeout_cycles,
-                            self._max_consecutive_timeout_cycles,
-                        )
-                        connected = await self.client.async_reconnect()
-                        if connected:
-                            _LOGGER.info("Successfully reconnected after repeated timeouts")
-                            self._consecutive_timeout_cycles = 0
-                            self._connection_established_at = now
-                        else:
-                            _LOGGER.warning("Reconnect attempt after repeated timeouts failed")
-                    except Exception as exc:
-                        _LOGGER.error("Exception during reconnect after repeated timeouts: %s", exc)
-            elif successful_reads == 0:
-                # We attempted reads but ALL failed - connection issue
-                self._consecutive_failures += 1
-                _LOGGER.warning("All read attempts failed (%d/%d) - consecutive failures: %d/%d",
-                              successful_reads, attempted_reads, 
-                              self._consecutive_failures, self._max_consecutive_failures)
-                
-                # Try to reconnect immediately on failure (use reconnect helper)
-                try:
-                    _LOGGER.info("Attempting immediate reconnection after read failures")
-                    connected = await self.client.async_reconnect()
-                    if connected:
-                        _LOGGER.info("Successfully reconnected")
-                        self._consecutive_failures = 0
-                        self._connection_established_at = now
-                    else:
-                        _LOGGER.warning("Immediate reconnection failed")
-                except Exception as exc:
-                    _LOGGER.error("Exception during immediate reconnect: %s", exc)
-                
-                if self._consecutive_failures >= self._max_consecutive_failures:
-                    # Too many failures - suspend connection attempts for 1 minute
-                    self._connection_suspended = True
-                    self._suspension_reset_time = now + timedelta(minutes=1)
-                    _LOGGER.error(
-                        "Connection suspended after %d consecutive failures. "
-                        "Will retry in 1 minute to prevent resource exhaustion.",
-                        self._consecutive_failures
-                    )
-                self._consecutive_timeout_cycles = 0
-        else:
-            _LOGGER.debug("No sensors due for update in this cycle")
-
-        # Defensive check
-        if self.data is None:
-            self.data = {}
-
-        # Discard any read result that was overtaken by a write during this cycle.
-        # If a write completed after the read for a key was started, the read
-        # observed a pre-write device state and must not overwrite the fresh write.
-        for _k in list(updated_data.keys()):
-            _read_start = self._read_start_times.get(_k)
-            _last_write = self._last_write_times.get(_k)
-            if _read_start and _last_write and _last_write > _read_start:
-                _LOGGER.debug(
-                    "Discarding stale read of '%s' — write completed after read started", _k
-                )
-                del updated_data[_k]
-
-        # Update the coordinator's data
-        self.data.update(updated_data)
-        return self.data
-    
-
-    async def async_close(self):
-        """Close the Modbus client connection cleanly."""
         try:
-            await self.client.async_close()
-            _LOGGER.debug("Closed Modbus connection to %s:%d", self.host, self.port)
-        except Exception as e:
-            _LOGGER.warning("Error closing Modbus client: %s", e)
+            async with asyncio.timeout(_WRITE_LOCK_TIMEOUT):
+                async with self._lock:
+                    await _write_register(self._client, address, value)
+        except TimeoutError as exc:
+            raise UpdateFailed(
+                f"Timeout acquiring write lock for reg {address}"
+            ) from exc
+        except (ConnectionError, OSError, TModbusError) as exc:
+            raise UpdateFailed(
+                f"Failed to write Modbus register {address} = {value}: {exc}"
+            ) from exc
 
+    async def async_write_registers(self, address: int, values: list[int]) -> None:
+        """Write multiple consecutive Modbus registers (FC 16)."""
+        if self._client is None:
+            raise UpdateFailed("Cannot write – Modbus client is not connected")
 
-def get_registers(version: str):
-    """
-    Return a dict with entity/register definitions for the given device version.
-
-    The returned dict contains the keys:
-      - SENSOR_DEFINITIONS
-      - BINARY_SENSOR_DEFINITIONS
-      - SELECT_DEFINITIONS
-      - SWITCH_DEFINITIONS
-      - NUMBER_DEFINITIONS
-      - BUTTON_DEFINITIONS
-      - EFFICIENCY_SENSOR_DEFINITIONS
-      - STORED_ENERGY_SENSOR_DEFINITIONS
-    - CYCLE_SENSOR_DEFINITIONS
-
-    If an unknown version is requested, the function falls back to the v1/v2
-    register set (because v1 and v2 share the same registers in this integration).
-    """
-    # Normalize incoming version value and accept legacy tokens.
-    version_raw = (version or "").strip()
-    version = version_raw.lower()
-    _LOGGER.info(
-        "Version '%s' mapped to '%s'" ,
-        version_raw,
-        version,
-    )
-    # Accept legacy tokens 'v1/v2' and 'v3' and automatically map them
-    # to the new tokens used by the integration ('e v1/v2', 'e v3').
-    legacy_to_new = {
-        "v1/v2": "e v1/v2",
-        "v3": "e v3",
-    }
-    if version in legacy_to_new:
-        mapped = legacy_to_new[version]
-        _LOGGER.info(
-            "Mapping legacy device version '%s' to '%s' for backwards compatibility",
-            version_raw,
-            mapped,
-        )
-        version = mapped
-
-    # Validate against supported versions (case-insensitive)
-    allowed = {str(item).lower() for item in SUPPORTED_VERSIONS}
-    if version not in allowed:
-        raise ValueError(
-            "Unsupported or missing device version %r. Supported versions: %s"
-            % (version_raw, ", ".join(sorted(allowed)))
-        )
-
-    def _normalize_section(section):
-        """Convert mapping-based sections into the legacy list-of-dicts format."""
-        if isinstance(section, dict):
-            normalized = []
-            for key, value in section.items():
-                entry = dict(value or {})
-                entry.setdefault("key", key)
-                normalized.append(entry)
-            return normalized
-        if isinstance(section, list):
-            return section
-        return []
-
-    # Prefer YAML-based register definitions placed in the `registers/` folder.
-    # Map version tokens to YAML filenames.
-    filename_map = {
-        "e v1/v2": "e_v12.yaml",
-        "e v3": "e_v3.yaml",
-        "d": "d.yaml",
-        "a": "a.yaml",
-    }
-
-    yaml_filename = filename_map.get(version)
-    if yaml_filename:
-        yaml_path = Path(__file__).parent / "registers" / yaml_filename
-        if yaml_path.exists():
-            try:
-                import yaml
-
-                with open(yaml_path, "r", encoding="utf-8") as fh:
-                    data = yaml.safe_load(fh) or {}
-
-                return {
-                    "SENSOR_DEFINITIONS": _normalize_section(data.get("SENSOR_DEFINITIONS")),
-                    "BINARY_SENSOR_DEFINITIONS": _normalize_section(data.get("BINARY_SENSOR_DEFINITIONS")),
-                    "SELECT_DEFINITIONS": _normalize_section(data.get("SELECT_DEFINITIONS")),
-                    "SWITCH_DEFINITIONS": _normalize_section(data.get("SWITCH_DEFINITIONS")),
-                    "NUMBER_DEFINITIONS": _normalize_section(data.get("NUMBER_DEFINITIONS")),
-                    "BUTTON_DEFINITIONS": _normalize_section(data.get("BUTTON_DEFINITIONS")),
-                    "EFFICIENCY_SENSOR_DEFINITIONS": _normalize_section(
-                        data.get("EFFICIENCY_SENSOR_DEFINITIONS")
-                    ),
-                    "STORED_ENERGY_SENSOR_DEFINITIONS": _normalize_section(
-                        data.get("STORED_ENERGY_SENSOR_DEFINITIONS")
-                    ),
-                    "CYCLE_SENSOR_DEFINITIONS": _normalize_section(
-                        data.get("CYCLE_SENSOR_DEFINITIONS")
-                    ),
-                }
-            except Exception as e:
-                _LOGGER.warning("Failed to load YAML registers %s: %s", yaml_path, e)
-
+        try:
+            async with asyncio.timeout(_WRITE_LOCK_TIMEOUT):
+                async with self._lock:
+                    await _write_registers(self._client, address, values)
+        except TimeoutError as exc:
+            raise UpdateFailed(
+                f"Timeout acquiring write lock for regs at {address}"
+            ) from exc
+        except (ConnectionError, OSError, TModbusError) as exc:
+            raise UpdateFailed(
+                f"Failed to write Modbus registers at {address}: {exc}"
+            ) from exc
