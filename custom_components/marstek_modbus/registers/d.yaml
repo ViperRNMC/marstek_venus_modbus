@@ -523,7 +523,7 @@ SENSOR_DEFINITIONS:
         register: 30303
         scale: -1
         data_type: uint16
-        device_class: diagnostic
+        device_class: signal_strength
         unit: dBm
         icon: "mdi:wifi"
         category: diagnostic
