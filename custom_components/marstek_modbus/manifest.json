@@ -4,7 +4,7 @@
   "version": "2026.3.4",
   "config_flow": true,
   "documentation": "https://github.com/viperrnmc/marstek_venus_modbus",
-  "requirements": ["pymodbus>=3.9.2"],
+  "requirements": ["tmodbus"],
   "codeowners": ["@ViperRNMC"],
   "iot_class": "local_polling"
 }
