@@ -286,5 +286,5 @@ _Notes:_
 - Schedule Day selection: the underlying `schedule_*_days` register uses a bitmask to represent multiple days, but the integration currently exposes it as a single-select option in Home Assistant. Due to this limitation you cannot select multiple days from the integration UI.
 - Schedule Mode values: `schedule_*_mode` accepts the following ranges:
   - `-1` = Self consumption mode
-  - `100` to `2500` = Charge power (W)
-  - `-100` to `-2500` = Discharge power (W)
+  - `-100` to `-2500` = Charge power (W)
+  - `100` to `2500` = Discharge power (W)
