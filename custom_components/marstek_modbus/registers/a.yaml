@@ -1197,7 +1197,7 @@ SENSOR_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         precision: 0
-        scan_interval: high
+        scan_interval: medium
     mppt1_voltage:
         register: 30020
         scale: 0.1
