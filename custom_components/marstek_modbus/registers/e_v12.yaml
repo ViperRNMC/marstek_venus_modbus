@@ -692,8 +692,8 @@ NUMBER_DEFINITIONS:
         enabled_by_default: false
         icon: "mdi:battery-sync-outline"
         min: 10
-        max: 1001
-        step: 3591
+        max: 100
+        step: 1
         unit: "%"
         scale: 1
         data_type: uint16
