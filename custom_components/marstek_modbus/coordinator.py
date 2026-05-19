@@ -10,7 +10,7 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
 
 from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS, DEFAULT_UNIT_ID
 
@@ -559,6 +559,28 @@ class MarstekCoordinator(DataUpdateCoordinator):
             value = await self.async_read_value(sensor, key)
 
             if value is not None:
+                # For total_increasing sensors, reject suspicious regressions/glitches
+                # by failing the coordinator update.
+                if sensor.get("state_class") == "total_increasing" and isinstance(value, (int, float)):
+                    previous_value = self.data.get(key)
+                    if isinstance(previous_value, (int, float)):
+                        regression = value < previous_value
+                        scale_glitch = (
+                            previous_value > 0
+                            and 0.08 <= (value / previous_value) <= 0.12
+                        )
+                        if regression or scale_glitch:
+                            reason = "regression" if regression else "possible 10x scaling glitch"
+                            raise UpdateFailed(
+                                "Suspicious %s for total_increasing sensor '%s' (new=%s, previous=%s)"
+                                % (
+                                    reason,
+                                    key,
+                                    value,
+                                    previous_value,
+                                )
+                            )
+
                 # Special-case: for packed schedule sensors, store both the
                 # raw 5-register list as the main `data[key]` and the decoded
                 # dict under `data["<key>_attrs"]` so sensors can expose
