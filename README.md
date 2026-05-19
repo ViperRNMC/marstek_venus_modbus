@@ -24,7 +24,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 - Fully asynchronous operation for optimal performance and responsiveness
 - Sensors for voltage, current, SOC, power, energy, and fault/alarm status (combined bits)
 - Switches for force charge/discharge control
-- Adjustable charge/discharge power (0–2500W)
+- Adjustable charge/discharge power (model-dependent, up to 2500W)
 - Entities grouped under a device in Home Assistant
 - Select entity support for multi-state control (e.g., force mode)
 - Select entity for control modes (e.g., force mode, grid standard)
@@ -286,5 +286,6 @@ _Notes:_
 - Schedule Day selection: the underlying `schedule_*_days` register uses a bitmask to represent multiple days, but the integration currently exposes it as a single-select option in Home Assistant. Due to this limitation you cannot select multiple days from the integration UI.
 - Schedule Mode values: `schedule_*_mode` accepts the following ranges:
   - `-1` = Self consumption mode
-  - `-100` to `-2500` = Charge power (W)
-  - `100` to `2500` = Discharge power (W)
+  - Charge/discharge range is model-dependent.
+  - Venus A (fw v148+): `-100` to `-1500` (charge), `100` to `1500` (discharge)
+  - Venus D / Venus E: `-100` to `-2500` (charge), `100` to `2500` (discharge)
