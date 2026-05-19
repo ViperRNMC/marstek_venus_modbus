@@ -77,7 +77,6 @@ SENSOR_DEFINITIONS:
         register: 34002
         scale: 0.1
         unit: "%"
-        device_class: battery
         state_class: measurement
         enabled_by_default: false
         data_type: uint16
@@ -87,7 +86,6 @@ SENSOR_DEFINITIONS:
         register: 34102
         scale: 0.1
         unit: "%"
-        device_class: battery
         state_class: measurement
         enabled_by_default: false
         data_type: uint16
@@ -97,7 +95,6 @@ SENSOR_DEFINITIONS:
         register: 34202
         scale: 0.1
         unit: "%"
-        device_class: battery
         state_class: measurement
         enabled_by_default: false
         data_type: uint16
@@ -107,7 +104,6 @@ SENSOR_DEFINITIONS:
         register: 34302
         scale: 0.1
         unit: "%"
-        device_class: battery
         state_class: measurement
         enabled_by_default: false
         data_type: uint16
@@ -117,7 +113,6 @@ SENSOR_DEFINITIONS:
         register: 34402
         scale: 0.1
         unit: "%"
-        device_class: battery
         state_class: measurement
         enabled_by_default: false
         data_type: uint16
@@ -127,7 +122,6 @@ SENSOR_DEFINITIONS:
         register: 34502
         scale: 0.1
         unit: "%"
-        device_class: battery
         state_class: measurement
         enabled_by_default: false
         data_type: uint16
