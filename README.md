@@ -284,8 +284,10 @@ _Notes:_
 - For access to registers in the 42000–42999 range, the battery must be set to RS485 control mode.
 - Schedule Time format: `start` and `end` are entered as HHMM 24-hour integers (for example `0830` = 08:30). Use values within the valid range shown in the YAML for each device; ensure `start` is earlier than `end` for a single active period.
 - Schedule Day selection: the underlying `schedule_*_days` register uses a bitmask to represent multiple days, but the integration currently exposes it as a single-select option in Home Assistant. Due to this limitation you cannot select multiple days from the integration UI.
+- Energy Dashboard caveat (Venus A / Venus D with PV input): reported battery charge/discharge energy registers may include energy that flows to household loads via the inverter path, not only net battery-in/out energy. This can lead to misleading Home Assistant Energy Dashboard battery statistics. For accurate dashboard usage, prefer custom derived sensors (for example from power integration) and validate behavior on your firmware/device.
 - Schedule Mode values: `schedule_*_mode` accepts the following ranges:
   - `-1` = Self consumption mode
   - Charge/discharge range is model-dependent.
   - Venus A (fw v148+): `-100` to `-1500` (charge), `100` to `1500` (discharge)
   - Venus D / Venus E: `-100` to `-2500` (charge), `100` to `2500` (discharge)
+
