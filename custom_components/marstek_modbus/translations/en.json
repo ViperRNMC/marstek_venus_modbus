@@ -83,6 +83,12 @@
       "vms_version": {
         "name": "VMS Version"
       },
+      "ems_sub_version": {
+        "name": "EMS Sub-Version"
+      },
+      "vns_version": {
+        "name": "VNS Version"
+      },
       "comm_module_firmware": {
         "name": "Communication Module Firmware"
       },
@@ -454,6 +460,27 @@
       },
       "wifi_signal_strength": {
         "name": "WiFi Signal Strength"
+      },
+      "wifi_ssid": {
+        "name": "WiFi SSID"
+      },
+      "bms_temperature_1": {
+        "name": "BMS Temperature 1"
+      },
+      "bms_temperature_2": {
+        "name": "BMS Temperature 2"
+      },
+      "battery_1_temperature": {
+        "name": "Battery Pack 1 Temperature"
+      },
+      "battery_2_temperature": {
+        "name": "Battery Pack 2 Temperature"
+      },
+      "battery_3_temperature": {
+        "name": "Battery Pack 3 Temperature"
+      },
+      "battery_4_temperature": {
+        "name": "Battery Pack 4 Temperature"
       },
       "round_trip_efficiency_total": {
         "name": "Round Trip Efficiency Total"

@@ -31,7 +31,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: uint16
         scan_interval: very_low
-    vms_version:
+    vms_version:  # Venus Management System: main firmware (overall control)
         register: 30202
         icon: "mdi:battery-check-outline"
         category: diagnostic
@@ -45,6 +45,26 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: uint16
         scale: 1
+        scan_interval: very_low
+    ems_sub_version:  # Energy Management Sub: energy logic, charge/discharge algorithms
+        register: 30201
+        scale: 1
+        unit: null
+        icon: "mdi:ticket-confirmation-outline"
+        category: diagnostic
+        enabled_by_default: false
+        data_type: uint16
+        precision: 0
+        scan_interval: very_low
+    vns_version:  # Venus Network System: WiFi/BT chip module, connectivity, Local API
+        register: 30203
+        scale: 1
+        unit: null
+        icon: "mdi:ticket-confirmation-outline"
+        category: diagnostic
+        enabled_by_default: false
+        data_type: uint16
+        precision: 0
         scan_interval: very_low
     comm_module_firmware:
         register: 30350
@@ -299,6 +319,66 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 3
         scan_interval: medium
+    bms_temperature_1:
+        register: 34011
+        scale: 0.1
+        unit: "°C"
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    bms_temperature_2:
+        register: 34012
+        scale: 0.1
+        unit: "°C"
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    battery_1_temperature:
+        register: 34013
+        scale: 0.1
+        unit: "°C"
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    battery_2_temperature:
+        register: 34014
+        scale: 0.1
+        unit: "°C"
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    battery_3_temperature:
+        register: 34015
+        scale: 0.1
+        unit: "°C"
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 1
+        scan_interval: medium
+    battery_4_temperature:
+        register: 34016
+        scale: 0.1
+        unit: "°C"
+        device_class: temperature
+        state_class: measurement
+        enabled_by_default: false
+        data_type: int16
+        precision: 1
+        scan_interval: medium
     battery_1_cell_1_voltage:
         register: 34018
         scale: 0.001
@@ -522,6 +602,14 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         precision: 0
         scan_interval: high
+    wifi_ssid:
+        register: 41500
+        count: 16
+        data_type: char
+        category: diagnostic
+        icon: "mdi:wifi"
+        enabled_by_default: false
+        scan_interval: very_low
     bluetooth_status:
         register: 30301
         data_type: uint16
@@ -529,6 +617,12 @@ SENSOR_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         scan_interval: medium
+        states:
+            0: Disconnected
+            1: Connected after reboot
+            2: Connected
+            3: Active
+            4: Locked
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:
