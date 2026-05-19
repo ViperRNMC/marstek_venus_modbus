@@ -1114,7 +1114,6 @@ EFFICIENCY_SENSOR_DEFINITIONS:
     round_trip_efficiency_total:
         key: round_trip_efficiency_total
         unit: "%"
-        device_class: battery
         icon: "mdi:percent"
         state_class: measurement
         mode: round_trip
@@ -1124,7 +1123,6 @@ EFFICIENCY_SENSOR_DEFINITIONS:
     round_trip_efficiency_monthly:
         key: round_trip_efficiency_monthly
         unit: "%"
-        device_class: battery
         icon: "mdi:percent"
         state_class: measurement
         mode: round_trip
@@ -1134,7 +1132,6 @@ EFFICIENCY_SENSOR_DEFINITIONS:
     conversion_efficiency:
         key: conversion_efficiency
         unit: "%"
-        device_class: battery
         state_class: measurement
         mode: conversion
         dependency_keys:
