@@ -34,11 +34,19 @@ class MarstekCoordinator(DataUpdateCoordinator):
     def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
         """Initialize the coordinator with connection parameters and update interval."""        
         self.hass = hass
-        self.host = entry.data["host"]
-        self.port = entry.data["port"]
-        self.message_wait_ms = entry.data.get("message_wait_milliseconds")
-        self.timeout = entry.data.get("timeout")
-        self.unit_id = entry.data.get("unit_id", DEFAULT_UNIT_ID)
+        entry_data = entry.data or {}
+
+        self.host = entry_data.get("host")
+        self.port = entry_data.get("port")
+        if self.host is None or self.port is None:
+            raise ValueError(
+                "Config entry is missing required connection data (host/port). "
+                "Please reconfigure the Marstek integration."
+            )
+
+        self.message_wait_ms = entry_data.get("message_wait_milliseconds")
+        self.timeout = entry_data.get("timeout")
+        self.unit_id = entry_data.get("unit_id", DEFAULT_UNIT_ID)
 
         # Mapping from sensor key to entity type for logging and processing
         self._entity_types: dict[str, str] = {}
@@ -562,7 +570,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 # For total_increasing sensors, reject suspicious regressions/glitches
                 # by failing the coordinator update.
                 if sensor.get("state_class") == "total_increasing" and isinstance(value, (int, float)):
-                    previous_value = self.data.get(key)
+                    previous_value = self.data.get(key) if isinstance(self.data, dict) else None
                     if isinstance(previous_value, (int, float)):
                         regression = value < previous_value
                         scale_glitch = (
