@@ -34,7 +34,9 @@ async def async_setup_entry(
         (MarstekSensor, coordinator.SENSOR_DEFINITIONS),
         (MarstekEfficiencySensor, coordinator.EFFICIENCY_SENSOR_DEFINITIONS),
         (MarstekStoredEnergySensor, coordinator.STORED_ENERGY_SENSOR_DEFINITIONS),
-        (MarstekBatteryCycleSensor, coordinator.CYCLE_SENSOR_DEFINITIONS),
+        (MarstekQuotientSensor, coordinator.QUOTIENT_SENSOR_DEFINITIONS),
+        (MarstekDifferenceSensor, coordinator.DIFFERENCE_SENSOR_DEFINITIONS),
+        (MarstekDifferenceQuotientSensor, coordinator.DIFFERENCE_QUOTIENT_SENSOR_DEFINITIONS),
     )
     for entity_cls, definitions in sensor_groups:
         entities.extend(entity_cls(coordinator, definition) for definition in definitions)
@@ -501,15 +503,45 @@ class MarstekEfficiencySensor(MarstekCalculatedSensor):
         return efficiency_rounded
 
 
-class MarstekBatteryCycleSensor(MarstekCalculatedSensor):
-    """Calculate estimated battery cycles from discharge energy and capacity."""
+class MarstekQuotientSensor(MarstekCalculatedSensor):
+    """Sensor calculating quotient: dividend / divisor.
+    
+    Used for operations like battery cycles (discharge / capacity)
+    or current from power and voltage.
+    """
 
     def calculate_value(self, dep_values: dict):
-        discharge = dep_values.get("discharge")
-        capacity = dep_values.get("capacity")
-        if discharge is None or capacity in (None, 0):
+        dividend = dep_values.get("dividend")
+        divisor = dep_values.get("divisor")
+        if dividend is None or divisor in (None, 0):
             return None
+        return round(dividend / divisor, 2)
 
-        cycles = round(discharge / capacity, 2)
-        self._attr_native_value = cycles
-        return cycles
+
+class MarstekDifferenceSensor(MarstekCalculatedSensor):
+    """Sensor calculating difference: minuend - subtrahend.
+    
+    Used for net power calculations (e.g., grid power = offgrid - inverter).
+    """
+
+    def calculate_value(self, dep_values: dict):
+        minuend = dep_values.get("minuend")
+        subtrahend = dep_values.get("subtrahend")
+        if minuend is None or subtrahend is None:
+            return None
+        return round(minuend - subtrahend, 1)
+
+
+class MarstekDifferenceQuotientSensor(MarstekCalculatedSensor):
+    """Sensor calculating difference quotient: (minuend - subtrahend) / divisor.
+    
+    Used for current from power difference and voltage.
+    """
+
+    def calculate_value(self, dep_values: dict):
+        minuend = dep_values.get("minuend")
+        subtrahend = dep_values.get("subtrahend")
+        divisor = dep_values.get("divisor")
+        if minuend is None or subtrahend is None or divisor in (None, 0):
+            return None
+        return round((minuend - subtrahend) / divisor, 2)
