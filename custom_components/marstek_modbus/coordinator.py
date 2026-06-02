@@ -10,7 +10,7 @@ from datetime import timedelta
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import Entity
-from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+from homeassistant.helpers.update_coordinator import DataUpdateCoordinator
 
 from .const import DEFAULT_SCAN_INTERVALS, SUPPORTED_VERSIONS, DEFAULT_UNIT_ID
 
@@ -164,6 +164,57 @@ class MarstekCoordinator(DataUpdateCoordinator):
             self.update_interval,
         )
 
+    @staticmethod
+    def _definition_register_count(definition: dict) -> int:
+        """Return the register span needed for a definition."""
+        if definition.get("count") is not None:
+            return int(definition["count"])
+        data_type = definition.get("data_type", "uint16")
+        if data_type in {"int32", "uint32"}:
+            return 2
+        if data_type == "schedule":
+            return 5
+        return 1
+
+    def _build_contiguous_read_groups(self, sensors: list[dict]) -> list[list[dict]]:
+        """Group sensor definitions into strictly contiguous register blocks."""
+        if not sensors:
+            return []
+
+        ordered = sorted(sensors, key=lambda definition: definition["register"])
+        groups: list[list[dict]] = []
+        current_group: list[dict] = []
+        current_end: int | None = None
+
+        for sensor in ordered:
+            register = sensor["register"]
+            span = self._definition_register_count(sensor)
+            sensor_end = register + span - 1
+
+            if not current_group:
+                current_group = [sensor]
+                current_end = sensor_end
+                continue
+
+            if current_end is not None and register == current_end + 1 and sensor_end - current_group[0]["register"] < 125:
+                current_group.append(sensor)
+                current_end = sensor_end
+                continue
+
+            groups.append(current_group)
+            current_group = [sensor]
+            current_end = sensor_end
+
+        if current_group:
+            groups.append(current_group)
+
+        return groups
+
+    @staticmethod
+    def _definitions_by_key(definitions: list[dict]) -> dict[str, dict]:
+        """Return definitions indexed by key."""
+        return {definition["key"]: definition for definition in definitions}
+
 
     def register_entity_type(self, key: str, entity_type: str):
         """Register the entity type for a given sensor key.
@@ -282,7 +333,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 self.client.async_read_register(
                     register=sensor["register"],
                     data_type=sensor.get("data_type", "uint16"),
-                    count=sensor.get("count", 1),
+                    count=sensor.get("count"),
                     sensor_key=key,
                 ),
                 timeout=10.0
@@ -324,6 +375,88 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 entity_type, key, sensor["register"], e,
             )
             return None
+
+    async def _async_read_contiguous_group(
+        self,
+        block_sensors: list[dict],
+        due_sensors: list[dict],
+    ) -> tuple[dict[str, object], dict[str, int]]:
+        """Read a contiguous block and decode due sensors, with per-sensor fallback on failure."""
+        if not block_sensors or not due_sensors:
+            return {}, {"requests": 0, "block_requests": 0, "fallback_requests": 0}
+
+        if len(block_sensors) == 1 and len(due_sensors) == 1:
+            sensor = due_sensors[0]
+            key = sensor["key"]
+            value = await self.async_read_value(sensor, key)
+            values = {key: value} if value is not None else {}
+            return values, {"requests": 1, "block_requests": 0, "fallback_requests": 1}
+
+        block_start = block_sensors[0]["register"]
+        block_end = max(sensor["register"] + self._definition_register_count(sensor) - 1 for sensor in block_sensors)
+        block_count = block_end - block_start + 1
+
+        block_registers = await self.client.async_read_holding_registers(
+            register=block_start,
+            count=block_count,
+            sensor_key=f"block:{block_sensors[0]['key']}+{len(block_sensors) - 1}",
+            max_retries=1,
+        )
+
+        if block_registers is None:
+            _LOGGER.debug(
+                "Contiguous block read failed for %d-%d; falling back to individual reads",
+                block_start,
+                block_end,
+            )
+            values: dict[str, object] = {}
+            for sensor in due_sensors:
+                key = sensor["key"]
+                value = await self.async_read_value(sensor, key)
+                if value is not None:
+                    values[key] = value
+            return values, {
+                "requests": 1 + len(due_sensors),
+                "block_requests": 1,
+                "fallback_requests": len(due_sensors),
+            }
+
+        values: dict[str, object] = {}
+        for sensor in due_sensors:
+            key = sensor["key"]
+            register = sensor["register"]
+            offset = register - block_start
+            span = self._definition_register_count(sensor)
+            raw_regs = block_registers[offset:offset + span]
+
+            try:
+                value = self.client._decode_registers(
+                    register=register,
+                    regs=raw_regs,
+                    data_type=sensor.get("data_type", "uint16"),
+                    bit_index=sensor.get("bit_index"),
+                )
+            except Exception as exc:
+                _LOGGER.debug(
+                    "Failed to decode block value for %s from registers %d-%d: %s",
+                    key,
+                    register,
+                    register + span - 1,
+                    exc,
+                )
+                value = None
+
+            if value is not None:
+                values[key] = value
+                _LOGGER.debug(
+                    "Updated %s '%s' from block read: register=%d, value=%s",
+                    self._entity_types.get(key, get_entity_type(sensor)),
+                    key,
+                    register,
+                    value,
+                )
+
+        return values, {"requests": 1, "block_requests": 1, "fallback_requests": 0}
 
     async def async_write_value(
         self,
@@ -495,7 +628,14 @@ class MarstekCoordinator(DataUpdateCoordinator):
         for dep_key in dependency_keys_set:
             _LOGGER.debug("Dependency key '%s'", dep_key)
 
-        # Iterate over each sensor definition to poll if due
+        due_sensors: list[dict] = []
+        readable_sensors: list[dict] = []
+        grouped_blocks = 0
+        top_level_requests = 0
+        block_requests = 0
+        fallback_requests = 0
+
+        # Iterate over each sensor definition to determine if it should be polled now
         for sensor in self._all_definitions:
             key = sensor["key"]
             entity_type = self._entity_types.get(key, get_entity_type(sensor))
@@ -518,6 +658,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 else:
                     _LOGGER.debug("Skipping disabled entity '%s'", sensor.get("name", key))
                     continue
+
+            readable_sensors.append(sensor)
 
             # Determine polling interval for this sensor, using self.scan_intervals
             interval_name = sensor.get("scan_interval")
@@ -559,114 +701,129 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 )
                 continue
 
-            # Track that we're attempting a read
-            attempted_reads += 1
-            self._read_start_times[key] = now
+            due_sensors.append(sensor)
 
-            # Attempt to read the sensor value from Modbus using helper function
-            value = await self.async_read_value(sensor, key)
+        due_by_key = self._definitions_by_key(due_sensors)
 
-            if value is not None:
-                # For total_increasing sensors, ignore suspicious drops/10x glitches,
-                # but do not fail the whole coordinator cycle.
-                # Daily/monthly counters may legitimately reset and are excluded.
-                if sensor.get("state_class") == "total_increasing" and isinstance(value, (int, float)):
-                    allow_reset = "_daily_" in key or "_monthly_" in key
-                    if not allow_reset:
-                        previous_value = self.data.get(key) if isinstance(self.data, dict) else None
-                        if isinstance(previous_value, (int, float)):
-                            regression = value < previous_value
-                            scale_glitch = (
-                                previous_value > 0
-                                and 0.08 <= (value / previous_value) <= 0.12
-                            )
-                            if regression or scale_glitch:
-                                reason = "regression" if regression else "possible 10x scaling glitch"
-                                _LOGGER.warning(
-                                    "Ignoring suspicious %s for total_increasing sensor '%s' (new=%s, previous=%s)",
-                                    reason,
-                                    key,
-                                    value,
-                                    previous_value,
+        for block_group in self._build_contiguous_read_groups(readable_sensors):
+            group_due_sensors = [sensor for sensor in block_group if sensor["key"] in due_by_key]
+            if not group_due_sensors:
+                continue
+
+            grouped_blocks += 1
+            group_values, group_stats = await self._async_read_contiguous_group(block_group, group_due_sensors)
+            top_level_requests += group_stats["requests"]
+            block_requests += group_stats["block_requests"]
+            fallback_requests += group_stats["fallback_requests"]
+
+            for sensor in group_due_sensors:
+                key = sensor["key"]
+                entity_type = self._entity_types.get(key, get_entity_type(sensor))
+                interval_name = sensor.get("scan_interval")
+                interval = self.scan_intervals.get(interval_name) if interval_name else None
+
+                attempted_reads += 1
+                self._read_start_times[key] = now
+                value = group_values.get(key)
+
+                if value is not None:
+                    # For total_increasing sensors, ignore suspicious drops/10x glitches,
+                    # but do not fail the whole coordinator cycle.
+                    # Daily/monthly counters may legitimately reset and are excluded.
+                    if sensor.get("state_class") == "total_increasing" and isinstance(value, (int, float)):
+                        allow_reset = "_daily_" in key or "_monthly_" in key
+                        if not allow_reset:
+                            previous_value = self.data.get(key) if isinstance(self.data, dict) else None
+                            if isinstance(previous_value, (int, float)):
+                                regression = value < previous_value
+                                scale_glitch = (
+                                    previous_value > 0
+                                    and 0.08 <= (value / previous_value) <= 0.12
                                 )
-                                self._last_attempt_times[key] = now
-                                continue
+                                if regression or scale_glitch:
+                                    reason = "regression" if regression else "possible 10x scaling glitch"
+                                    _LOGGER.warning(
+                                        "Ignoring suspicious %s for total_increasing sensor '%s' (new=%s, previous=%s)",
+                                        reason,
+                                        key,
+                                        value,
+                                        previous_value,
+                                    )
+                                    self._last_attempt_times[key] = now
+                                    continue
 
-                # Special-case: for packed schedule sensors, store both the
-                # raw 5-register list as the main `data[key]` and the decoded
-                # dict under `data["<key>_attrs"]` so sensors can expose
-                # attributes while the state remains the raw registers.
-                if sensor.get("data_type") == "schedule" and isinstance(value, dict):
-                    try:
-                        days = int(value.get("days") or 0)
-                    except Exception:
-                        days = value.get("days")
-                    try:
-                        start = int(value.get("start") or 0)
-                    except Exception:
-                        start = value.get("start")
-                    try:
-                        end = int(value.get("end") or 0)
-                    except Exception:
-                        end = value.get("end")
-                    try:
-                        enabled = int(value.get("enabled") or 0)
-                    except Exception:
-                        enabled = value.get("enabled")
+                    # Special-case: for packed schedule sensors, store both the
+                    # raw 5-register list as the main `data[key]` and the decoded
+                    # dict under `data["<key>_attrs"]` so sensors can expose
+                    # attributes while the state remains the raw registers.
+                    if sensor.get("data_type") == "schedule" and isinstance(value, dict):
+                        try:
+                            days = int(value.get("days") or 0)
+                        except Exception:
+                            days = value.get("days")
+                        try:
+                            start = int(value.get("start") or 0)
+                        except Exception:
+                            start = value.get("start")
+                        try:
+                            end = int(value.get("end") or 0)
+                        except Exception:
+                            end = value.get("end")
+                        try:
+                            enabled = int(value.get("enabled") or 0)
+                        except Exception:
+                            enabled = value.get("enabled")
 
-                    # Mode in attrs is signed; convert to unsigned 16-bit for raw register
-                    try:
-                        mode_signed = int(value.get("mode") or 0)
-                        mode_raw = mode_signed & 0xFFFF
-                    except Exception:
-                        mode_raw = value.get("mode")
+                        try:
+                            mode_signed = int(value.get("mode") or 0)
+                            mode_raw = mode_signed & 0xFFFF
+                        except Exception:
+                            mode_raw = value.get("mode")
 
-                    raw_regs = [days, start, end, mode_raw, enabled]
+                        raw_regs = [days, start, end, mode_raw, enabled]
 
-                    updated_data[key] = raw_regs
-                    try:
-                        updated_data[f"{key}_attrs"] = value
-                    except Exception:
-                        _LOGGER.exception("Failed to populate %s_attrs", key)
+                        updated_data[key] = raw_regs
+                        try:
+                            updated_data[f"{key}_attrs"] = value
+                        except Exception:
+                            _LOGGER.exception("Failed to populate %s_attrs", key)
 
-                    _LOGGER.debug(
-                        "Stored raw schedule for %s: %s and attrs: %s",
-                        key,
-                        raw_regs,
-                        value,
-                    )
+                        _LOGGER.debug(
+                            "Stored raw schedule for %s: %s and attrs: %s",
+                            key,
+                            raw_regs,
+                            value,
+                        )
+                    else:
+                        updated_data[key] = value
+
+                    self._last_update_times[key] = now
+                    self._last_attempt_times[key] = now
+                    prev_failures = self._register_failures.get(key, 0)
+                    if prev_failures > 0:
+                        _LOGGER.info(
+                            "%s '%s' recovered after %d consecutive failure(s)",
+                            entity_type, key, prev_failures,
+                        )
+                    self._register_failures[key] = 0
+                    successful_reads += 1
                 else:
-                    updated_data[key] = value
-
-                self._last_update_times[key] = now
-                self._last_attempt_times[key] = now
-                prev_failures = self._register_failures.get(key, 0)
-                if prev_failures > 0:
-                    _LOGGER.info(
-                        "%s '%s' recovered after %d consecutive failure(s)",
-                        entity_type, key, prev_failures,
-                    )
-                self._register_failures[key] = 0
-                successful_reads += 1
-            else:
-                # Individual sensor read failed — increment backoff counter
-                self._last_attempt_times[key] = now
-                new_failures = self._register_failures.get(key, 0) + 1
-                self._register_failures[key] = new_failures
-                next_backoff = min(2 ** new_failures, 64)
-                next_interval = min(interval * next_backoff, 3600)
-                # Log verbosely on first few failures and then only at milestones
-                if new_failures <= 3 or new_failures % 10 == 0:
-                    _LOGGER.warning(
-                        "Failed to read %s '%s' - value is None "
-                        "(consecutive failures: %d, next poll in %ds)",
-                        entity_type, key, new_failures, next_interval,
-                    )
-                else:
-                    _LOGGER.debug(
-                        "Failed to read %s '%s' - value is None (failure #%d)",
-                        entity_type, key, new_failures,
-                    )
+                    self._last_attempt_times[key] = now
+                    new_failures = self._register_failures.get(key, 0) + 1
+                    self._register_failures[key] = new_failures
+                    next_backoff = min(2 ** new_failures, 64)
+                    next_interval = min((interval or 30) * next_backoff, 3600)
+                    if new_failures <= 3 or new_failures % 10 == 0:
+                        _LOGGER.warning(
+                            "Failed to read %s '%s' - value is None "
+                            "(consecutive failures: %d, next poll in %ds)",
+                            entity_type, key, new_failures, next_interval,
+                        )
+                    else:
+                        _LOGGER.debug(
+                            "Failed to read %s '%s' - value is None (failure #%d)",
+                            entity_type, key, new_failures,
+                        )
 
         # Connection retry logic: only track failures if we actually attempted reads
         if attempted_reads > 0:
@@ -740,6 +897,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 self._consecutive_timeout_cycles = 0
         else:
             _LOGGER.debug("No sensors due for update in this cycle")
+
+        _LOGGER.debug(
+            "Polling summary: due=%d, groups=%d, requests=%d, block_requests=%d, fallback_requests=%d, successful_reads=%d",
+            len(due_sensors),
+            grouped_blocks,
+            top_level_requests,
+            block_requests,
+            fallback_requests,
+            successful_reads,
+        )
 
         # Defensive check
         if self.data is None:

@@ -193,35 +193,99 @@ class MarstekModbusClient:
                 _LOGGER.warning("Unhandled exception during reconnect: %s", e)
                 return False
 
-    async def async_read_register(
+    @staticmethod
+    def _default_count_for_data_type(data_type: str) -> int:
+        """Return the default register count for a given data type."""
+        if data_type in {"int32", "uint32"}:
+            return 2
+        if data_type == "schedule":
+            return 5
+        return 1
+
+    def _decode_registers(
         self,
         register: int,
+        regs: list[int],
         data_type: str = "uint16",
-        count: Optional[int] = None,
         bit_index: Optional[int] = None,
+    ):
+        """Decode raw holding registers into the requested data type."""
+        if data_type == "int16":
+            val = regs[0]
+            return val - 0x10000 if val >= 0x8000 else val
+
+        if data_type == "uint16":
+            return regs[0]
+
+        if data_type == "int32":
+            if len(regs) < 2:
+                _LOGGER.warning(
+                    "Expected 2 registers for int32 at register %d (0x%04X), got %s",
+                    register,
+                    register,
+                    len(regs),
+                )
+                return None
+            val = (regs[0] << 16) | regs[1]
+            return val - 0x100000000 if val >= 0x80000000 else val
+
+        if data_type == "uint32":
+            if len(regs) < 2:
+                _LOGGER.warning(
+                    "Expected 2 registers for uint32 at register %d (0x%04X), got %s",
+                    register,
+                    register,
+                    len(regs),
+                )
+                return None
+            return (regs[0] << 16) | regs[1]
+
+        if data_type == "char":
+            byte_array = bytearray()
+            for reg in regs:
+                byte_array.append((reg >> 8) & 0xFF)
+                byte_array.append(reg & 0xFF)
+            null_pos = byte_array.find(0)
+            if null_pos >= 0:
+                byte_array = byte_array[:null_pos]
+            return byte_array.decode("ascii", errors="ignore")
+
+        if data_type == "schedule":
+            if len(regs) < 5:
+                _LOGGER.warning(
+                    "Expected 5 registers for schedule at %d (0x%04X), got %s",
+                    register,
+                    register,
+                    len(regs),
+                )
+                return None
+            mode_raw = int(regs[3])
+            mode_signed = mode_raw - 0x10000 if mode_raw >= 0x8000 else mode_raw
+            return {
+                "days": int(regs[0]),
+                "start": int(regs[1]),
+                "end": int(regs[2]),
+                "mode": mode_signed,
+                "enabled": int(regs[4]),
+            }
+
+        if data_type == "bit":
+            if bit_index is None or not (0 <= bit_index < 16):
+                raise ValueError("bit_index must be between 0 and 15 for bit data_type")
+            reg_val = regs[0]
+            return bool((reg_val >> bit_index) & 1)
+
+        raise ValueError(f"Unsupported data_type: {data_type}")
+
+    async def async_read_holding_registers(
+        self,
+        register: int,
+        count: int,
         sensor_key: Optional[str] = None,
         max_retries: int = 3,
         retry_delay: float = 0.1,
-    ):
-        """
-        Robustly read registers and interpret the data asynchronously with retries.
-
-        Args:
-            register (int): Register address to read from.
-            data_type (str): Data type for interpretation, e.g. 'int16', 'int32', 'char', 'bit'.
-            count (Optional[int]): Number of registers to read (default depends on data_type).
-            bit_index (Optional[int]): Bit position for 'bit' data type (0-15).
-            sensor_key (Optional[str]): Sensor key for logging.
-            max_retries (int): Maximum number of read attempts.
-            retry_delay (float): Delay in seconds between retries.
-
-        Returns:
-            int, str, bool, or None: Interpreted value or None on error.
-        """
-
-        if count is None:
-            count = 2 if data_type in ["int32", "uint32"] else 1
-
+    ) -> list[int] | None:
+        """Read raw holding registers asynchronously with retries."""
         if not (0 <= register <= 0xFFFF):
             _LOGGER.error(
                 "Invalid register address: %d (0x%04X). Must be 0-65535.",
@@ -230,7 +294,7 @@ class MarstekModbusClient:
             )
             return None
 
-        if not (1 <= count <= 125):  # Modbus spec limit
+        if not (1 <= count <= 125):
             _LOGGER.error(
                 "Invalid register count: %d. Must be between 1 and 125.",
                 count,
@@ -239,7 +303,6 @@ class MarstekModbusClient:
 
         attempt = 0
         while attempt < max_retries:
-            # Guard against client being None (closed during unload)
             client_connected = False
             try:
                 client_connected = bool(self.client and getattr(self.client, "connected", False))
@@ -263,10 +326,8 @@ class MarstekModbusClient:
 
             try:
                 result = None
-                # Serialize Modbus requests to avoid overlapping frames and transaction id mismatches
                 async with self._request_lock:
                     try:
-                        # Try multiple kwarg names for different pymodbus versions
                         read_method = getattr(self.client, "read_holding_registers")
                         for unit_kw in ("device_id", "unit", "slave"):
                             try:
@@ -276,7 +337,6 @@ class MarstekModbusClient:
                                 result = None
                                 continue
                     finally:
-                        # Short spacing after each request to give the device time
                         try:
                             await asyncio.sleep(self.message_wait_sec)
                         except asyncio.CancelledError:
@@ -306,95 +366,29 @@ class MarstekModbusClient:
                         len(result.registers) if result.registers else 0,
                     )
                 else:
-                    regs = result.registers
+                    regs = list(result.registers)
                     _LOGGER.debug(
-                        "Requesting register %d (0x%04X) from '%s' for sensor '%s' (type: %s, count: %s)",
+                        "Requesting register block %d-%d (0x%04X-0x%04X) from '%s' for sensor '%s' (count: %s)",
                         register,
+                        register + count - 1,
                         register,
+                        register + count - 1,
                         self.host,
-                        sensor_key or 'unknown',
-                        data_type,
+                        sensor_key or "unknown",
                         count,
                     )
-                    _LOGGER.debug("Received data from '%s' for register %d (0x%04X): %s", self.host, register, register, regs)
-
-                    if data_type == "int16":
-                        val = regs[0]
-                        return val - 0x10000 if val >= 0x8000 else val
-
-                    elif data_type == "uint16":
-                        return regs[0]
-
-                    elif data_type == "int32":
-                        if len(regs) < 2:
-                            _LOGGER.warning(
-                                "Expected 2 registers for int32 at register %d (0x%04X), got %s",
-                                register,
-                                register,
-                                len(regs),
-                            )
-                            return None
-                        val = (regs[0] << 16) | regs[1]
-                        return val - 0x100000000 if val >= 0x80000000 else val
-
-                    elif data_type == "uint32":
-                        if len(regs) < 2:
-                            _LOGGER.warning(
-                                "Expected 2 registers for uint32 at register %d (0x%04X), got %s",
-                                register,
-                                register,
-                                len(regs),
-                            )
-                            return None
-                        return (regs[0] << 16) | regs[1]
-
-                    elif data_type == "char":
-                        byte_array = bytearray()
-                        for reg in regs:
-                            byte_array.append((reg >> 8) & 0xFF)
-                            byte_array.append(reg & 0xFF)
-                        # Truncate at first null byte (C-string semantics), then decode
-                        null_pos = byte_array.find(0)
-                        if null_pos >= 0:
-                            byte_array = byte_array[:null_pos]
-                        return byte_array.decode("ascii", errors="ignore")
-
-                    elif data_type == "schedule":
-                        # Return a decoded dict for schedule blocks.
-                        # 5 registers: days, start, end, mode (int16 signed), enabled
-                        if len(regs) < 5:
-                            _LOGGER.warning(
-                                "Expected 5 registers for schedule at %d (0x%04X), got %s",
-                                register,
-                                register,
-                                len(regs),
-                            )
-                            return None
-                        mode_raw = int(regs[3])
-                        mode_signed = mode_raw - 0x10000 if mode_raw >= 0x8000 else mode_raw
-                        return {
-                            "days": int(regs[0]),
-                            "start": int(regs[1]),
-                            "end": int(regs[2]),
-                            "mode": mode_signed,
-                            "enabled": int(regs[4]),
-                        }
-
-                    elif data_type == "bit":
-                        if bit_index is None or not (0 <= bit_index < 16):
-                            raise ValueError("bit_index must be between 0 and 15 for bit data_type")
-                        reg_val = regs[0]
-                        return bool((reg_val >> bit_index) & 1)
-
-                    else:
-                        raise ValueError(f"Unsupported data_type: {data_type}")
+                    _LOGGER.debug(
+                        "Received block data from '%s' for register %d (0x%04X): %s",
+                        self.host,
+                        register,
+                        register,
+                        regs,
+                    )
+                    return regs
 
             except asyncio.CancelledError:
-                # Allow cancellation to propagate during Home Assistant shutdown
                 raise
             except Exception as e:
-                # If the underlying cause is a CancelledError (pymodbus wraps it),
-                # propagate it so shutdown is not logged as an error.
                 cause = getattr(e, "__cause__", None)
                 if isinstance(cause, asyncio.CancelledError):
                     raise cause
@@ -418,6 +412,60 @@ class MarstekModbusClient:
             max_retries,
         )
         return None
+
+    async def async_read_register(
+        self,
+        register: int,
+        data_type: str = "uint16",
+        count: Optional[int] = None,
+        bit_index: Optional[int] = None,
+        sensor_key: Optional[str] = None,
+        max_retries: int = 3,
+        retry_delay: float = 0.1,
+    ):
+        """
+        Robustly read registers and interpret the data asynchronously with retries.
+
+        Args:
+            register (int): Register address to read from.
+            data_type (str): Data type for interpretation, e.g. 'int16', 'int32', 'char', 'bit'.
+            count (Optional[int]): Number of registers to read (default depends on data_type).
+            bit_index (Optional[int]): Bit position for 'bit' data type (0-15).
+            sensor_key (Optional[str]): Sensor key for logging.
+            max_retries (int): Maximum number of read attempts.
+            retry_delay (float): Delay in seconds between retries.
+
+        Returns:
+            int, str, bool, or None: Interpreted value or None on error.
+        """
+        if count is None:
+            count = self._default_count_for_data_type(data_type)
+
+        regs = await self.async_read_holding_registers(
+            register=register,
+            count=count,
+            sensor_key=sensor_key,
+            max_retries=max_retries,
+            retry_delay=retry_delay,
+        )
+        if regs is None:
+            return None
+
+        _LOGGER.debug(
+            "Decoding register %d (0x%04X) from '%s' for sensor '%s' (type: %s, count: %s)",
+            register,
+            register,
+            self.host,
+            sensor_key or "unknown",
+            data_type,
+            count,
+        )
+        return self._decode_registers(
+            register=register,
+            regs=regs,
+            data_type=data_type,
+            bit_index=bit_index,
+        )
 
     async def async_write_register(
         self,
