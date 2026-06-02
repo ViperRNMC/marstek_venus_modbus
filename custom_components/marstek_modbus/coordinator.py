@@ -567,27 +567,30 @@ class MarstekCoordinator(DataUpdateCoordinator):
             value = await self.async_read_value(sensor, key)
 
             if value is not None:
-                # For total_increasing sensors, reject suspicious regressions/glitches
-                # by failing the coordinator update.
+                # For total_increasing sensors, ignore suspicious drops/10x glitches,
+                # but do not fail the whole coordinator cycle.
+                # Daily/monthly counters may legitimately reset and are excluded.
                 if sensor.get("state_class") == "total_increasing" and isinstance(value, (int, float)):
-                    previous_value = self.data.get(key) if isinstance(self.data, dict) else None
-                    if isinstance(previous_value, (int, float)):
-                        regression = value < previous_value
-                        scale_glitch = (
-                            previous_value > 0
-                            and 0.08 <= (value / previous_value) <= 0.12
-                        )
-                        if regression or scale_glitch:
-                            reason = "regression" if regression else "possible 10x scaling glitch"
-                            raise UpdateFailed(
-                                "Suspicious %s for total_increasing sensor '%s' (new=%s, previous=%s)"
-                                % (
+                    allow_reset = "_daily_" in key or "_monthly_" in key
+                    if not allow_reset:
+                        previous_value = self.data.get(key) if isinstance(self.data, dict) else None
+                        if isinstance(previous_value, (int, float)):
+                            regression = value < previous_value
+                            scale_glitch = (
+                                previous_value > 0
+                                and 0.08 <= (value / previous_value) <= 0.12
+                            )
+                            if regression or scale_glitch:
+                                reason = "regression" if regression else "possible 10x scaling glitch"
+                                _LOGGER.warning(
+                                    "Ignoring suspicious %s for total_increasing sensor '%s' (new=%s, previous=%s)",
                                     reason,
                                     key,
                                     value,
                                     previous_value,
                                 )
-                            )
+                                self._last_attempt_times[key] = now
+                                continue
 
                 # Special-case: for packed schedule sensors, store both the
                 # raw 5-register list as the main `data[key]` and the decoded

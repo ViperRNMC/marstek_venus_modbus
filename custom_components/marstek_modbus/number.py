@@ -132,6 +132,8 @@ class MarstekNumber(CoordinatorEntity, NumberEntity):
         raw_value = int(value / self._scale)
         
         # Optimistically update the coordinator data so HA shows the new state immediately
+        if not isinstance(self.coordinator.data, dict):
+            self.coordinator.data = {}
         self.coordinator.data[self._key] = raw_value
         self.async_write_ha_state()
 
