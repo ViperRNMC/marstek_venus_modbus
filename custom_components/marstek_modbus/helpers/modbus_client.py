@@ -367,23 +367,41 @@ class MarstekModbusClient:
                     )
                 else:
                     regs = list(result.registers)
-                    _LOGGER.debug(
-                        "Requesting register block %d-%d (0x%04X-0x%04X) from '%s' for sensor '%s' (count: %s)",
-                        register,
-                        register + count - 1,
-                        register,
-                        register + count - 1,
-                        self.host,
-                        sensor_key or "unknown",
-                        count,
-                    )
-                    _LOGGER.debug(
-                        "Received block data from '%s' for register %d (0x%04X): %s",
-                        self.host,
-                        register,
-                        register,
-                        regs,
-                    )
+                    if count == 1:
+                        _LOGGER.debug(
+                            "Requesting single register %d (0x%04X) from '%s' for key '%s'",
+                            register,
+                            register,
+                            self.host,
+                            sensor_key or "unknown",
+                        )
+                        _LOGGER.debug(
+                            "Received single register data from '%s' for register %d (0x%04X): %s",
+                            self.host,
+                            register,
+                            register,
+                            regs,
+                        )
+                    else:
+                        _LOGGER.debug(
+                            "Requesting register block %d-%d (0x%04X-0x%04X) from '%s' for keys '%s' (count: %s)",
+                            register,
+                            register + count - 1,
+                            register,
+                            register + count - 1,
+                            self.host,
+                            sensor_key or "unknown",
+                            count,
+                        )
+                        _LOGGER.debug(
+                            "Received block data from '%s' for registers %d-%d (0x%04X-0x%04X): %s",
+                            self.host,
+                            register,
+                            register + count - 1,
+                            register,
+                            register + count - 1,
+                            regs,
+                        )
                     return regs
 
             except asyncio.CancelledError:
@@ -451,15 +469,6 @@ class MarstekModbusClient:
         if regs is None:
             return None
 
-        _LOGGER.debug(
-            "Decoding register %d (0x%04X) from '%s' for sensor '%s' (type: %s, count: %s)",
-            register,
-            register,
-            self.host,
-            sensor_key or "unknown",
-            data_type,
-            count,
-        )
         return self._decode_registers(
             register=register,
             regs=regs,

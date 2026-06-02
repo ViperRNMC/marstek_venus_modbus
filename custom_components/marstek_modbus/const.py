@@ -12,10 +12,8 @@ DEFAULT_UNIT_ID = 1  # Default Modbus Unit ID (unit ID)
 
 # General scan intervals (in seconds)
 DEFAULT_SCAN_INTERVALS = {
-    "high": 10,       # fast-changing sensors, e.g., power, alarms
-    "medium": 30,     # moderately changing sensors, e.g., voltage, current
-    "low": 60,        # slow-changing sensors, e.g., cumulative energy counters
-    "very_low": 180   # rarely changing info, e.g., device info, firmware versions
+    "high": 10,      # fast-changing sensors and former medium-priority sensors
+    "low": 60,       # slower-changing sensors and former very_low-priority sensors
 }
 
 # Supported device versions

@@ -134,12 +134,18 @@ class MarstekCoordinator(DataUpdateCoordinator):
         old_intervals = getattr(self, "scan_intervals", {}).copy() if hasattr(self, "scan_intervals") else {}
         self.scan_intervals = DEFAULT_SCAN_INTERVALS.copy()
 
+        normalized_options = dict(options)
+        if "high" not in normalized_options and "medium" in normalized_options:
+            normalized_options["high"] = normalized_options["medium"]
+        if "low" not in normalized_options and "very_low" in normalized_options:
+            normalized_options["low"] = normalized_options["very_low"]
+
         for key in DEFAULT_SCAN_INTERVALS:
-            if key in options:
+            if key in normalized_options:
                 try:
-                    self.scan_intervals[key] = int(options[key])
+                    self.scan_intervals[key] = int(normalized_options[key])
                 except Exception:
-                    _LOGGER.warning("Invalid scan interval for %s: %s", key, options[key])
+                    _LOGGER.warning("Invalid scan interval for %s: %s", key, normalized_options[key])
 
         # Compute minimum interval for coordinator
         min_interval = min(self.scan_intervals.values()) if self.scan_intervals else 30
@@ -343,7 +349,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             # by specialized data_type handlers (e.g., `schedule` returning a dict).
             if isinstance(value, (int, float, bool, str, dict, list)):
                 _LOGGER.debug(
-                     "Updated %s '%s': register=%d, value=%s, scale=%s, unit=%s",
+                     "Updated %s '%s' from single read: register=%d, value=%s, scale=%s, unit=%s",
                     entity_type,
                     key,
                     sensor["register"],
@@ -383,23 +389,24 @@ class MarstekCoordinator(DataUpdateCoordinator):
     ) -> tuple[dict[str, object], dict[str, int]]:
         """Read a contiguous block and decode due sensors, with per-sensor fallback on failure."""
         if not block_sensors or not due_sensors:
-            return {}, {"requests": 0, "block_requests": 0, "fallback_requests": 0}
+            return {}, {"requests": 0, "block_requests": 0, "single_requests": 0, "failover_single_requests": 0}
 
         if len(block_sensors) == 1 and len(due_sensors) == 1:
             sensor = due_sensors[0]
             key = sensor["key"]
             value = await self.async_read_value(sensor, key)
             values = {key: value} if value is not None else {}
-            return values, {"requests": 1, "block_requests": 0, "fallback_requests": 1}
+            return values, {"requests": 1, "block_requests": 0, "single_requests": 1, "failover_single_requests": 0}
 
-        block_start = block_sensors[0]["register"]
-        block_end = max(sensor["register"] + self._definition_register_count(sensor) - 1 for sensor in block_sensors)
+        block_start = min(sensor["register"] for sensor in due_sensors)
+        block_end = max(sensor["register"] + self._definition_register_count(sensor) - 1 for sensor in due_sensors)
         block_count = block_end - block_start + 1
+        sensor_keys = ",".join(sensor["key"] for sensor in due_sensors)
 
         block_registers = await self.client.async_read_holding_registers(
             register=block_start,
             count=block_count,
-            sensor_key=f"block:{block_sensors[0]['key']}+{len(block_sensors) - 1}",
+            sensor_key=f"block[{sensor_keys}]",
             max_retries=1,
         )
 
@@ -418,7 +425,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
             return values, {
                 "requests": 1 + len(due_sensors),
                 "block_requests": 1,
-                "fallback_requests": len(due_sensors),
+                "single_requests": len(due_sensors),
+                "failover_single_requests": len(due_sensors),
             }
 
         values: dict[str, object] = {}
@@ -428,6 +436,9 @@ class MarstekCoordinator(DataUpdateCoordinator):
             offset = register - block_start
             span = self._definition_register_count(sensor)
             raw_regs = block_registers[offset:offset + span]
+            entity_type = self._entity_types.get(key, get_entity_type(sensor))
+            scale = self._scales.get(key, sensor.get("scale", 1))
+            unit = sensor.get("unit", "N/A")
 
             try:
                 value = self.client._decode_registers(
@@ -449,14 +460,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
             if value is not None:
                 values[key] = value
                 _LOGGER.debug(
-                    "Updated %s '%s' from block read: register=%d, value=%s",
-                    self._entity_types.get(key, get_entity_type(sensor)),
+                    "Updated %s '%s' from block read: register=%d, value=%s, scale=%s, unit=%s",
+                    entity_type,
                     key,
                     register,
                     value,
+                    scale,
+                    unit,
                 )
 
-        return values, {"requests": 1, "block_requests": 1, "fallback_requests": 0}
+        return values, {"requests": 1, "block_requests": 1, "single_requests": 0, "failover_single_requests": 0}
 
     async def async_write_value(
         self,
@@ -633,7 +646,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
         grouped_blocks = 0
         top_level_requests = 0
         block_requests = 0
-        fallback_requests = 0
+        single_requests = 0
+        failover_single_requests = 0
 
         # Iterate over each sensor definition to determine if it should be polled now
         for sensor in self._all_definitions:
@@ -714,7 +728,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
             group_values, group_stats = await self._async_read_contiguous_group(block_group, group_due_sensors)
             top_level_requests += group_stats["requests"]
             block_requests += group_stats["block_requests"]
-            fallback_requests += group_stats["fallback_requests"]
+            single_requests += group_stats["single_requests"]
+            failover_single_requests += group_stats["failover_single_requests"]
 
             for sensor in group_due_sensors:
                 key = sensor["key"]
@@ -899,12 +914,13 @@ class MarstekCoordinator(DataUpdateCoordinator):
             _LOGGER.debug("No sensors due for update in this cycle")
 
         _LOGGER.debug(
-            "Polling summary: due=%d, groups=%d, requests=%d, block_requests=%d, fallback_requests=%d, successful_reads=%d",
+            "Polling summary: due=%d, groups=%d, requests=%d, block_requests=%d, single_requests=%d, failover_single_requests=%d, successful_reads=%d",
             len(due_sensors),
             grouped_blocks,
             top_level_requests,
             block_requests,
-            fallback_requests,
+            single_requests,
+            failover_single_requests,
             successful_reads,
         )
 

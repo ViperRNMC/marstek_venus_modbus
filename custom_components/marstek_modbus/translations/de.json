@@ -47,9 +47,7 @@
         "description": "Abfragehäufigkeit pro Kategorie anpassen",
         "data": {
           "high": "High-Priorität Intervall (s)",
-          "medium": "Medium-Priorität Intervall (s)",
-          "low": "Low-Priorität Intervall (s)",
-          "very_low": "Very-low-Priorität Intervall (s)"
+          "low": "Low-Priorität Intervall (s)"
         }
       },
       "connection": {

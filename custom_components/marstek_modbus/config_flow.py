@@ -35,9 +35,7 @@ SCHEMA_HOST_BASE = vol.Schema(
 SCHEMA_POLLING = vol.Schema(
     {
         vol.Required("high"): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
-        vol.Required("medium"): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
         vol.Required("low"): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
-        vol.Required("very_low"): vol.All(vol.Coerce(int), vol.Clamp(min=1, max=3600)),
     }
 )
 
@@ -226,12 +224,19 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
         errors = {}
         config = self._config_entry
 
+        legacy_options = config.options or {}
+        normalized_options = dict(legacy_options)
+        if "high" not in normalized_options and "medium" in normalized_options:
+            normalized_options["high"] = normalized_options["medium"]
+        if "low" not in normalized_options and "very_low" in normalized_options:
+            normalized_options["low"] = normalized_options["very_low"]
+
         # Get defaults from options, then data, then constants
         defaults = {
-            key: config.options.get(
+            key: normalized_options.get(
                 key, config.data.get(key, DEFAULT_SCAN_INTERVALS[key])
             )
-            for key in ("high", "medium", "low", "very_low")
+            for key in ("high", "low")
         }
 
         # Calculate lowest scan interval for description
@@ -244,7 +249,15 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
 
             # Save and return to menu
             self.hass.config_entries.async_update_entry(
-                config, options={**config.options, **user_input}
+                config,
+                options={
+                    **{
+                        key: value
+                        for key, value in config.options.items()
+                        if key not in {"medium", "very_low"}
+                    },
+                    **user_input,
+                },
             )
             return await self.async_step_menu()
 

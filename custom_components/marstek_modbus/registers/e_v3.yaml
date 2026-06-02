@@ -23,21 +23,21 @@ SENSOR_DEFINITIONS:
         data_type: char
         enabled_by_default: true
         icon: "mdi:package-variant-closed"
-        scan_interval: very_low
+        scan_interval: low
     bms_version:
         register: 30204
         icon: "mdi:battery-check-outline"
         category: diagnostic
         enabled_by_default: true
         data_type: uint16
-        scan_interval: very_low
+        scan_interval: low
     vms_version:
         register: 30202
         icon: "mdi:battery-check-outline"
         category: diagnostic
         enabled_by_default: true
         data_type: uint16
-        scan_interval: very_low
+        scan_interval: low
     ems_version:
         register: 30200
         category: diagnostic
@@ -45,7 +45,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: uint16
         scale: 1
-        scan_interval: very_low
+        scan_interval: low
     comm_module_firmware:
         register: 30350
         count: 6
@@ -53,14 +53,14 @@ SENSOR_DEFINITIONS:
         icon: "mdi:ticket-confirmation-outline"
         enabled_by_default: true
         data_type: char
-        scan_interval: very_low
+        scan_interval: low
     mac_address:
         register: 30304
         count: 6
         enabled_by_default: true
         icon: "mdi:ethernet"
         data_type: char
-        scan_interval: very_low
+        scan_interval: low
     battery_soc:
         register: 34002
         scale: 0.1
@@ -70,7 +70,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: uint16
         precision: 2
-        scan_interval: medium
+        scan_interval: high
     battery_total_energy:
         register: 32105
         scale: 0.001
@@ -90,7 +90,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: uint16
         precision: 2
-        scan_interval: medium
+        scan_interval: high
     battery_current:
         register: 30101
         scale: 0.1
@@ -100,7 +100,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: int16
         precision: 1
-        scan_interval: medium
+        scan_interval: high
     battery_power:
         register: 30001
         count: 1
@@ -121,7 +121,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: int16
         precision: 2
-        scan_interval: medium
+        scan_interval: high
     internal_mos1_temperature:
         register: 35001
         scale: 0.1
@@ -131,7 +131,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 2
-        scan_interval: medium
+        scan_interval: high
     internal_mos2_temperature:
         register: 35002
         scale: 0.1
@@ -141,7 +141,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 2
-        scan_interval: medium
+        scan_interval: high
     ac_voltage:
         register: 32200
         scale: 0.1
@@ -151,7 +151,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: uint16
         precision: 1
-        scan_interval: medium
+        scan_interval: high
     ac_current:
         register: 37004
         scale: 0.004
@@ -161,7 +161,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: int16
         precision: 1
-        scan_interval: medium
+        scan_interval: high
     ac_power:
         register: 30006
         count: 1
@@ -182,7 +182,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: int16
         precision: 2
-        scan_interval: medium
+        scan_interval: high
     total_charging_energy:
         register: 33000
         count: 2
@@ -268,7 +268,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 1
-        scan_interval: medium
+        scan_interval: high
     min_cell_temperature:
         register: 35011
         scale: 0.1
@@ -278,7 +278,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 1
-        scan_interval: medium
+        scan_interval: high
     max_cell_voltage:
         register: 37007
         scale: 0.001
@@ -288,7 +288,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     min_cell_voltage:
         register: 37008
         scale: 0.001
@@ -298,7 +298,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_1_voltage:
         register: 34018
         scale: 0.001
@@ -308,7 +308,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_2_voltage:
         register: 34019
         scale: 0.001
@@ -318,7 +318,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_3_voltage:
         register: 34020
         scale: 0.001
@@ -328,7 +328,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_4_voltage:
         register: 34021
         scale: 0.001
@@ -338,7 +338,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_5_voltage:
         register: 34022
         scale: 0.001
@@ -348,7 +348,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_6_voltage:
         register: 34023
         scale: 0.001
@@ -358,7 +358,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_7_voltage:
         register: 34024
         scale: 0.001
@@ -368,7 +368,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_8_voltage:
         register: 34025
         scale: 0.001
@@ -378,7 +378,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_9_voltage:
         register: 34026
         scale: 0.001
@@ -388,7 +388,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_10_voltage:
         register: 34027
         scale: 0.001
@@ -398,7 +398,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_11_voltage:
         register: 34028
         scale: 0.001
@@ -408,7 +408,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_12_voltage:
         register: 34029
         scale: 0.001
@@ -418,7 +418,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_13_voltage:
         register: 34030
         scale: 0.001
@@ -428,7 +428,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_14_voltage:
         register: 34031
         scale: 0.001
@@ -438,7 +438,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_15_voltage:
         register: 34032
         scale: 0.001
@@ -448,7 +448,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     battery_1_cell_16_voltage:
         register: 34033
         scale: 0.001
@@ -458,7 +458,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: int16
         precision: 3
-        scan_interval: medium
+        scan_interval: high
     inverter_state:
         register: 35100
         scale: 1
@@ -479,7 +479,7 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         icon: "mdi:home-automation"
         enabled_by_default: false
-        scan_interval: very_low
+        scan_interval: low
     ac_offgrid_voltage:
         register: 32300
         scale: 0.1
@@ -489,7 +489,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
         precision: 1
-        scan_interval: medium
+        scan_interval: high
     ac_offgrid_current:
         register: 32301
         scale: 0.01
@@ -499,7 +499,7 @@ SENSOR_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
         precision: 1
-        scan_interval: medium
+        scan_interval: high
     ac_offgrid_power:
         register: 32302
         count: 1
@@ -521,14 +521,14 @@ SENSOR_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         precision: 0
-        scan_interval: medium
+        scan_interval: high
     bluetooth_status:
         register: 30301
         data_type: uint16
         icon: "mdi:bluetooth"
         category: diagnostic
         enabled_by_default: false
-        scan_interval: medium
+        scan_interval: high
 
 BINARY_SENSOR_DEFINITIONS:
     wifi_status:
@@ -538,7 +538,7 @@ BINARY_SENSOR_DEFINITIONS:
         device_class: connectivity
         icon: "mdi:check-network-outline"
         enabled_by_default: false
-        scan_interval: medium
+        scan_interval: high
     cloud_status:
         register: 30302
         data_type: uint16
@@ -546,7 +546,7 @@ BINARY_SENSOR_DEFINITIONS:
         device_class: connectivity
         icon: "mdi:cloud-outline"
         enabled_by_default: false
-        scan_interval: medium
+        scan_interval: high
 
 SELECT_DEFINITIONS:
     user_work_mode:
@@ -594,7 +594,7 @@ SELECT_DEFINITIONS:
     schedule_3_days:
         register: 43110
         enabled_by_default: false
-        scan_interval: very_low
+        scan_interval: low
         category: config
         options:
             sunday: 64
@@ -607,7 +607,7 @@ SELECT_DEFINITIONS:
     schedule_4_days:
         register: 43115
         enabled_by_default: false
-        scan_interval: very_low
+        scan_interval: low
         category: config
         options:
             sunday: 64
@@ -620,7 +620,7 @@ SELECT_DEFINITIONS:
     schedule_5_days:
         register: 43120
         enabled_by_default: false
-        scan_interval: very_low
+        scan_interval: low
         category: config
         options:
             sunday: 64
@@ -633,7 +633,7 @@ SELECT_DEFINITIONS:
     schedule_6_days:
         register: 43125
         enabled_by_default: false
-        scan_interval: very_low
+        scan_interval: low
         category: config
         options:
             sunday: 64
@@ -685,7 +685,7 @@ SWITCH_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_4_enabled:
         register: 43119
         command_on: 1
@@ -694,7 +694,7 @@ SWITCH_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_5_enabled:
         register: 43124
         command_on: 1
@@ -703,7 +703,7 @@ SWITCH_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_6_enabled:
         register: 43129
         command_on: 1
@@ -712,7 +712,7 @@ SWITCH_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
 
 NUMBER_DEFINITIONS:
     set_charge_power:
@@ -798,7 +798,7 @@ NUMBER_DEFINITIONS:
         unit: "min"
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_4_start:
         register: 43116
         enabled_by_default: false
@@ -809,7 +809,7 @@ NUMBER_DEFINITIONS:
         unit: "min"
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_5_start:
         register: 43121
         enabled_by_default: false
@@ -820,7 +820,7 @@ NUMBER_DEFINITIONS:
         unit: "min"
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_6_start:
         register: 43126
         enabled_by_default: false
@@ -831,7 +831,7 @@ NUMBER_DEFINITIONS:
         unit: "min"
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_1_end:
         register: 43102
         enabled_by_default: false
@@ -864,7 +864,7 @@ NUMBER_DEFINITIONS:
         unit: "min"
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_4_end:
         register: 43117
         enabled_by_default: false
@@ -875,7 +875,7 @@ NUMBER_DEFINITIONS:
         unit: "min"
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_5_end:
         register: 43122
         enabled_by_default: false
@@ -886,7 +886,7 @@ NUMBER_DEFINITIONS:
         unit: "min"
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_6_end:
         register: 43127
         enabled_by_default: false
@@ -897,7 +897,7 @@ NUMBER_DEFINITIONS:
         unit: "min"
         data_type: uint16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_1_mode:
         register: 43103
         enabled_by_default: false
@@ -930,7 +930,7 @@ NUMBER_DEFINITIONS:
         unit: W
         data_type: int16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_4_mode:
         register: 43118
         enabled_by_default: false
@@ -941,7 +941,7 @@ NUMBER_DEFINITIONS:
         unit: W
         data_type: int16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_5_mode:
         register: 43123
         enabled_by_default: false
@@ -952,7 +952,7 @@ NUMBER_DEFINITIONS:
         unit: W
         data_type: int16
         category: config
-        scan_interval: very_low
+        scan_interval: low
     schedule_6_mode:
         register: 43128
         enabled_by_default: false
@@ -963,7 +963,7 @@ NUMBER_DEFINITIONS:
         unit: W
         data_type: int16
         category: config
-        scan_interval: very_low
+        scan_interval: low
 
 BUTTON_DEFINITIONS:
     reset_device:
