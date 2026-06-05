@@ -1818,12 +1818,12 @@ STORED_ENERGY_SENSOR_DEFINITIONS:
             soc: battery_soc
             capacity: battery_total_energy
 
-CYCLE_SENSOR_DEFINITIONS:
+QUOTIENT_SENSOR_DEFINITIONS:
     battery_cycle_count_calc:
         key: battery_cycle_count_calc
         icon: "mdi:counter"
         category: diagnostic
         state_class: measurement
         dependency_keys:
-            discharge: total_discharging_energy
-            capacity: battery_total_energy
+            dividend: total_discharging_energy
+            divisor: battery_total_energy

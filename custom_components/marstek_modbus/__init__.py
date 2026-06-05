@@ -9,6 +9,7 @@ import logging
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import entity_registry
 
 from .const import DOMAIN
 from .coordinator import MarstekCoordinator
@@ -23,7 +24,15 @@ PLATFORMS = [
     "button",
     "number",
     "binary_sensor",
-] 
+]
+
+# Sensor unique_id suffixes that no longer exist and must be removed from the
+# entity registry on startup. Add entries here whenever a sensor key is renamed
+# or removed so that stale entities are cleaned up automatically.
+REMOVED_ENTITY_UNIQUE_ID_SUFFIXES = [
+    # ac_frequency renamed to inverter_frequency (feat/inverter-ac-rename)
+    "ac_frequency",
+]
 
 
 async def async_setup(hass: HomeAssistant, config: dict) -> bool:
@@ -91,6 +100,14 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
         # Forward setup to all platforms defined in PLATFORMS
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
+
+        # Remove stale entities from previous versions
+        ent_reg = entity_registry.async_get(hass)
+        for suffix in REMOVED_ENTITY_UNIQUE_ID_SUFFIXES:
+            unique_id = f"{entry.entry_id}_{suffix}"
+            if entity_id := ent_reg.async_get_entity_id("sensor", DOMAIN, unique_id):
+                _LOGGER.debug("Removing stale entity %s (unique_id: %s)", entity_id, unique_id)
+                ent_reg.async_remove(entity_id)
 
         # Perform first refresh to ensure coordinator has up-to-date data
         await coordinator.async_config_entry_first_refresh()

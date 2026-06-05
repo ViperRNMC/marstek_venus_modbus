@@ -81,6 +81,16 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         precision: 3
         scan_interval: low
+    ac_voltage:
+        register: 36103
+        scale: 0.1
+        unit: V
+        device_class: voltage
+        state_class: measurement
+        enabled_by_default: false
+        data_type: uint16
+        precision: 1
+        scan_interval: medium
     battery_voltage:
         register: 30100
         scale: 0.01
@@ -142,7 +152,7 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 2
         scan_interval: medium
-    ac_voltage:
+    inverter_voltage:
         register: 32200
         scale: 0.1
         unit: V
@@ -152,7 +162,7 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         precision: 1
         scan_interval: medium
-    ac_current:
+    inverter_current:
         register: 37004
         scale: 0.004
         unit: A
@@ -162,7 +172,7 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 1
         scan_interval: medium
-    ac_power:
+    inverter_power:
         register: 30006
         count: 1
         scale: 1
@@ -173,7 +183,7 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 0
         scan_interval: high
-    ac_frequency:
+    inverter_frequency:
         register: 32204
         scale: 0.1
         unit: Hz
@@ -485,16 +495,6 @@ SENSOR_DEFINITIONS:
         scale: 0.1
         unit: V
         device_class: voltage
-        state_class: measurement
-        enabled_by_default: false
-        data_type: uint16
-        precision: 1
-        scan_interval: medium
-    ac_offgrid_current:
-        register: 32301
-        scale: 0.01
-        unit: A
-        device_class: current
         state_class: measurement
         enabled_by_default: false
         data_type: uint16
@@ -1010,7 +1010,7 @@ EFFICIENCY_SENSOR_DEFINITIONS:
         mode: conversion
         dependency_keys:
             battery_power: battery_power
-            ac_power: ac_power
+            inverter_power: inverter_power
 
 STORED_ENERGY_SENSOR_DEFINITIONS:
     stored_energy:
@@ -1022,12 +1022,48 @@ STORED_ENERGY_SENSOR_DEFINITIONS:
             soc: battery_soc
             capacity: battery_total_energy
 
-CYCLE_SENSOR_DEFINITIONS:
+QUOTIENT_SENSOR_DEFINITIONS:
     battery_cycle_count_calc:
         key: battery_cycle_count_calc
         icon: "mdi:counter"
         category: diagnostic
         state_class: measurement
         dependency_keys:
-            discharge: total_discharging_energy
-            capacity: battery_total_energy
+            dividend: total_discharging_energy
+            divisor: battery_total_energy
+    ac_offgrid_current:
+        key: ac_offgrid_current
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: true
+        icon: "mdi:power-socket"
+        dependency_keys:
+            dividend: ac_offgrid_power
+            divisor: ac_offgrid_voltage
+
+DIFFERENCE_SENSOR_DEFINITIONS:
+    ac_power:
+        key: ac_power
+        unit: W
+        device_class: power
+        state_class: measurement
+        enabled_by_default: true
+        icon: "mdi:transmission-tower"
+        dependency_keys:
+            minuend: ac_offgrid_power
+            subtrahend: inverter_power
+
+DIFFERENCE_QUOTIENT_SENSOR_DEFINITIONS:
+    ac_current:
+        key: ac_current
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: true
+        icon: "mdi:transmission-tower"
+        dependency_keys:
+            minuend: ac_offgrid_power
+            subtrahend: inverter_power
+            divisor: inverter_voltage
+
