@@ -71,6 +71,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.NUMBER_DEFINITIONS = []
         self.BUTTON_DEFINITIONS = []
         self.EFFICIENCY_SENSOR_DEFINITIONS = []
+        self.VERSION_SENSOR_DEFINITIONS = []
         self.STORED_ENERGY_SENSOR_DEFINITIONS = []
         self.CYCLE_SENSOR_DEFINITIONS = []
 
@@ -107,6 +108,13 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Connection health tracking for diagnostics
         self._last_successful_read = None
         self._connection_established_at = None
+        self._last_cycle_stats = {
+            "attempted_reads": 0,
+            "successful_reads": 0,
+            "timeout_reads": 0,
+            "degraded": False,
+            "last_cycle_at": None,
+        }
 
         # Per-register failure tracking for exponential backoff.
         # Counts consecutive failed reads per key; resets to 0 on first success.
@@ -262,6 +270,54 @@ class MarstekCoordinator(DataUpdateCoordinator):
         
         return diagnostics
 
+    def get_connection_health_threshold_seconds(self) -> int:
+        """Return the stale threshold used for the connection health entity."""
+        min_interval = min(self.scan_intervals.values()) if self.scan_intervals else 30
+        return max(int(min_interval) * 3, 60)
+
+    def is_connection_healthy(self) -> bool:
+        """Return True when Modbus communication is considered healthy."""
+        from homeassistant.util.dt import utcnow
+
+        if self._connection_suspended or self._last_successful_read is None:
+            return False
+
+        age_seconds = (utcnow() - self._last_successful_read).total_seconds()
+        return age_seconds <= self.get_connection_health_threshold_seconds()
+
+    def is_connection_degraded(self) -> bool:
+        """Return True when communication still works but recent polling was partial."""
+        stats = self._last_cycle_stats or {}
+        attempted_reads = int(stats.get("attempted_reads", 0) or 0)
+        successful_reads = int(stats.get("successful_reads", 0) or 0)
+        timeout_reads = int(stats.get("timeout_reads", 0) or 0)
+
+        return successful_reads > 0 and (
+            successful_reads < attempted_reads
+            or timeout_reads > 0
+            or self._consecutive_timeout_cycles > 0
+        )
+
+    def get_connection_health_attributes(self) -> dict:
+        """Return diagnostic state attributes for the Modbus connection entity."""
+        stats = self._last_cycle_stats or {}
+        health = "offline"
+        if self.is_connection_healthy():
+            health = "degraded" if self.is_connection_degraded() else "ok"
+
+        return {
+            "health": health,
+            "degraded": self.is_connection_degraded(),
+            "last_successful_read": self._last_successful_read.isoformat() if self._last_successful_read else None,
+            "attempted_reads": int(stats.get("attempted_reads", 0) or 0),
+            "successful_reads": int(stats.get("successful_reads", 0) or 0),
+            "timeout_reads": int(stats.get("timeout_reads", 0) or 0),
+            "consecutive_failures": self._consecutive_failures,
+            "consecutive_timeout_cycles": self._consecutive_timeout_cycles,
+            "connection_suspended": self._connection_suspended,
+            "stale_after_seconds": self.get_connection_health_threshold_seconds(),
+        }
+
     async def async_init(self):
         """Asynchronously initialize the Modbus connection."""
         from homeassistant.util.dt import utcnow
@@ -297,6 +353,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             self.NUMBER_DEFINITIONS = data.get("NUMBER_DEFINITIONS", [])
             self.BUTTON_DEFINITIONS = data.get("BUTTON_DEFINITIONS", [])
             self.EFFICIENCY_SENSOR_DEFINITIONS = data.get("EFFICIENCY_SENSOR_DEFINITIONS", [])
+            self.VERSION_SENSOR_DEFINITIONS = data.get("VERSION_SENSOR_DEFINITIONS", [])
             self.STORED_ENERGY_SENSOR_DEFINITIONS = data.get("STORED_ENERGY_SENSOR_DEFINITIONS", [])
             self.CYCLE_SENSOR_DEFINITIONS = data.get("CYCLE_SENSOR_DEFINITIONS", [])
 
@@ -627,6 +684,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Collect all dependency keys from all definitions
         all_definitions_for_deps = (
             self.EFFICIENCY_SENSOR_DEFINITIONS
+            + self.VERSION_SENSOR_DEFINITIONS
             + self.STORED_ENERGY_SENSOR_DEFINITIONS
             + self.CYCLE_SENSOR_DEFINITIONS
         )
@@ -840,6 +898,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
                             entity_type, key, new_failures,
                         )
 
+        degraded = successful_reads > 0 and (
+            successful_reads < attempted_reads or self._timeouts_in_cycle > 0
+        )
+
         # Connection retry logic: only track failures if we actually attempted reads
         if attempted_reads > 0:
             timeout_reads = int(getattr(self, "_timeouts_in_cycle", 0) or 0)
@@ -923,6 +985,21 @@ class MarstekCoordinator(DataUpdateCoordinator):
             failover_single_requests,
             successful_reads,
         )
+        self._last_cycle_stats = {
+            "attempted_reads": attempted_reads,
+            "successful_reads": successful_reads,
+            "timeout_reads": int(getattr(self, "_timeouts_in_cycle", 0) or 0),
+            "degraded": degraded,
+            "last_cycle_at": now,
+        }
+
+        self._last_cycle_stats = {
+            "attempted_reads": attempted_reads,
+            "successful_reads": successful_reads,
+            "timeout_reads": int(getattr(self, "_timeouts_in_cycle", 0) or 0),
+            "degraded": degraded,
+            "last_cycle_at": now,
+        }
 
         # Defensive check
         if self.data is None:
@@ -1044,6 +1121,9 @@ def get_registers(version: str):
                     "BUTTON_DEFINITIONS": _normalize_section(data.get("BUTTON_DEFINITIONS")),
                     "EFFICIENCY_SENSOR_DEFINITIONS": _normalize_section(
                         data.get("EFFICIENCY_SENSOR_DEFINITIONS")
+                    ),
+                    "VERSION_SENSOR_DEFINITIONS": _normalize_section(
+                        data.get("VERSION_SENSOR_DEFINITIONS")
                     ),
                     "STORED_ENERGY_SENSOR_DEFINITIONS": _normalize_section(
                         data.get("STORED_ENERGY_SENSOR_DEFINITIONS")

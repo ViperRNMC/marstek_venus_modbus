@@ -28,21 +28,21 @@ SENSOR_DEFINITIONS:
         register: 30204
         icon: "mdi:battery-check-outline"
         category: diagnostic
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         scan_interval: low
     vms_version:
         register: 30202
         icon: "mdi:battery-check-outline"
         category: diagnostic
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         scan_interval: low
     ems_version:
         register: 30200
         category: diagnostic
         icon: "mdi:ticket-confirmation-outline"
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         scale: 1
         scan_interval: low
@@ -54,12 +54,13 @@ SENSOR_DEFINITIONS:
         enabled_by_default: true
         data_type: char
         scan_interval: low
-    mac_address:
+    ble_mac_address:
         register: 30304
         count: 6
-        enabled_by_default: true
-        icon: "mdi:ethernet"
-        data_type: char
+        category: diagnostic
+        enabled_by_default: false
+        icon: "mdi:bluetooth"
+        data_type: mac
         scan_interval: low
     battery_soc:
         register: 34002
@@ -148,7 +149,7 @@ SENSOR_DEFINITIONS:
         unit: V
         device_class: voltage
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: uint16
         precision: 1
         scan_interval: high
@@ -179,7 +180,7 @@ SENSOR_DEFINITIONS:
         unit: Hz
         device_class: frequency
         state_class: measurement
-        enabled_by_default: true
+        enabled_by_default: false
         data_type: int16
         precision: 2
         scan_interval: high
@@ -511,6 +512,22 @@ SENSOR_DEFINITIONS:
         data_type: int16
         precision: 0
         scan_interval: high
+    device_ip:
+        register: 30400
+        count: 2
+        data_type: ipv4
+        icon: "mdi:ip-network"
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: very_low
+    gateway_ip:
+        register: 30402
+        count: 2
+        data_type: ipv4
+        icon: "mdi:ip-network-outline"
+        category: diagnostic
+        enabled_by_default: false
+        scan_interval: very_low
     wifi_signal_strength:
         register: 30303
         scale: -1
@@ -980,6 +997,19 @@ BUTTON_DEFINITIONS:
         category: diagnostic
         enabled_by_default: false
         data_type: uint16
+
+VERSION_SENSOR_DEFINITIONS:
+    firmware_version:
+        key: firmware_version
+        unit: null
+        icon: "mdi:chip"
+        category: diagnostic
+        enabled_by_default: true
+        mode: ems_vms_bms
+        dependency_keys:
+            ems: ems_version
+            vms: vms_version
+            bms: bms_version
 
 EFFICIENCY_SENSOR_DEFINITIONS:
     round_trip_efficiency_total:

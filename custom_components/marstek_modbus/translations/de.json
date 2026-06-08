@@ -78,11 +78,14 @@
       "ems_version": {
         "name": "EMS-Version"
       },
+      "firmware_version": {
+        "name": "Firmware-Version"
+      },
       "comm_module_firmware": {
         "name": "Kommunikationsmodul-Firmware"
       },
-      "mac_address": {
-        "name": "MAC-Adresse"
+      "ble_mac_address": {
+        "name": "Bluetooth-MAC"
       },
       "battery_soc": {
         "name": "SoC Batterie"
@@ -447,6 +450,12 @@
       "ac_offgrid_power": {
         "name": "AC-Offgrid-Leistung"
       },
+      "device_ip": {
+        "name": "Geräte-IP-Adresse"
+      },
+      "gateway_ip": {
+        "name": "Gateway-IP-Adresse"
+      },
       "wifi_signal_strength": {
         "name": "WLAN-Signalstärke"
       },
@@ -510,6 +519,9 @@
       }
     },
     "binary_sensor": {
+      "modbus_connection": {
+        "name": "Modbus-Verbindung"
+      },
       "wifi_status": {
         "name": "WLAN-Status"
       },

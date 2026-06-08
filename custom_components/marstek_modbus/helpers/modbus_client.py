@@ -250,6 +250,29 @@ class MarstekModbusClient:
                 byte_array = byte_array[:null_pos]
             return byte_array.decode("ascii", errors="ignore")
 
+        if data_type == "mac":
+            byte_array = bytearray()
+            for reg in regs:
+                byte_array.append((reg >> 8) & 0xFF)
+                byte_array.append(reg & 0xFF)
+
+            null_pos = byte_array.find(0)
+            if null_pos >= 0:
+                byte_array = byte_array[:null_pos]
+
+            try:
+                ascii_value = byte_array.decode("ascii", errors="strict").strip()
+            except UnicodeDecodeError:
+                ascii_value = ""
+
+            if len(ascii_value) == 12 and all(ch in "0123456789abcdefABCDEF" for ch in ascii_value):
+                return ":".join(
+                    ascii_value[index:index + 2].upper()
+                    for index in range(0, 12, 2)
+                )
+
+            return ":".join(f"{byte:02X}" for byte in byte_array)
+
         if data_type == "schedule":
             if len(regs) < 5:
                 _LOGGER.warning(
@@ -456,6 +479,25 @@ class MarstekModbusClient:
         Returns:
             int, str, bool, or None: Interpreted value or None on error.
         """
+        if count is None:
+            count = self._default_count_for_data_type(data_type)
+
+        regs = await self.async_read_holding_registers(
+            register=register,
+            count=count,
+            sensor_key=sensor_key,
+            max_retries=max_retries,
+            retry_delay=retry_delay,
+        )
+        if regs is None:
+            return None
+
+        return self._decode_registers(
+            register=register,
+            regs=regs,
+            data_type=data_type,
+            bit_index=bit_index,
+        )
         if count is None:
             count = self._default_count_for_data_type(data_type)
 

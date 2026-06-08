@@ -7,7 +7,7 @@ All entities are registered through the coordinator to enable centralized pollin
 import logging
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.components.binary_sensor import BinarySensorEntity
+from homeassistant.components.binary_sensor import BinarySensorDeviceClass, BinarySensorEntity
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -39,6 +39,7 @@ async def async_setup_entry(
     # Retrieve the coordinator instance from hass data and add entities
     coordinator = hass.data[DOMAIN][entry.entry_id]
     entities = [MarstekBinarySensor(coordinator, definition) for definition in coordinator.BINARY_SENSOR_DEFINITIONS]
+    entities.append(MarstekConnectionBinarySensor(coordinator))
     async_add_entities(entities)   
 
 
@@ -121,6 +122,45 @@ class MarstekBinarySensor(CoordinatorEntity, BinarySensorEntity):
         Return device information for Home Assistant's device registry.
         Includes identifiers, name, manufacturer, model, and entry type.
         """
+        return {
+            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
+            "name": self.coordinator.config_entry.title,
+            "manufacturer": MANUFACTURER,
+            "model": MODEL,
+            "entry_type": "service",
+        }
+
+
+class MarstekConnectionBinarySensor(CoordinatorEntity, BinarySensorEntity):
+    """Diagnostic binary sensor exposing Modbus connection health."""
+
+    def __init__(self, coordinator: MarstekCoordinator):
+        """Initialize the Modbus connection binary sensor."""
+        super().__init__(coordinator)
+        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_modbus_connection"
+        self._attr_has_entity_name = True
+        self._attr_translation_key = "modbus_connection"
+        self._attr_entity_category = EntityCategory.DIAGNOSTIC
+        self._attr_device_class = BinarySensorDeviceClass.CONNECTIVITY
+
+    @property
+    def available(self) -> bool:
+        """Always expose the connection entity so health changes stay visible."""
+        return True
+
+    @property
+    def is_on(self) -> bool:
+        """Return True when the Modbus connection is currently healthy."""
+        return self.coordinator.is_connection_healthy()
+
+    @property
+    def extra_state_attributes(self) -> dict:
+        """Return diagnostic connection health attributes."""
+        return self.coordinator.get_connection_health_attributes()
+
+    @property
+    def device_info(self) -> dict:
+        """Return device information for Home Assistant's device registry."""
         return {
             "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
             "name": self.coordinator.config_entry.title,
