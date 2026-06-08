@@ -520,8 +520,10 @@ class MarstekVersionSensor(MarstekCalculatedSensor):
     """Sensor that formats multiple version registers into a human-readable version string.
 
     Supported modes:
-    - "ems_bms_version": combines ems_version + bms_sub_version + bms_version
-      into a string like "V147.6.117.112"
+                - "ems_bms": combines ems_version + bms_version
+                    into a string like "V147.6.112"
+                - "ems_vms_bms": combines ems_version + vms_version + bms_version
+                    into a string like "V147.6.117.112"
     """
 
     def _calculate(self, data: dict) -> None:
@@ -542,15 +544,25 @@ class MarstekVersionSensor(MarstekCalculatedSensor):
 
     def calculate_value(self, raw_values: dict):
         mode = self.definition.get("mode")
-        if mode == "ems_bms_version":
+        if mode in ("ems_bms", "ems_vms_bms"):
             ems_raw = int(raw_values["ems"])
-            bms_sub = int(raw_values["bms_sub"])
             bms = int(raw_values["bms"])
+            vms_raw = raw_values.get("vms")
             # ems_version: 4-digit encodes tenths (1476 -> 147.6), 3-digit = whole
             if ems_raw >= 1000:
                 ems_str = f"{ems_raw // 10}.{ems_raw % 10}"
             else:
                 ems_str = str(ems_raw)
-            return f"V{ems_str}.{bms_sub}.{bms}"
+
+            if mode == "ems_bms":
+                return f"V{ems_str}.{bms}"
+
+            # ems_vms_bms expects the third version part.
+            if vms_raw is None:
+                _LOGGER.warning("%s missing vms for mode '%s'", self._key, mode)
+                return None
+
+            vms = int(vms_raw)
+            return f"V{ems_str}.{vms}.{bms}"
         _LOGGER.warning("%s unknown version mode '%s'", self._key, mode)
         return None
