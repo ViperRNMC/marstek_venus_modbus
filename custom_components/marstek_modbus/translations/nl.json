@@ -521,6 +521,9 @@
       }
     },
     "binary_sensor": {
+      "modbus_connection": {
+        "name": "Modbus-verbinding"
+      },
       "wifi_status": {
         "name": "WiFi-status"
       },
