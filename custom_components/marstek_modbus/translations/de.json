@@ -80,6 +80,9 @@
       "ems_version": {
         "name": "EMS-Version"
       },
+      "firmware_version": {
+        "name": "Firmware-Version"
+      },
       "comm_module_firmware": {
         "name": "Kommunikationsmodul-Firmware"
       },
