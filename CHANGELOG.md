@@ -1,4 +1,26 @@
 # Changelog
+
+# [2026.6.2] - 2026-06-08
+
+### Added
+
+- Smart contiguous block polling for adjacent due registers, with automatic fallback to individual reads when a block request fails.
+- Combined `firmware_version` calculated sensor for all supported device profiles.
+- `ble_mac_address` diagnostic sensor with normalized MAC formatting.
+- `modbus_connection` diagnostic binary sensor with connection-health attributes.
+
+### Changed
+
+- Polling configuration simplified from four scan interval classes to two user-facing options: `high` and `low`.
+- Coordinator polling statistics and debug logging expanded to show block requests, single requests and failover behavior.
+- Register maps updated to use explicit firmware version composition modes (`ems_bms` and `ems_vms_bms`).
+- README updated to document simplified polling, smart block reads, supported device versions and new diagnostic entities.
+
+### Fixed
+
+- BLE MAC addresses are now decoded to a readable `AA:BB:CC:DD:EE:FF` format, including devices that expose the value as ASCII hex.
+- Firmware version composition corrected across `A`, `D`, `E v1/v2` and `E v3` register maps.
+
 # [2026.3.4] - 2026-03-23
 
 ### Added
