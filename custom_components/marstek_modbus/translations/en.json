@@ -47,9 +47,7 @@
         "description": "Adjust polling frequency per category",
         "data": {
           "high": "High priority interval (s)",
-          "medium": "Medium priority interval (s)",
-          "low": "Low priority interval (s)",
-          "very_low": "Very low priority interval (s)"
+          "low": "Low priority interval (s)"
         }
       },
       "connection": {

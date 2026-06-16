@@ -4,7 +4,7 @@
 [![GitHub Issues](https://img.shields.io/github/issues/ViperRNMC/marstek_venus_modbus)](https://github.com/ViperRNMC/marstek_venus_modbus/issues)
 [![Downloads](https://img.shields.io/github/downloads/ViperRNMC/marstek_venus_modbus/total)](https://github.com/ViperRNMC/marstek_venus_modbus/releases)
 
-This is a custom HACS-compatible integration for the Marstek Venus E home battery system, using **Modbus TCP** via an **RS485-to-WiFi gateway**. No YAML required. The integration provides sensors, switches and number controls to monitor and manage the battery directly from Home Assistant.
+This is a custom HACS-compatible integration for Marstek Venus battery systems, using **Modbus TCP** via an **RS485-to-WiFi gateway** or direct Ethernet where supported. No YAML required. The integration provides sensors, switches and number controls to monitor and manage the battery directly from Home Assistant.
 
 
 ### 🧩 Requirements
@@ -19,10 +19,12 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 
 - Native Modbus TCP polling via `pymodbus`
 - Polling is handled centrally via the DataUpdateCoordinator with dynamic intervals per entity type
+- Smart contiguous block polling groups adjacent registers into single Modbus requests where possible, with automatic fallback to per-entity reads on failure
 - Configurable scan intervals via the integration options UI
 - Dependency entities are always polled, even if the related entity is disabled
 - Fully asynchronous operation for optimal performance and responsiveness
 - Sensors for voltage, current, SOC, power, energy, and fault/alarm status (combined bits)
+- Diagnostic entities for communication health, firmware version, BLE MAC address and communication-module firmware
 - Switches for force charge/discharge control
 - Adjustable charge/discharge power (model-dependent, up to 2500W)
 - Entities grouped under a device in Home Assistant
@@ -49,7 +51,7 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
    - IP address of your Modbus TCP gateway
    - Port (default: 502)
    - Unit ID / Slave ID (default: 1, valid range: 1-255)
-   - Device version (v1/v2 or v3)
+  - Device version (`A`, `D`, `E v1/v2` or `E v3`)
 
 
 ## ⚙️ Configuration
@@ -58,11 +60,16 @@ This is a custom HACS-compatible integration for the Marstek Venus E home batter
 
 The integration uses intelligent polling with configurable intervals per entity type to balance responsiveness and network load.
 
+Recent versions use two polling classes instead of four. The coordinator still respects per-entity priorities, but the user-facing options are simplified to the intervals that matter most.
+
 **Configurable via Options UI:**
-- **High priority** (default: 5 seconds) - Critical sensors like power, voltage, current, SOC
-- **Medium priority** (default: 30 seconds) - Temperature sensors, state sensors
-- **Low priority** (default: 60 seconds) - Energy totals, efficiency calculations
-- **Very low priority** (default: 300 seconds) - Device information, firmware versions
+- **High priority** (default: 10 seconds) - Fast-changing sensors such as power, voltage, current, SOC and state entities
+- **Low priority** (default: 60 seconds) - Slower-changing sensors such as totals, diagnostics, firmware and device information
+
+Notes:
+- The coordinator will combine adjacent due registers into a single block read when possible.
+- If a block read fails, the integration falls back to individual reads for the affected entities.
+- Disabled entities are normally skipped, except when they are required as dependencies for calculated sensors.
 
 
 ## ✅ Tested Devices for Modbus TCP
@@ -97,7 +104,8 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | bms_version                       | BMS firmware version                       | uint16  | 2    | -      | -    | 30204 | 30204 | 31102 | 30204 |
 | vms_version                       | VMS firmware version                       | uint16  | 2    | -      | -    | 30202 | 30202 |       | 30202 |
 | ems_version                       | EMS firmware version (special formatting)  | uint16  | 2    | 1      | -    | 30200 | 30200 | 31101 | 30200 |
-| mac_address                       | MAC address                                | char    | 12   | -      | -    | 30304 | 30304 | 30402 | 30304 |
+| firmware_version                  | Combined firmware version string           | calculated | - | - | - |  |  |  |  |
+| ble_mac_address                   | BLE MAC address                            | mac     | 12   | -      | -    | 30304 | 30304 | 30402 | 30304 |
 | comm_module_firmware              | Communication module firmware              | char    | 12   | -      | -    | 30350 | 30350 | 30800 | 30350 |
 | wifi_signal_strength              | WiFi RSSI                                  | uint16  | 2    | -1     | dBm  | 30303 | 30303 | 30303 | 30303 |
 | bluetooth_status                  | Bluetooth connectivity/status              | uint16  | 2    | -      | -    | 30301 | 30301 | 30301 | 30301 |
@@ -230,6 +238,7 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | force_mode (select)               | Force mode (None/Charge/Discharge)         | uint16  | 2    | -      | -    | 42010 | 42010 | 42010 | 42010 |
 | user_work_mode (select)           | User Work Mode (manual/anti_feed/trade)    | uint16  | 2    | -      | -    | 43000 | 43000 | 43000 | 43000 |
 | discharge_limit_mode (binary)     | Discharge limit mode (diagnostic)          | uint16  | 2    | -      | -    |       |       | 41010 |       |
+| modbus_connection (binary)        | Modbus connection health                   | derived | -    | -      | -    |  |  |  |  |
 | grid_standard (select)            | Grid standard / region selection           | uint16  | 2    | -      | -    |       |       | 44100 |       |
 | charge_to_soc (number)            | Charge/discharge to SOC (0-100%)           | uint16  | 2    | 1      | %    | 42011 | 42011 | 42011 | 42011 |
 | set_charge_power (number)         | Forcible charge power setpoint             | uint16  | 2    | -      | W    | 42020 | 42020 | 42020 | 42020 |
@@ -280,6 +289,9 @@ _Notes:_
 - Columns `a`, `d`, `e_v12` and `e_v3` correspond to the YAML files under `custom_components/marstek_modbus/registers/`.
 - `Bytes` shows the typical byte size for the key (each Modbus register = 2 bytes).
 - Blank cells mean that YAML does not define that key (or the value is calculated and has no direct Modbus register).
+- `firmware_version` is assembled from the raw version registers. `E v1/v2` uses `ems + bms`; `A`, `D` and `E v3` use `ems + vms + bms`.
+- `ble_mac_address` is decoded and formatted as a normal MAC address string such as `00:9B:08:05:D9:0A`.
+- `modbus_connection` is a diagnostic binary sensor derived from recent successful Modbus reads, not from a separate device register.
 - The `rs485_control_mode` switch (register 42000) uses write commands (command_on=21930, command_off=21947) to trigger RS485 control operations; use with caution.
 - For access to registers in the 42000–42999 range, the battery must be set to RS485 control mode.
 - Schedule Time format: `start` and `end` are entered as HHMM 24-hour integers (for example `0830` = 08:30). Use values within the valid range shown in the YAML for each device; ensure `start` is earlier than `end` for a single active period.
