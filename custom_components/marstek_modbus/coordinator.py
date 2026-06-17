@@ -460,12 +460,35 @@ class MarstekCoordinator(DataUpdateCoordinator):
         block_count = block_end - block_start + 1
         sensor_keys = ",".join(sensor["key"] for sensor in due_sensors)
 
-        block_registers = await self.client.async_read_holding_registers(
-            register=block_start,
-            count=block_count,
-            sensor_key=f"block[{sensor_keys}]",
-            max_retries=1,
-        )
+        # Try block read with timeout to prevent indefinite hangs
+        block_registers = None
+        block_timeout_occurred = False
+        try:
+            block_registers = await asyncio.wait_for(
+                self.client.async_read_holding_registers(
+                    register=block_start,
+                    count=block_count,
+                    sensor_key=f"block[{sensor_keys}]",
+                    max_retries=1,
+                ),
+                timeout=10.0
+            )
+        except asyncio.TimeoutError:
+            block_timeout_occurred = True
+            _LOGGER.warning(
+                "Block read timeout for registers %d-%d (block[%s]), falling back to individual reads",
+                block_start,
+                block_end,
+                sensor_keys,
+            )
+            self._timeouts_in_cycle = getattr(self, "_timeouts_in_cycle", 0) + 1
+        except Exception as exc:
+            _LOGGER.error(
+                "Unexpected error during block read for registers %d-%d: %s",
+                block_start,
+                block_end,
+                exc,
+            )
 
         if block_registers is None:
             _LOGGER.debug(
