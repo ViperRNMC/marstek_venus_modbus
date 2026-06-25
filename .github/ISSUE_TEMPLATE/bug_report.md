@@ -11,13 +11,11 @@ labels: bug
 **Device details**
 - Model / type:
 - Firmware version:
-- Venus system / hardware version:
 - Modbus-to-Ethernet adapter (e.g. EW11):
 
 **Integration details**
-- Integration version / commit:
+- Integration version:
 - Home Assistant version:
-- Device ID or unit_id used:
 
 **Logs**
 - Add relevant errors or warnings from the Home Assistant logs.
