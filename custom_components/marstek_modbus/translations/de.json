@@ -538,7 +538,8 @@
         "state": {
           "manual": "Manuell",
           "anti_feed": "Nulleinspeisung",
-          "trade_mode": "AI-Optimierung (Dynamischer Stromtarif)"
+          "trade_mode": "AI-Optimierung (Dynamischer Stromtarif)",
+          "ups": "UPS"
         }
       },
       "force_mode": {

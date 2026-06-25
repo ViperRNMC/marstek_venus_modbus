@@ -542,8 +542,9 @@
         "name": "User Work Mode",
         "state": {
           "manual": "Manual",
-          "anti_feed": "Anti-Feed",
-          "trade_mode": "Trade Mode"
+          "anti_feed": "Self Consumption",
+          "trade_mode": "AI Optimization",
+          "ups": "UPS"
         }
       },
       "force_mode": {

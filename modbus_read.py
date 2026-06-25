@@ -10,7 +10,13 @@ Examples:
 
 import sys
 import asyncio
-from pymodbus.client.tcp import AsyncModbusTcpClient
+try:
+    from pymodbus.client.tcp import AsyncModbusTcpClient
+except ImportError:
+    print("Missing dependency: pymodbus is not installed.")
+    print("Install it with: pip install pymodbus")
+    print("Or install all dependencies: pip install -r requirements.txt")
+    sys.exit(1)
 
 # Known register bit descriptions from registers_v12.py
 REGISTER_DESCRIPTIONS = {

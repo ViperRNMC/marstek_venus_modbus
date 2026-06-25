@@ -545,7 +545,8 @@
         "state": {
           "manual": "Handmatig",
           "anti_feed": "Anti-teruglevering",
-          "trade_mode": "Handelsmodus"
+          "trade_mode": "Handelsmodus",
+          "ups": "UPS"
         }
       },
       "force_mode": {
