@@ -68,6 +68,11 @@ class MarstekModbusClient:
         # Lock to serialize outgoing Modbus requests to avoid transaction id collisions
         self._request_lock = asyncio.Lock()
 
+        # Smart transport state for request pacing and diagnostics
+        self.wait_between_requests = self.message_wait_sec
+        self._last_request_finished_at: float | None = None
+        self._last_request_duration: float | None = None
+
     async def async_connect(self) -> bool:
         """
         Connect asynchronously to the Modbus TCP server.
@@ -144,7 +149,7 @@ class MarstekModbusClient:
 
     async def async_close(self) -> None:
         """
-        Close the Modbus TCP connection safely (sync or async) 
+        Close the Modbus TCP connection safely (sync or async)
         and reset client reference.
         """
         if not self.client:
@@ -160,6 +165,31 @@ class MarstekModbusClient:
         finally:
             # Ensure client reference is cleared so future connect creates fresh instance
             self.client = None
+
+    async def _reset_client(self) -> None:
+        """Close the current client and clear the reference."""
+        if self.client:
+            try:
+                result = self.client.close()
+                if asyncio.iscoroutine(result):
+                    await result
+            except Exception as err:
+                _LOGGER.debug("Error closing stale Modbus client: %s", err)
+        self.client = None
+
+    async def _ensure_connected(self) -> bool:
+        """Ensure there is an active Modbus connection, reconnecting if needed."""
+        if self.is_connected:
+            return True
+        return await self.async_reconnect()
+
+    @property
+    def is_connected(self) -> bool:
+        """Return True when the wrapped pymodbus client is currently connected."""
+        try:
+            return bool(self.client and getattr(self.client, "connected", False))
+        except Exception:
+            return False
 
     async def async_reconnect(self) -> bool:
         """Reconnect to the Modbus TCP server by closing and re-opening the connection."""
@@ -332,24 +362,26 @@ class MarstekModbusClient:
             except Exception:
                 client_connected = False
 
-            if not client_connected:
-                _LOGGER.warning(
-                    "Modbus client not connected, attempting reconnect before register %d (0x%04X)",
+            if not await self._ensure_connected():
+                _LOGGER.error(
+                    "Modbus client not connected, skipping register %d (0x%04X)",
                     register,
                     register,
                 )
-                connected = await self.async_connect()
-                if not connected:
-                    _LOGGER.error(
-                        "Reconnect failed, skipping register %d (0x%04X)",
-                        register,
-                        register,
-                    )
-                    return None
+                return None
 
+            request_start = asyncio.get_running_loop().time()
             try:
                 result = None
                 async with self._request_lock:
+                    # Pace requests to avoid overwhelming the device.
+                    if self.wait_between_requests > 0 and self._last_request_finished_at is not None:
+                        wait_time = self.wait_between_requests - (
+                            asyncio.get_running_loop().time() - self._last_request_finished_at
+                        )
+                        if wait_time > 0:
+                            await asyncio.sleep(wait_time)
+
                     try:
                         read_method = getattr(self.client, "read_holding_registers")
                         for unit_kw in ("device_id", "unit", "slave"):
@@ -379,6 +411,13 @@ class MarstekModbusClient:
                         register,
                         attempt + 1,
                     )
+                    if attempt + 1 < max_retries:
+                        _LOGGER.debug(
+                            "Attempting reconnect after Modbus error response for register %d (0x%04X)",
+                            register,
+                            register,
+                        )
+                        await self.async_reconnect()
                 elif not hasattr(result, "registers") or result.registers is None or len(result.registers) < count:
                     _LOGGER.warning(
                         "Incomplete data received at register %d (0x%04X) on attempt %d: expected %d registers, got %s",
@@ -388,6 +427,13 @@ class MarstekModbusClient:
                         count,
                         len(result.registers) if result.registers else 0,
                     )
+                    if attempt + 1 < max_retries:
+                        _LOGGER.debug(
+                            "Attempting reconnect after incomplete response for register %d (0x%04X)",
+                            register,
+                            register,
+                        )
+                        await self.async_reconnect()
                 else:
                     regs = list(result.registers)
                     if count == 1:
@@ -426,7 +472,6 @@ class MarstekModbusClient:
                             regs,
                         )
                     return regs
-
             except asyncio.CancelledError:
                 raise
             except Exception as e:
@@ -441,6 +486,16 @@ class MarstekModbusClient:
                     attempt + 1,
                     e,
                 )
+                if attempt + 1 < max_retries:
+                    _LOGGER.debug(
+                        "Attempting reconnect after exception for register %d (0x%04X)",
+                        register,
+                        register,
+                    )
+                    await self.async_reconnect()
+            finally:
+                self._last_request_finished_at = asyncio.get_running_loop().time()
+                self._last_request_duration = self._last_request_finished_at - request_start
 
             attempt += 1
             if attempt < max_retries:
@@ -479,25 +534,6 @@ class MarstekModbusClient:
         Returns:
             int, str, bool, or None: Interpreted value or None on error.
         """
-        if count is None:
-            count = self._default_count_for_data_type(data_type)
-
-        regs = await self.async_read_holding_registers(
-            register=register,
-            count=count,
-            sensor_key=sensor_key,
-            max_retries=max_retries,
-            retry_delay=retry_delay,
-        )
-        if regs is None:
-            return None
-
-        return self._decode_registers(
-            register=register,
-            regs=regs,
-            data_type=data_type,
-            bit_index=bit_index,
-        )
         if count is None:
             count = self._default_count_for_data_type(data_type)
 
