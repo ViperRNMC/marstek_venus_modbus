@@ -6,6 +6,7 @@ with per-sensor intervals and optional skipping if not due.
 import asyncio
 import logging
 from datetime import timedelta
+from time import perf_counter
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
@@ -107,7 +108,15 @@ class MarstekCoordinator(DataUpdateCoordinator):
         
         # Connection health tracking for diagnostics
         self._last_successful_read = None
+        self._last_failed_read = None
         self._connection_established_at = None
+        self._last_reconnect_time = None
+        self._reconnect_attempts = 0
+        self._last_block_timeout_time = None
+        self._last_block_timeout_registers = None
+        self._last_block_timeout_count = None
+        self._last_block_timeout_keys = None
+        self._last_block_read_duration = None
         self._last_cycle_stats = {
             "attempted_reads": 0,
             "successful_reads": 0,
@@ -189,6 +198,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
         if data_type == "schedule":
             return 5
         return 1
+
+    def _block_read_timeout(self, block_count: int) -> float:
+        """Return a dynamic timeout for block reads based on request size."""
+        # Longer blocks need a bit more time; cap to avoid very slow failure detection.
+        return min(10.0 + 0.15 * block_count, 22.0)
 
     def _build_contiguous_read_groups(self, sensors: list[dict]) -> list[list[dict]]:
         """Group sensor definitions into strictly contiguous register blocks."""
@@ -309,6 +323,14 @@ class MarstekCoordinator(DataUpdateCoordinator):
             "health": health,
             "degraded": self.is_connection_degraded(),
             "last_successful_read": self._last_successful_read.isoformat() if self._last_successful_read else None,
+            "last_failed_read": self._last_failed_read.isoformat() if self._last_failed_read else None,
+            "last_reconnect_time": self._last_reconnect_time.isoformat() if self._last_reconnect_time else None,
+            "reconnect_attempts": self._reconnect_attempts,
+            "last_block_timeout_time": self._last_block_timeout_time.isoformat() if self._last_block_timeout_time else None,
+            "last_block_timeout_registers": self._last_block_timeout_registers,
+            "last_block_timeout_count": self._last_block_timeout_count,
+            "last_block_timeout_keys": self._last_block_timeout_keys,
+            "last_block_read_duration": self._last_block_read_duration,
             "attempted_reads": int(stats.get("attempted_reads", 0) or 0),
             "successful_reads": int(stats.get("successful_reads", 0) or 0),
             "timeout_reads": int(stats.get("timeout_reads", 0) or 0),
@@ -427,6 +449,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
         except asyncio.TimeoutError:
             if track_failure:
                 self._timeouts_in_cycle = getattr(self, "_timeouts_in_cycle", 0) + 1
+            from homeassistant.util.dt import utcnow
+            self._last_failed_read = utcnow()
             _LOGGER.warning(
                 "Timeout reading %s '%s' at register %d from %s:%d - connection may be slow or incorrect",
                 entity_type, key, sensor["register"], self.client.host, self.client.port
@@ -463,6 +487,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Try block read with timeout to prevent indefinite hangs
         block_registers = None
         block_timeout_occurred = False
+        block_start_time = perf_counter()
         try:
             block_registers = await asyncio.wait_for(
                 self.client.async_read_holding_registers(
@@ -471,23 +496,33 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     sensor_key=f"block[{sensor_keys}]",
                     max_retries=1,
                 ),
-                timeout=10.0
+                timeout=self._block_read_timeout(block_count),
             )
+            self._last_block_read_duration = perf_counter() - block_start_time
         except asyncio.TimeoutError:
             block_timeout_occurred = True
+            from homeassistant.util.dt import utcnow
+            self._last_block_timeout_time = utcnow()
+            self._last_block_timeout_registers = (block_start, block_end)
+            self._last_block_timeout_count = block_count
+            self._last_block_timeout_keys = sensor_keys
+            self._last_block_read_duration = perf_counter() - block_start_time
+            self._timeouts_in_cycle = getattr(self, "_timeouts_in_cycle", 0) + 1
             _LOGGER.warning(
                 "Block read timeout for registers %d-%d (block[%s]), falling back to individual reads",
                 block_start,
                 block_end,
                 sensor_keys,
             )
-            self._timeouts_in_cycle = getattr(self, "_timeouts_in_cycle", 0) + 1
         except Exception as exc:
+            from homeassistant.util.dt import utcnow
+            self._last_failed_read = utcnow()
             _LOGGER.error(
                 "Unexpected error during block read for registers %d-%d: %s",
                 block_start,
                 block_end,
                 exc,
+
             )
 
         if block_registers is None:
@@ -956,8 +991,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
                             self._consecutive_timeout_cycles,
                             self._max_consecutive_timeout_cycles,
                         )
+                        self._reconnect_attempts += 1
                         connected = await self.client.async_reconnect()
                         if connected:
+                            from homeassistant.util.dt import utcnow
+                            self._last_reconnect_time = utcnow()
                             _LOGGER.info("Successfully reconnected after repeated timeouts")
                             self._consecutive_timeout_cycles = 0
                             self._connection_established_at = now
@@ -975,8 +1013,11 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 # Try to reconnect immediately on failure (use reconnect helper)
                 try:
                     _LOGGER.info("Attempting immediate reconnection after read failures")
+                    self._reconnect_attempts += 1
                     connected = await self.client.async_reconnect()
                     if connected:
+                        from homeassistant.util.dt import utcnow
+                        self._last_reconnect_time = utcnow()
                         _LOGGER.info("Successfully reconnected")
                         self._consecutive_failures = 0
                         self._connection_established_at = now
@@ -1008,14 +1049,6 @@ class MarstekCoordinator(DataUpdateCoordinator):
             failover_single_requests,
             successful_reads,
         )
-        self._last_cycle_stats = {
-            "attempted_reads": attempted_reads,
-            "successful_reads": successful_reads,
-            "timeout_reads": int(getattr(self, "_timeouts_in_cycle", 0) or 0),
-            "degraded": degraded,
-            "last_cycle_at": now,
-        }
-
         self._last_cycle_stats = {
             "attempted_reads": attempted_reads,
             "successful_reads": successful_reads,
