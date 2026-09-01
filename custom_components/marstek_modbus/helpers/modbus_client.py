@@ -7,6 +7,8 @@ a Marstek Venus battery system asynchronously.
 from pymodbus.client.tcp import AsyncModbusTcpClient
 import asyncio
 import socket
+import struct
+import time
 from typing import Optional
 
 import logging
@@ -68,10 +70,86 @@ class MarstekModbusClient:
         # Lock to serialize outgoing Modbus requests to avoid transaction id collisions
         self._request_lock = asyncio.Lock()
 
+        # Settle time between force-closing a stale connection and opening
+        # the replacement, giving the device time to actually process the
+        # RST and free its connection slot before we knock again.
+        self._reconnect_settle_sec = 10.0
+
+        # Tracks whether a connect has ever been attempted on this wrapper,
+        # to decide whether there is a previous client worth resetting in
+        # async_connect(). Deliberately NOT based on self.client.transport:
+        # pymodbus's own connection_lost() handler sets that back to None
+        # itself on every disconnect (see transport.py's __close()), so by
+        # the time we notice we're disconnected, transport is already gone
+        # even though the client very much needs a reset. Checking
+        # transport there would skip the reset in exactly the case it's
+        # meant for.
+        self._has_attempted_connect = False
+
+        # After a reset attempt, skip further attempts for this many
+        # seconds instead of redoing the full close+settle+connect dance
+        # on every subsequent register access. Without this, a poll cycle
+        # with ~30 registers each independently discovering "not
+        # connected" fired a fresh RST at the device every ~5-10s for
+        # minutes straight - one full pass through every register, each
+        # paying its own reset+wait, instead of failing fast after the
+        # first one. Set on every reset attempt, not just failed ones
+        # (see async_connect()): a successful TCP-level connect() doesn't
+        # mean the device can actually serve requests again, and without
+        # the cooldown surviving a "successful" connect, a reset whose
+        # connection turns out to be just as unusable triggers another
+        # one immediately, every ~10s, indefinitely.
+        self._last_failed_connect_monotonic: float | None = None
+        self._connect_retry_cooldown_sec = 15.0
+
+        # Serializes connect attempts so two callers discovering "not
+        # connected" at nearly the same instant (e.g. a read from the
+        # poll cycle and a write from an automation) can't both slip past
+        # the cooldown check above before either has recorded a failure -
+        # the second one now waits for the first to finish (and record
+        # its failure) before it even looks, instead of racing it into a
+        # second, redundant reset.
+        self._connect_lock = asyncio.Lock()
+
         # Smart transport state for request pacing and diagnostics
         self.wait_between_requests = self.message_wait_sec
         self._last_request_finished_at: float | None = None
         self._last_request_duration: float | None = None
+
+    @staticmethod
+    async def _close_with_reset(client) -> None:
+        """Force an immediate, unambiguous OS-level teardown (RST) of a
+        client's underlying socket and actually close it, instead of
+        relying only on pymodbus's own close() - which only schedules a
+        graceful FIN-based close on the asyncio transport and can leave
+        the socket lingering if that close never fully completes (e.g.
+        right after we abandoned a timed-out read). Observed in practice:
+        only a full Home Assistant restart (which forces the OS to clean
+        up every socket the process held) reliably makes the Marstek
+        device release its side of a stuck connection - our own
+        in-process reconnect loop, using only pymodbus's close(),
+        sometimes doesn't. Setting SO_LINGER to 0 makes the close() below
+        send an immediate RST instead of a graceful FIN, giving the
+        device an unambiguous signal. Must run before any wait meant to
+        let the device process that RST - the option alone does nothing
+        until close() actually executes it.
+        """
+        try:
+            transport = getattr(client, "transport", None)
+            if transport is not None:
+                sock = transport.get_extra_info("socket")
+                if sock is not None:
+                    try:
+                        sock.setsockopt(
+                            socket.SOL_SOCKET, socket.SO_LINGER, struct.pack("ii", 1, 0)
+                        )
+                    except Exception:
+                        pass
+            result = client.close()
+            if asyncio.iscoroutine(result):
+                await result
+        except Exception:
+            pass
 
     async def async_connect(self) -> bool:
         """
@@ -80,72 +158,112 @@ class MarstekModbusClient:
         Returns:
             bool: True if connection succeeded, False otherwise.
         """
-        # Always create a fresh client instance to avoid reusing internal
-        # buffers/state that may be left in an inconsistent state after
-        # network interruptions. This reduces "extra data" / parse errors
-        # and stale transaction id problems.
-        try:
-            # Close and discard any existing client first
-            if self.client:
+        async with self._connect_lock:
+            if self._last_failed_connect_monotonic is not None:
+                elapsed = time.monotonic() - self._last_failed_connect_monotonic
+                if elapsed < self._connect_retry_cooldown_sec:
+                    _LOGGER.debug(
+                        "Skipping reconnect to %s:%s, still within %.0fs cooldown "
+                        "after last failed attempt (%.1fs elapsed)",
+                        self.host,
+                        self.port,
+                        self._connect_retry_cooldown_sec,
+                        elapsed,
+                    )
+                    return False
+
+            # Always create a fresh client instance to avoid reusing internal
+            # buffers/state that may be left in an inconsistent state after
+            # network interruptions. This reduces "extra data" / parse errors
+            # and stale transaction id problems.
+            try:
+                # Close and discard any existing client first - but only once a
+                # connect has actually been attempted before. The very first
+                # call (still holding the client created in __init__) has
+                # nothing to reset, so skip the close/settle/log dance and go
+                # straight to connecting.
+                if self.client and self._has_attempted_connect:
+                    await self._close_with_reset(self.client)
+                    # Give the device a moment to actually process the RST and
+                    # free up its connection slot before we hit it again -
+                    # reconnecting in the very same instant risks arriving
+                    # before that's done, especially on a device that only
+                    # tolerates one connection at a time.
+                    _LOGGER.warning(
+                        "Force-closed stale Modbus connection to %s:%s, waiting "
+                        "%.1fs before reconnecting",
+                        self.host,
+                        self.port,
+                        self._reconnect_settle_sec,
+                    )
+                    await asyncio.sleep(self._reconnect_settle_sec)
+
+                # Create a new client instance
+                self.client = AsyncModbusTcpClient(
+                    host=self.host,
+                    port=self.port,
+                    timeout=self.timeout,
+                )
+                # restore configured properties where supported
                 try:
-                    result = self.client.close()
-                    if asyncio.iscoroutine(result):
-                        await result
+                    self.client.message_wait_milliseconds = self.message_wait_ms
                 except Exception:
                     pass
 
-            # Create a new client instance
-            self.client = AsyncModbusTcpClient(
-                host=self.host,
-                port=self.port,
-                timeout=self.timeout,
-            )
-            # restore configured properties where supported
-            try:
-                self.client.message_wait_milliseconds = self.message_wait_ms
-            except Exception:
-                pass
+                self._has_attempted_connect = True
+                connected = await self.client.connect()
 
-            connected = await self.client.connect()
+                if connected:
+                    # Deliberately NOT cleared here. A successful TCP-level
+                    # connect() doesn't mean the device is actually able to
+                    # serve Modbus requests again - observed in practice:
+                    # connect() succeeds, the very next real read/write
+                    # still times out, and without this cooldown staying
+                    # set that immediately triggers another full reset,
+                    # over and over, every ~10s. Leaving it set means any
+                    # reset attempt (successful connect or not) still
+                    # blocks a further one for the full cooldown window;
+                    # it naturally stops mattering once real traffic keeps
+                    # flowing and connect() simply isn't called again.
+                    # Small settle time so the device has time to flush and be ready
+                    await asyncio.sleep(max(0.2, self.message_wait_sec))
+                    # Enable TCP keepalive so the OS probes dead connections quickly
+                    # rather than waiting hours for the default kernel timeout.
+                    try:
+                        transport = getattr(self.client, "transport", None)
+                        if transport is not None:
+                            sock = transport.get_extra_info("socket")
+                            if sock is not None:
+                                sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
+                                if hasattr(socket, "TCP_KEEPIDLE"):
+                                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60)
+                                if hasattr(socket, "TCP_KEEPINTVL"):
+                                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
+                                if hasattr(socket, "TCP_KEEPCNT"):
+                                    sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
+                                _LOGGER.debug("TCP keepalive enabled on Modbus socket")
+                    except Exception as ke:
+                        _LOGGER.debug("Could not set TCP keepalive: %s", ke)
+                    _LOGGER.info(
+                        "Connected to Modbus server at %s:%s with unit %s",
+                        self.host,
+                        self.port,
+                        self.unit_id,
+                    )
+                else:
+                    self._last_failed_connect_monotonic = time.monotonic()
+                    _LOGGER.warning(
+                        "Failed to connect to Modbus server at %s:%s with unit %s",
+                        self.host,
+                        self.port,
+                        self.unit_id,
+                    )
 
-            if connected:
-                # Small settle time so the device has time to flush and be ready
-                await asyncio.sleep(max(0.2, self.message_wait_sec))
-                # Enable TCP keepalive so the OS probes dead connections quickly
-                # rather than waiting hours for the default kernel timeout.
-                try:
-                    transport = getattr(self.client, "transport", None)
-                    if transport is not None:
-                        sock = transport.get_extra_info("socket")
-                        if sock is not None:
-                            sock.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, 1)
-                            if hasattr(socket, "TCP_KEEPIDLE"):
-                                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPIDLE, 60)
-                            if hasattr(socket, "TCP_KEEPINTVL"):
-                                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPINTVL, 10)
-                            if hasattr(socket, "TCP_KEEPCNT"):
-                                sock.setsockopt(socket.IPPROTO_TCP, socket.TCP_KEEPCNT, 3)
-                            _LOGGER.debug("TCP keepalive enabled on Modbus socket")
-                except Exception as ke:
-                    _LOGGER.debug("Could not set TCP keepalive: %s", ke)
-                _LOGGER.info(
-                    "Connected to Modbus server at %s:%s with unit %s",
-                    self.host,
-                    self.port,
-                    self.unit_id,
-                )
-            else:
-                _LOGGER.warning(
-                    "Failed to connect to Modbus server at %s:%s with unit %s",
-                    self.host,
-                    self.port,
-                    self.unit_id,
-                )
-
-            return bool(connected)
-        except Exception as e:
-            _LOGGER.exception("Exception while connecting to Modbus server: %s", e)
-            return False
+                return bool(connected)
+            except Exception as e:
+                self._last_failed_connect_monotonic = time.monotonic()
+                _LOGGER.exception("Exception while connecting to Modbus server: %s", e)
+                return False
 
     async def async_close(self) -> None:
         """
@@ -156,9 +274,7 @@ class MarstekModbusClient:
             return
 
         try:
-            result = self.client.close()
-            if asyncio.iscoroutine(result):
-                await result
+            await self._close_with_reset(self.client)
             _LOGGER.debug("Modbus client closed successfully")
         except Exception as e:
             _LOGGER.debug("Error closing Modbus client: %s", e)
@@ -197,11 +313,12 @@ class MarstekModbusClient:
             _LOGGER.info("Reconnecting to Modbus server at %s:%s", self.host, self.port)
 
             try:
-                try:
-                    await self.async_close()
-                except Exception as e:
-                    _LOGGER.debug("Error closing Modbus client during reconnect: %s", e)
-
+                # Don't close here first: async_connect() already closes any
+                # existing (transported) client - with the RST reset and
+                # settle delay - before opening the new one. Closing here
+                # first would just clear self.client early, so
+                # async_connect() would find nothing to reset and skip
+                # straight to reconnecting with no delay at all.
                 try:
                     connected = await self.async_connect()
                 except Exception as e:
@@ -708,4 +825,13 @@ class MarstekModbusClient:
             register,
             max_retries,
         )
+        # A write that times out on every one of its own retries is a much
+        # clearer signal of a stuck connection than the read path's slower
+        # per-sensor backoff - waiting for that to independently notice was
+        # observed taking several minutes longer in practice. Force a
+        # reconnect now so the next read or write gets a fresh connection
+        # instead of hitting the same stuck one. async_connect()'s own
+        # cooldown and lock already guard against this firing redundantly
+        # if a reset just ran for another register.
+        await self.async_reconnect()
         return False

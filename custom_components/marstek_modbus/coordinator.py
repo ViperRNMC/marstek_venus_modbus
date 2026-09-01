@@ -738,6 +738,14 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     entity_type,
                     key,
                 )
+                # This 10s wait_for cancels async_write_register() before it
+                # can reach its own "exhausted retries" handling (its 3
+                # internal attempts can themselves take close to 10s when
+                # every one times out) - force the reconnect here instead,
+                # right where the timeout is actually observed, rather than
+                # waiting for the read path's slower per-sensor backoff to
+                # notice independently.
+                await self.client.async_reconnect()
                 return False
 
             if success:
