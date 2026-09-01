@@ -20,6 +20,17 @@ from pathlib import Path
 
 _LOGGER = logging.getLogger(__name__)
 
+# Post-write refresh tuning, measured on a Venus E 3.0. The hardware starts
+# moving ~0.8s after a write and settles in 3.5-5s, but a wake from standby can
+# take 9.6s, so the budget has to outlast that. Stability is a time window with a
+# tolerance band: live readings jitter ~1.5% while the inverter holds steady.
+POST_WRITE_REFRESH_INITIAL_DELAY = 0.75      # hardware starts moving ~0.8s in
+POST_WRITE_REFRESH_INTERVAL = 0.5
+POST_WRITE_REFRESH_TIMEOUT = 12.0            # covers a slow wake from standby
+POST_WRITE_REFRESH_STABLE_WINDOW = 2.0       # steady this long = settled
+POST_WRITE_REFRESH_STABLE_TOLERANCE = 0.03   # fraction of the reading
+POST_WRITE_REFRESH_STABLE_MIN_BAND = 2.0     # floor, in the sensor's own units
+
 
 def get_entity_type(entity) -> str:
     """Determine entity type based on its class inheritance."""
@@ -98,6 +109,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self._read_start_times: dict = {}
         # Pending post-write refresh task to avoid overlapping refresh loops
         self._post_write_refresh_task = None
+        # Last raw word written per key, to skip refreshing on a no-op write
+        self._last_written_values: dict = {}
         
         # Connection throttling to prevent endless retry attempts after repeated failures
         self._consecutive_failures = 0
@@ -258,6 +271,23 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     return definition
         return None
 
+    def _get_readable_definition_for_key(self, key: str) -> dict | None:
+        """Return the definition for any readable key, sensors included.
+
+        Refresh targets are sensors, which the writable-only lookup cannot find.
+        """
+        for definitions in (
+            self.SENSOR_DEFINITIONS,
+            self.BINARY_SENSOR_DEFINITIONS,
+            self.NUMBER_DEFINITIONS,
+            self.SELECT_DEFINITIONS,
+            self.SWITCH_DEFINITIONS,
+        ):
+            for definition in definitions:
+                if definition.get("key") == key:
+                    return definition
+        return None
+
     def _get_post_write_refresh_targets(self, key: str) -> list[str]:
         """Return sensor keys that should be refreshed shortly after a successful write."""
         if not key:
@@ -287,42 +317,121 @@ class MarstekCoordinator(DataUpdateCoordinator):
         if not targets:
             return
 
+        # One slot, so a rapid second write replaces the first key's targets rather
+        # than merging them - harmless while every `affects` lists the same sensors.
         self._cancel_pending_post_write_refresh()
         self._post_write_refresh_task = self.hass.async_create_task(
             self._async_refresh_affected_keys_after_write(key, targets)
         )
 
     async def _async_refresh_affected_keys_after_write(self, key: str, targets: list[str]) -> None:
-        """Re-read affected keys shortly after a write, retrying until values settle."""
+        """Re-read affected keys after a write until their values stop changing.
+
+        Stopping at the first differing reading returns a mid-ramp value, which
+        then waits for the next scan anyway. A target only counts as settled once
+        it has moved from its pre-write value and held steady. Every reading is
+        published as it arrives, so the sensor follows the ramp.
+        """
         if not targets:
             return
 
-        for attempt in range(5):
-            if attempt == 0:
-                await asyncio.sleep(3.5)
-            else:
-                await asyncio.sleep(0.5)
+        if not isinstance(self.data, dict):
+            self.data = {}
 
-            for target in targets:
-                definition = self._get_definition_for_key(target)
-                if not definition:
+        # Pre-write values, to tell "not moved yet" from "moved and settled".
+        initial_values = {target: self.data.get(target) for target in targets}
+        windows: dict[str, list[tuple[float, float]]] = {t: [] for t in targets}
+        last_values: dict[str, object] = {}
+        stable_since: dict[str, float] = {}
+        pending = [t for t in targets if self._get_readable_definition_for_key(t)]
+        missing = [t for t in targets if t not in pending]
+        if missing:
+            _LOGGER.warning(
+                "Post-write refresh: no definition found for %s (declared in "
+                "'affects' of '%s') - check the register YAML", missing, key,
+            )
+
+        # Timed from the write itself so the debug log reads as a latency trace.
+        started = perf_counter()
+        _LOGGER.debug(
+            "Post-write refresh armed for '%s' -> %s (first read in %.1fs)",
+            key, pending, POST_WRITE_REFRESH_INITIAL_DELAY,
+        )
+
+        await asyncio.sleep(POST_WRITE_REFRESH_INITIAL_DELAY)
+        deadline = perf_counter() + POST_WRITE_REFRESH_TIMEOUT
+
+        while pending:
+            updated = False
+
+            for target in list(pending):
+                definition = self._get_readable_definition_for_key(target)
+                value = await self.async_read_value(definition, target, track_failure=False)
+                if value is None:
                     continue
 
-                value = await self.async_read_value(definition, target, track_failure=False)
-                if value is not None:
-                    if not isinstance(self.data, dict):
-                        self.data = {}
-                    previous_value = self.data.get(target)
+                now = perf_counter()
+                numeric = isinstance(value, (int, float)) and not isinstance(value, bool)
+                if numeric:
+                    # Rolling window, keeping one older sample so it spans the period.
+                    window = windows[target]
+                    window.append((now, float(value)))
+                    while len(window) >= 2 and now - window[1][0] >= POST_WRITE_REFRESH_STABLE_WINDOW:
+                        window.pop(0)
+                    values = [v for _, v in window]
+                    band = max(POST_WRITE_REFRESH_STABLE_MIN_BAND,
+                               abs(float(value)) * POST_WRITE_REFRESH_STABLE_TOLERANCE)
+                    spans = now - window[0][0]
+                    steady = (spans >= POST_WRITE_REFRESH_STABLE_WINDOW
+                              and max(values) - min(values) <= band)
+                    stable_since[target] = (now - POST_WRITE_REFRESH_STABLE_WINDOW
+                                            if steady else now)
+                elif last_values.get(target) != value or target not in last_values:
+                    stable_since[target] = now
+                last_values[target] = value
+
+                if self.data.get(target) != value:
+                    _LOGGER.debug(
+                        "Post-write refresh t=%.2fs '%s' %s -> %s",
+                        now - started, target, self.data.get(target), value,
+                    )
                     self.data[target] = value
-                    self.async_set_updated_data(self.data)
-                    if previous_value != value:
-                        _LOGGER.debug(
-                            "Post-write refresh updated '%s' after write to '%s' to %s",
-                            target,
-                            key,
-                            value,
-                        )
-                        return
+                    updated = True
+
+                # Same band for movement, so jitter is not read as a real change.
+                start_value = initial_values[target]
+                if start_value is None:
+                    has_moved = True
+                elif numeric and isinstance(start_value, (int, float)):
+                    move_band = max(POST_WRITE_REFRESH_STABLE_MIN_BAND,
+                                    max(abs(float(value)), abs(float(start_value)))
+                                    * POST_WRITE_REFRESH_STABLE_TOLERANCE)
+                    has_moved = abs(float(value) - float(start_value)) > move_band
+                else:
+                    has_moved = value != start_value
+                held_for = now - stable_since[target]
+                if has_moved and held_for >= POST_WRITE_REFRESH_STABLE_WINDOW:
+                    pending.remove(target)
+                    _LOGGER.debug(
+                        "Post-write refresh t=%.2fs '%s' settled at %s (write to '%s')",
+                        now - started, target, value, key,
+                    )
+
+            if updated:
+                self.async_set_updated_data(self.data)
+
+            if not pending:
+                break
+
+            if perf_counter() >= deadline:
+                _LOGGER.debug(
+                    "Post-write refresh t=%.2fs gave up on %s (write to '%s'); "
+                    "still moving at the deadline",
+                    perf_counter() - started, pending, key,
+                )
+                break
+
+            await asyncio.sleep(POST_WRITE_REFRESH_INTERVAL)
 
     def register_entity_type(self, key: str, entity_type: str):
         """Register the entity type for a given sensor key.
@@ -753,7 +862,20 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 )
                 from homeassistant.util.dt import utcnow as _utcnow
                 self._last_write_times[key] = _utcnow()
-                self._schedule_post_write_refresh(key)
+
+                # An automation on a timer often rewrites a value it already set;
+                # the device does not move, so there is nothing to re-read. If it
+                # changed outside HA meanwhile, the regular scan still catches it.
+                previous = self._last_written_values.get(key)
+                self._last_written_values[key] = value_to_send
+                if previous is not None and previous == value_to_send:
+                    _LOGGER.debug(
+                        "Post-write refresh skipped for '%s': value unchanged (%s)",
+                        key,
+                        value_to_send,
+                    )
+                else:
+                    self._schedule_post_write_refresh(key)
                 return True
             else:
                 _LOGGER.warning(
