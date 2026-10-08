@@ -37,6 +37,7 @@ async def async_setup_entry(
         (MarstekVersionSensor, coordinator.VERSION_SENSOR_DEFINITIONS),
         (MarstekStoredEnergySensor, coordinator.STORED_ENERGY_SENSOR_DEFINITIONS),
         (MarstekBatteryCycleSensor, coordinator.CYCLE_SENSOR_DEFINITIONS),
+        (MarstekCurrentSensor, coordinator.CURRENT_SENSOR_DEFINITIONS),
     )
     for entity_cls, definitions in sensor_groups:
         entities.extend(entity_cls(coordinator, definition) for definition in definitions)
@@ -529,6 +530,25 @@ class MarstekBatteryCycleSensor(MarstekCalculatedSensor):
         cycles = round(discharge / capacity, 2)
         self._attr_native_value = cycles
         return cycles
+
+
+class MarstekCurrentSensor(MarstekCalculatedSensor):
+    """Calculate current (A) from power (W) and voltage (V).
+
+    Used where the device has no usable current register, e.g. the AC offgrid
+    current register 32301 returns the offgrid voltage instead of amperes.
+    """
+
+    def calculate_value(self, dep_values: dict):
+        power = dep_values.get("power")
+        voltage = dep_values.get("voltage")
+        if power is None or voltage in (None, 0):
+            return None
+
+        precision = int(self.definition.get("precision", 2) or 0)
+        current = round(power / voltage, precision)
+        self._attr_native_value = current
+        return current
 
 
 class MarstekVersionSensor(MarstekCalculatedSensor):

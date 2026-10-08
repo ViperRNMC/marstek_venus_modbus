@@ -491,16 +491,6 @@ SENSOR_DEFINITIONS:
         data_type: uint16
         precision: 1
         scan_interval: high
-    ac_offgrid_current:
-        register: 32301
-        scale: 0.01
-        unit: A
-        device_class: current
-        state_class: measurement
-        enabled_by_default: false
-        data_type: uint16
-        precision: 1
-        scan_interval: high
     ac_offgrid_power:
         register: 32302
         count: 1
@@ -1073,3 +1063,17 @@ CYCLE_SENSOR_DEFINITIONS:
         dependency_keys:
             discharge: total_discharging_energy
             capacity: battery_total_energy
+
+CURRENT_SENSOR_DEFINITIONS:
+    # Register 32301 returns the offgrid voltage instead of a current
+    # (see registers/README.md), so the current is calculated from power / voltage.
+    ac_offgrid_current:
+        key: ac_offgrid_current
+        unit: A
+        device_class: current
+        state_class: measurement
+        enabled_by_default: false
+        precision: 2
+        dependency_keys:
+            power: ac_offgrid_power
+            voltage: ac_offgrid_voltage
