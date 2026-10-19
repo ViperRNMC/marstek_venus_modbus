@@ -5,8 +5,10 @@ import socket
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.components.modbus import async_get_temporary_unit
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.translation import async_get_translations
+from modbus_connection import ModbusTcpParams
 
 from .const import (
     DEFAULT_PORT,
@@ -15,8 +17,6 @@ from .const import (
     DOMAIN,
     SUPPORTED_VERSIONS,
 )
-from .helpers.modbus_client import MarstekModbusClient
-
 _LOGGER = logging.getLogger(__name__)
 
 CONF_DEVICE_VERSION = "device_version"
@@ -107,7 +107,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
                 # Test Modbus connection including unit_id validation
                 errors["base"] = await async_test_modbus_connection(
-                    host, port, unit_id
+                    self.hass, host, port, unit_id
                 )
 
                 # Create configuration entry if no errors
@@ -297,77 +297,21 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
                 errors["base"] = "invalid_unit_id"
 
             if not errors:
-                coordinator = self.hass.data.get(DOMAIN, {}).get(config.entry_id)
-
-                # Close existing client to free resources
-                if coordinator:
-                    try:
-                        await coordinator.async_close()
-                    except Exception:
-                        _LOGGER.debug(
-                            "Existing coordinator client close failed or was not connected"
-                        )
-
-                # Test connection with new parameters
-                try:
-                    test_client = MarstekModbusClient(
-                        host,
-                        int(port),
-                        message_wait_ms=getattr(coordinator, "message_wait_ms", None),
-                        timeout=getattr(coordinator, "timeout", 3),
-                        unit_id=int(unit_id),
-                    )
-                    connected = await test_client.async_connect()
-                except Exception as exc:
-                    _LOGGER.debug(
-                        "Error while testing new Modbus connection: %s", exc
-                    )
-                    connected = False
-
-                if not connected:
-                    try:
-                        await test_client.async_close()
-                    except Exception:
-                        pass
-                    errors["base"] = "cannot_connect"
+                error = await async_test_modbus_connection(
+                    self.hass, host, int(port), int(unit_id)
+                )
+                if error:
+                    errors["base"] = error
                 else:
-                    # Connection successful, update config and coordinator
-                    try:
-                        new_data = dict(config.data)
-                        new_data[CONF_HOST] = host
-                        new_data[CONF_PORT] = int(port)
-                        new_data[CONF_UNIT_ID] = int(unit_id)
-                        self.hass.config_entries.async_update_entry(
-                            config, data=new_data
-                        )
-
-                        if coordinator:
-                            coordinator.client = test_client
-                            coordinator.host = host
-                            coordinator.port = int(port)
-                            coordinator.unit_id = int(unit_id)
-                            _LOGGER.info(
-                                "Reconnected Modbus client to %s:%d (unit %d)",
-                                host,
-                                int(port),
-                                int(unit_id),
-                            )
-
-                            try:
-                                await coordinator.async_refresh()
-                            except Exception:
-                                _LOGGER.debug(
-                                    "Coordinator refresh after reconnect failed"
-                                )
-
-                        # Return to menu after successful connection update
-                        return await self.async_step_menu()
-                    except Exception as exc:
-                        _LOGGER.error(
-                            "Failed to update config entry for host/port/unit: %s",
-                            exc,
-                        )
-                        errors["base"] = "unknown"
+                    new_data = dict(config.data)
+                    new_data[CONF_HOST] = host
+                    new_data[CONF_PORT] = int(port)
+                    new_data[CONF_UNIT_ID] = int(unit_id)
+                    self.hass.config_entries.async_update_entry(
+                        config, data=new_data
+                    )
+                    self.hass.config_entries.async_schedule_reload(config.entry_id)
+                    return await self.async_step_menu()
 
         return self.async_show_form(
             step_id="connection",
@@ -379,7 +323,9 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
         )
 
 
-async def async_test_modbus_connection(host: str, port: int, unit_id: int = 1):
+async def async_test_modbus_connection(
+    hass, host: str, port: int, unit_id: int = 1
+):
     """Test Modbus connection.
 
     Returns error key string or None if successful.
@@ -388,47 +334,21 @@ async def async_test_modbus_connection(host: str, port: int, unit_id: int = 1):
         "Testing Modbus connection to %s:%d with unit %d", host, port, unit_id
     )
 
-    client = MarstekModbusClient(host, int(port), timeout=3, unit_id=int(unit_id))
     try:
-        connected = await client.async_connect()
-        if not connected:
-            _LOGGER.debug("Failed to connect to %s:%d", host, port)
-            return "cannot_connect"
-
-        await asyncio.sleep(0.1)
-
-        # Validate unit_id by reading a known register
-        try:
-            result = await client.async_read_register(
-                register=32104,
-                data_type="uint16",
-                count=1,
-                sensor_key="_test_unit_id",
-            )
-            if result is None:
+        async with async_get_temporary_unit(
+            hass,
+            ModbusTcpParams(host=host, port=int(port)),
+            int(unit_id),
+        ) as unit:
+            result = await unit.read_holding_registers(address=32104, count=1)
+            if not result:
                 _LOGGER.debug("No response when reading register for unit_id test")
                 return "unit_id_no_response"
-            if isinstance(result, (int, float, bool)):
-                _LOGGER.debug("Unit ID %d test succeeded (value=%s)", unit_id, result)
-                return None
-            _LOGGER.debug(
-                "Unit ID %d returned non-numeric response: %r", unit_id, result
-            )
+            _LOGGER.debug("Unit ID %d test succeeded", unit_id)
             return None
-
-        except asyncio.TimeoutError:
-            _LOGGER.debug("Timeout testing unit_id %d", unit_id)
-            return "unit_id_no_response"
-        except Exception as exc:
-            _LOGGER.debug("Error during unit_id test: %s", exc)
-            return None
-
+    except asyncio.TimeoutError:
+        _LOGGER.debug("Timeout testing unit_id %d", unit_id)
+        return "unit_id_no_response"
     except Exception as exc:
-        _LOGGER.debug("Exception during Modbus client connect test: %s", exc)
+        _LOGGER.debug("Exception during Modbus connection test: %s", exc)
         return "cannot_connect"
-    finally:
-        try:
-            await client.async_close()
-        except Exception:
-            pass
-    return None
