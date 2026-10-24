@@ -32,7 +32,7 @@ def get_entity_type(entity) -> str:
 class MarstekCoordinator(DataUpdateCoordinator):
     """Coordinator managing all Marstek Venus Modbus sensors."""
 
-    def __init__(self, hass: HomeAssistant, entry: ConfigEntry):
+    def __init__(self, hass: HomeAssistant, entry: ConfigEntry, unit):
         """Initialize the coordinator with connection parameters and update interval."""        
         self.hass = hass
         entry_data = entry.data or {}
@@ -46,8 +46,8 @@ class MarstekCoordinator(DataUpdateCoordinator):
             )
 
         self.message_wait_ms = entry_data.get("message_wait_milliseconds")
-        self.timeout = entry_data.get("timeout")
         self.unit_id = entry_data.get("unit_id", DEFAULT_UNIT_ID)
+        self.unit = unit
 
         # Mapping from sensor key to entity type for logging and processing
         self._entity_types: dict[str, str] = {}
@@ -82,10 +82,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         # Initialize Modbus client for communication
         self.client = MarstekModbusClient(
+            self.unit,
             self.host,
             self.port,
             message_wait_ms=self.message_wait_ms,
-            timeout=self.timeout,
             unit_id=self.unit_id,
         )
 
@@ -112,9 +112,6 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Connection health tracking for diagnostics
         self._last_successful_read = None
         self._last_failed_read = None
-        self._connection_established_at = None
-        self._last_reconnect_time = None
-        self._reconnect_attempts = 0
         self._last_block_timeout_time = None
         self._last_block_timeout_registers = None
         self._last_block_timeout_count = None
@@ -356,7 +353,6 @@ class MarstekCoordinator(DataUpdateCoordinator):
             "consecutive_failures": self._consecutive_failures,
             "connection_suspended": self._connection_suspended,
             "last_successful_read": self._last_successful_read.isoformat() if self._last_successful_read else None,
-            "connection_established_at": self._connection_established_at.isoformat() if self._connection_established_at else None,
         }
         
         if self._connection_suspended and self._suspension_reset_time:
@@ -404,8 +400,6 @@ class MarstekCoordinator(DataUpdateCoordinator):
             "degraded": self.is_connection_degraded(),
             "last_successful_read": self._last_successful_read.isoformat() if self._last_successful_read else None,
             "last_failed_read": self._last_failed_read.isoformat() if self._last_failed_read else None,
-            "last_reconnect_time": self._last_reconnect_time.isoformat() if self._last_reconnect_time else None,
-            "reconnect_attempts": self._reconnect_attempts,
             "last_block_timeout_time": self._last_block_timeout_time.isoformat() if self._last_block_timeout_time else None,
             "last_block_timeout_registers": self._last_block_timeout_registers,
             "last_block_timeout_count": self._last_block_timeout_count,
@@ -419,18 +413,6 @@ class MarstekCoordinator(DataUpdateCoordinator):
             "connection_suspended": self._connection_suspended,
             "stale_after_seconds": self.get_connection_health_threshold_seconds(),
         }
-
-    async def async_init(self):
-        """Asynchronously initialize the Modbus connection."""
-        from homeassistant.util.dt import utcnow
-        connected = await self.client.async_connect()
-        if not connected:
-            _LOGGER.error("Failed to connect to Modbus device at %s:%d", self.host, self.port)
-        else:
-            self._connection_established_at = utcnow()
-            _LOGGER.info("Successfully connected to Modbus device at %s:%d", self.host, self.port)
-        return connected
-
 
     async def async_load_registers(self, version: str | None = None):
         """Load register definitions from YAML (off the event loop) and populate coordinator attributes.
@@ -797,21 +779,9 @@ class MarstekCoordinator(DataUpdateCoordinator):
         # Connection throttling: if too many failures, temporarily stop attempting connections
         if self._connection_suspended:
             if self._suspension_reset_time and now > self._suspension_reset_time:
-                _LOGGER.info("Connection suspension expired - attempting reconnection")
+                _LOGGER.info("Connection suspension expired - retrying on next poll")
                 self._connection_suspended = False
                 self._consecutive_failures = 0
-                
-                # Force reconnect after suspension
-                try:
-                    connected = await self.client.async_reconnect()
-                    if connected:
-                        _LOGGER.info("Successfully reconnected after suspension")
-                    else:
-                        _LOGGER.warning("Failed to reconnect after suspension - will retry next cycle")
-                        return self.data or {}
-                except Exception as exc:
-                    _LOGGER.error("Exception during reconnect: %s", exc)
-                    return self.data or {}
             else:
                 _LOGGER.debug("Connection suspended - skipping update to prevent resource exhaustion")
                 return self.data or {}
@@ -1067,46 +1037,16 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     self._consecutive_timeout_cycles = 0
                 
                 if self._consecutive_timeout_cycles >= self._max_consecutive_timeout_cycles:
-                    try:
-                        _LOGGER.info(
-                            "Attempting reconnect due to repeated timeouts (%d/%d cycles)",
-                            self._consecutive_timeout_cycles,
-                            self._max_consecutive_timeout_cycles,
-                        )
-                        self._reconnect_attempts += 1
-                        connected = await self.client.async_reconnect()
-                        if connected:
-                            from homeassistant.util.dt import utcnow
-                            self._last_reconnect_time = utcnow()
-                            _LOGGER.info("Successfully reconnected after repeated timeouts")
-                            self._consecutive_timeout_cycles = 0
-                            self._connection_established_at = now
-                        else:
-                            _LOGGER.warning("Reconnect attempt after repeated timeouts failed")
-                    except Exception as exc:
-                        _LOGGER.error("Exception during reconnect after repeated timeouts: %s", exc)
+                    _LOGGER.info(
+                        "Repeated Modbus timeouts; the shared connection will retry on the next request"
+                    )
+                    self._consecutive_timeout_cycles = 0
             elif successful_reads == 0:
                 # We attempted reads but ALL failed - connection issue
                 self._consecutive_failures += 1
                 _LOGGER.warning("All read attempts failed (%d/%d) - consecutive failures: %d/%d",
                               successful_reads, attempted_reads, 
                               self._consecutive_failures, self._max_consecutive_failures)
-                
-                # Try to reconnect immediately on failure (use reconnect helper)
-                try:
-                    _LOGGER.info("Attempting immediate reconnection after read failures")
-                    self._reconnect_attempts += 1
-                    connected = await self.client.async_reconnect()
-                    if connected:
-                        from homeassistant.util.dt import utcnow
-                        self._last_reconnect_time = utcnow()
-                        _LOGGER.info("Successfully reconnected")
-                        self._consecutive_failures = 0
-                        self._connection_established_at = now
-                    else:
-                        _LOGGER.warning("Immediate reconnection failed")
-                except Exception as exc:
-                    _LOGGER.error("Exception during immediate reconnect: %s", exc)
                 
                 if self._consecutive_failures >= self._max_consecutive_failures:
                     # Too many failures - suspend connection attempts for 1 minute
@@ -1159,15 +1099,6 @@ class MarstekCoordinator(DataUpdateCoordinator):
         self.data.update(updated_data)
         return self.data
     
-
-    async def async_close(self):
-        """Close the Modbus client connection cleanly."""
-        try:
-            await self.client.async_close()
-            _LOGGER.debug("Closed Modbus connection to %s:%d", self.host, self.port)
-        except Exception as e:
-            _LOGGER.warning("Error closing Modbus client: %s", e)
-
 
 def get_registers(version: str):
     """

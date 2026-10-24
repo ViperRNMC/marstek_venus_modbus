@@ -7,10 +7,12 @@ the data coordinator, and forwarding setup to sensor and select platforms.
 
 import logging
 
+from homeassistant.components.modbus import async_get_unit
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
+from modbus_connection import ModbusTcpParams
 
-from .const import DOMAIN
+from .const import DEFAULT_UNIT_ID, DOMAIN
 from .coordinator import MarstekCoordinator
 from .const import SUPPORTED_VERSIONS
 
@@ -73,9 +75,13 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
                     raw_version,
                     ", ".join(SUPPORTED_VERSIONS),
                 )
-        # Create the coordinator for data management and attempt an initial
-        # connection before forwarding platform setup so the client is ready.
-        coordinator = MarstekCoordinator(hass, entry)
+        unit = async_get_unit(
+            hass,
+            entry,
+            ModbusTcpParams(host=entry.data["host"], port=entry.data["port"]),
+            entry.data.get("unit_id", DEFAULT_UNIT_ID),
+        )
+        coordinator = MarstekCoordinator(hass, entry, unit)
         hass.data.setdefault(DOMAIN, {})[entry.entry_id] = coordinator
 
         # Load register definitions off the event loop to avoid blocking
@@ -83,11 +89,6 @@ async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
             await coordinator.async_load_registers(entry.data.get("device_version"))
         except Exception as err:
             _LOGGER.warning("Failed loading register definitions for entry %s: %s", entry.entry_id, err)
-
-        # Establish the Modbus connection upfront so the first refresh does not
-        # lazily reconnect on individual sensor reads, and failure is properly
-        # tracked from the start.
-        await coordinator.async_init()
 
         # Forward setup to all platforms defined in PLATFORMS
         await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
@@ -117,9 +118,6 @@ async def async_unload_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
         unload_ok = await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
 
         if unload_ok:
-            # Retrieve the coordinator and close it before removing
-            coordinator = hass.data[DOMAIN][entry.entry_id]
-            await coordinator.async_close()
             # Remove coordinator reference from hass data
             hass.data[DOMAIN].pop(entry.entry_id, None)
 
