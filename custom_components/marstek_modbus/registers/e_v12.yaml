@@ -453,6 +453,9 @@ SELECT_DEFINITIONS:
             manual: 0
             anti_feed: 1
             trade_mode: 2
+        affects:
+            - ac_power
+            - battery_power
     force_mode:
         register: 42010
         enabled_by_default: false
@@ -461,6 +464,9 @@ SELECT_DEFINITIONS:
             standby: 0
             charge: 1
             discharge: 2
+        affects:
+            - ac_power
+            - battery_power
     grid_standard:
         register: 44100
         enabled_by_default: true
@@ -570,6 +576,9 @@ SWITCH_DEFINITIONS:
         enabled_by_default: false
         data_type: uint16
         scan_interval: high
+        affects:
+            - ac_power
+            - battery_power
     schedule_1_enabled:
         register: 43104
         command_on: 1
