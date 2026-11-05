@@ -1,220 +1,121 @@
-"""
-This module defines a SelectEntity for setting and reading the user work mode
-and force mode of a Marstek Venus battery via Modbus within Home Assistant.
-"""
+"""Selects for the Marstek Venus Modbus integration."""
 
-import logging
-from typing import Any
+from __future__ import annotations
 
-from homeassistant.components.select import SelectEntity
-from homeassistant.config_entries import ConfigEntry
+from dataclasses import dataclass
+
+from homeassistant.components.select import SelectEntity, SelectEntityDescription
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
-from homeassistant.helpers.device_registry import DeviceEntryType
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .const import DOMAIN, MANUFACTURER, MODEL
-from .coordinator import MarstekCoordinator
+from .coordinator import MarstekConfigEntry, MarstekCoordinator
+from .entity import MarstekEntityDescription, MarstekWritableEntity, descriptions_for
+from .venus import VenusDevice
 
-_LOGGER = logging.getLogger(__name__)
+
+@dataclass(frozen=True, kw_only=True)
+class MarstekSelectEntityDescription(MarstekEntityDescription, SelectEntityDescription):
+    """Describe a Marstek select."""
+
+    # The register value of each option, in display order.
+    options_map: dict[str, int]
+
+
+_WEEKDAYS = {
+    "sunday": 64,
+    "monday": 1,
+    "tuesday": 2,
+    "wednesday": 4,
+    "thursday": 8,
+    "friday": 16,
+    "saturday": 32,
+}
+
+SELECTS: tuple[MarstekSelectEntityDescription, ...] = (
+    MarstekSelectEntityDescription(
+        key="user_work_mode",
+        component="control",
+        options_map={"manual": 0, "anti_feed": 1, "trade_mode": 2},
+    ),
+    MarstekSelectEntityDescription(
+        key="force_mode",
+        component="control",
+        options_map={"standby": 0, "charge": 1, "discharge": 2},
+        entity_registry_enabled_default=False,
+    ),
+    MarstekSelectEntityDescription(
+        key="grid_standard",
+        component="control",
+        options_map={
+            "Auto": 0,
+            "EN50549": 1,
+            "Netherlands": 2,
+            "Germany": 3,
+            "Austria": 4,
+            "United Kingdom": 5,
+            "Spain": 6,
+            "Poland": 7,
+            "Italy": 8,
+            "China": 9,
+        },
+    ),
+    *(
+        MarstekSelectEntityDescription(
+            key=f"schedule_{index}_days",
+            component=f"schedule_{index}",
+            field="days",
+            entity_category=EntityCategory.CONFIG,
+            options_map=_WEEKDAYS,
+            entity_registry_enabled_default=False,
+        )
+        for index in range(1, 7)
+    ),
+)
+
+
+def descriptions(device: VenusDevice) -> list[MarstekSelectEntityDescription]:
+    """Return the selects this device model has."""
+    return descriptions_for(device, SELECTS)
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    entry: MarstekConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """
-    Set up select entities when the config entry is loaded.
-    """
-    coordinator: MarstekCoordinator = hass.data[DOMAIN][entry.entry_id]
-
-    sel_defs = getattr(coordinator, "SELECT_DEFINITIONS", None)
-
-    # Defensive normalisation: accept list (preferred) or mapping
-    try:
-        if isinstance(sel_defs, dict):
-            # Mapping {key: def} -> List with set 'key'
-            normalized: list[dict[str, Any]] = []
-            for key, definition in sel_defs.items():
-                d = dict(definition or {})
-                d.setdefault("key", key)
-                normalized.append(d)
-            sel_defs = normalized
-        elif isinstance(sel_defs, list):
-            # Make sure that 'key' is present
-            for d in sel_defs:
-                if "key" not in d:
-                    raise ValueError(f"Select definition ohne 'key': {d}")
-        else:
-            _LOGGER.error("SELECT_DEFINITIONS is empty or unknown Typ: %r", type(sel_defs))
-            sel_defs = []
-    except Exception as err:
-        _LOGGER.exception("Error normalising SELECT_DEFINITIONS: %s", err)
-        sel_defs = []
-
-    entities: list[MarstekSelect] = []
-    for definition in sel_defs:
-        try:
-            entities.append(MarstekSelect(coordinator, definition))
-        except Exception as err:
-            _LOGGER.exception("Error creating a select entity from %r: %s", definition, err)
-
-    _LOGGER.debug(
-        "Set up %d Select Entities: %s",
-        len(entities),
-        [getattr(e, "_key", "?") for e in entities],
+    """Set up the selects."""
+    coordinator = entry.runtime_data
+    async_add_entities(
+        MarstekSelect(coordinator, description)
+        for description in descriptions(coordinator.device)
     )
 
-    if entities:
-        # Update_before_add: ensures faster first Status
-        async_add_entities(entities, update_before_add=True)
 
+class MarstekSelect(MarstekWritableEntity, SelectEntity):
+    """A register that holds one of a set of values."""
 
-class MarstekSelect(CoordinatorEntity, SelectEntity):
-    """
-    Representation of a Modbus select entity for Marstek Venus.
-
-    Select state is read and write asynchronously via
-    the coordinator communicating with the Modbus device.
-    """
+    entity_description: MarstekSelectEntityDescription
 
     def __init__(
-        self, coordinator: MarstekCoordinator, definition: dict[str, Any]
+        self,
+        coordinator: MarstekCoordinator,
+        description: MarstekSelectEntityDescription,
     ) -> None:
-        """
-        Initialize the select entity.
-
-        Args:
-            coordinator: The MarstekCoordinator instance managing data updates.
-            definition: A dictionary defining the select entity's properties.
-        """
-        super().__init__(coordinator)
-
-        # Store the key and definition
-        self._key = definition["key"]
-        self.definition = definition
-
-        # Defensive: Make sure the map exists in the coordinator
-        if not hasattr(self.coordinator, "_entity_types") or self.coordinator._entity_types is None:
-            self.coordinator._entity_types = {}
-        # Assign the entity type to the coordinator mapping
-        self.coordinator._entity_types[self._key] = self.entity_type
-
-        # Set entity attributes from definition
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self._key}"
-        self._attr_has_entity_name = True
-
-        # Use key as translation_key for automatic translations
-        self._attr_translation_key = definition["key"]
-
-        # Internal state variables
-        self._state = None
-        self._register = definition["register"]
-
-        # Set category if defined in the definition
-        if "category" in self.definition:
-            self._attr_entity_category = EntityCategory(self.definition.get("category"))
-
-        # Set icon if defined in the definition
-        if "icon" in self.definition:
-            self._attr_icon = self.definition.get("icon")
-
-        # Optional: disable entity by default if specified in the definition
-        if definition.get("enabled_by_default") is False:
-            self._attr_entity_registry_enabled_default = False
-
-        # Force entity_id to use key regardless of language setting
-        # This ensures English entity_ids while friendly_name follows user language
-        self._attr_suggested_object_id = definition["key"]
-
-        # You can rely on the property below, but pre-fill for HA caching behavior
-        self._attr_options = list(self.definition.get("options", {}).keys())
-
-    @property
-    def entity_type(self) -> str:
-        """
-        Return the type of this entity for logging purposes.
-        This allows the coordinator to show more descriptive messages.
-        """
-        return "select"
-
-    @property
-    def available(self) -> bool:
-        """
-        Return True if the coordinator has successfully fetched data.
-        Used by Home Assistant to determine entity availability.
-        """
-        return self.coordinator.last_update_success
-
-    @property
-    def options(self) -> list[str]:
-        """
-        Return a list of available options for selection.
-        """
-        return list(self.definition.get("options", {}).keys())
+        super().__init__(coordinator, description)
+        self._attr_options = list(description.options_map)
+        # English entity ids whatever the language of the friendly name.
+        self._attr_suggested_object_id = description.key
 
     @property
     def current_option(self) -> str | None:
-        """
-        Return the currently selected option.
-
-        The value is obtained from the coordinator's shared data dictionary.
-        Maps the numeric register value back to the option string.
-        """
-        data = self.coordinator.data
-        if data is None:
-            return None
-
-        value = data.get(self._key)
-        if value is None:
-            return None
-
-        options_map = self.definition.get("options", {})
-        # Reverse the mapping: {int_value: option_name}
-        try:
-            reversed_map = {int(v): k for k, v in options_map.items()}
-            return reversed_map.get(int(value))
-        except Exception:
-            _LOGGER.debug("current_option: value=%r passt nicht zu options_map=%r", value, options_map)
-            return None
+        """Return the option the register holds."""
+        value = self.field_value
+        for option, option_value in self.entity_description.options_map.items():
+            if option_value == value:
+                return option
+        return None
 
     async def async_select_option(self, option: str) -> None:
-        """
-        Change the selected option by writing to the device register.
-        """
-        options_map = self.definition.get("options", {})
-        if option not in options_map:
-            _LOGGER.warning("Invalid option '%s' for %s", option, self._key)
-            return
-
-        value = options_map[option]
-
-        # Optimistically update the coordinator data so HA shows the new state immediately
-        self.coordinator.data[self._key] = value
-        self.async_write_ha_state()
-
-        # Write the new value to the register via the coordinator
-        await self.coordinator.async_write_value(
-            register=self._register,
-            value=value,
-            key=self._key,
-            scale=self.definition.get("scale", 1),
-            unit=self.definition.get("unit"),
-            entity_type=self.entity_type,
-        )
-
-    @property
-    def device_info(self) -> dict:
-        """
-        Return device information for Home Assistant's device registry.
-        Includes identifiers, name, manufacturer, model, and entry type.
-        """
-        return {
-            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
-            "name": self.coordinator.config_entry.title,
-            "manufacturer": MANUFACTURER,
-            "model": MODEL,
-            "entry_type": DeviceEntryType.SERVICE,
-        }
+        """Write the option's value."""
+        await self.async_write(self.entity_description.options_map[option])

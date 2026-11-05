@@ -12,15 +12,16 @@ This is a custom HACS-compatible integration for Marstek Venus battery systems, 
 - A configured **Modbus RTU to Modbus TCP bridge** connected to the battery's RS485 port
      - Alternativly: Ethernet Connection to Battery with Modbus TCP support
 - The IP address, port of the Modbus TCP (usually port 502) and Unit ID (also called Slave ID).
-- Home Assistant Core 2025.9 or later
+- Home Assistant Core 2026.10 or later
 - HACS installed
 
 
 ### 🔧 Features
 
-- Native Modbus TCP polling via `pymodbus`
-- Polling is handled centrally via the DataUpdateCoordinator with dynamic intervals per entity type
-- Smart contiguous block polling groups adjacent registers into single Modbus requests where possible, with automatic fallback to per-entity reads on failure
+- Native Modbus TCP polling over Home Assistant's shared Modbus connection, with a typed register map built on [modbus-connection](https://github.com/home-assistant-libs/modbus-connection)
+- Polling is handled centrally via the DataUpdateCoordinator, with a fast and a slow interval
+- Adjacent registers are read in one Modbus request. Registers of disabled entities are not read
+- Each sub-system (battery, grid, temperatures, …) is read on its own: if the battery refuses one, only its entities become unavailable
 - Configurable scan intervals via the integration options UI
 - Dependency entities are always polled, even if the related entity is disabled
 - Fully asynchronous operation for optimal performance and responsiveness
@@ -93,9 +94,9 @@ The Marstek Venus Modbus integration has been tested with the following hardware
 
 ## 📘 Modbus Registers Used
 
-Register definitions live in `custom_components/marstek_modbus/registers/`.
+Register definitions live in `custom_components/marstek_modbus/venus/components.py`, one class per sub-system. `venus/device.py` puts the sub-systems together per model.
 
-Below is a per-key table showing descriptive fields and the register defined in each YAML file. Columns `Type`, `Bytes`, `Scale` and `Unit` are taken from the YAML definitions when present.
+Below is a per-key table showing descriptive fields and the register each model uses.
 
 | Key / Name                        | Description                                | Type    | Bytes | Scale  | Unit | a     | d     | e_v12 | e_v3 |
 |:----------------------------------|:-------------------------------------------|:--------|:-----:|:------:|:----:|:-----:|:-----:|:------:|:-----:|
@@ -287,15 +288,15 @@ Below is a per-key table showing descriptive fields and the register defined in 
 | battery_cycle_count_calc          | Cycle count calculated from total discharge and capacity | calculated | - | - | - |  |  |  |  |
 
 _Notes:_
-- Columns `a`, `d`, `e_v12` and `e_v3` correspond to the YAML files under `custom_components/marstek_modbus/registers/`.
+- Columns `a`, `d`, `e_v12` and `e_v3` correspond to the Venus A, Venus D, Venus E v1/v2 and Venus E v3.
 - `Bytes` shows the typical byte size for the key (each Modbus register = 2 bytes).
-- Blank cells mean that YAML does not define that key (or the value is calculated and has no direct Modbus register).
+- Blank cells mean that the model does not have that key (or the value is calculated and has no direct Modbus register).
 - `firmware_version` is assembled from the raw version registers. `E v1/v2` uses `ems + bms`; `A`, `D` and `E v3` use `ems + vms + bms`.
 - `ble_mac_address` is decoded and formatted as a normal MAC address string such as `00:9B:08:05:D9:0A`.
-- `modbus_connection` is a diagnostic binary sensor derived from recent successful Modbus reads, not from a separate device register.
+- `modbus_connection` is a diagnostic binary sensor that is on while the last poll reached the battery. It is not a device register.
 - The `rs485_control_mode` switch (register 42000) uses write commands (command_on=21930, command_off=21947) to trigger RS485 control operations; use with caution.
 - For access to registers in the 42000–42999 range, the battery must be set to RS485 control mode.
-- Schedule Time format: `start` and `end` are entered as HHMM 24-hour integers (for example `0830` = 08:30). Use values within the valid range shown in the YAML for each device; ensure `start` is earlier than `end` for a single active period.
+- Schedule Time format: `start` and `end` are entered as HHMM 24-hour integers (for example `0830` = 08:30). Use values within the range of the number entity; ensure `start` is earlier than `end` for a single active period.
 - Schedule Day selection: the underlying `schedule_*_days` register uses a bitmask to represent multiple days, but the integration currently exposes it as a single-select option in Home Assistant. Due to this limitation you cannot select multiple days from the integration UI.
 - Energy Dashboard caveat (Venus A / Venus D with PV input): reported battery charge/discharge energy registers may include energy that flows to household loads via the inverter path, not only net battery-in/out energy. This can lead to misleading Home Assistant Energy Dashboard battery statistics. For accurate dashboard usage, prefer custom derived sensors (for example from power integration) and validate behavior on your firmware/device.
 - Schedule Mode values: `schedule_*_mode` accepts the following ranges:

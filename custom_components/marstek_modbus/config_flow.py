@@ -5,6 +5,7 @@ import socket
 
 import voluptuous as vol
 from homeassistant import config_entries
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.components.modbus import async_get_temporary_unit
 from homeassistant.const import CONF_HOST, CONF_PORT
 from homeassistant.helpers.translation import async_get_translations
@@ -17,6 +18,7 @@ from .const import (
     DOMAIN,
     SUPPORTED_VERSIONS,
 )
+from .coordinator import scan_intervals
 _LOGGER = logging.getLogger(__name__)
 
 CONF_DEVICE_VERSION = "device_version"
@@ -243,9 +245,8 @@ class MarstekOptionsFlow(config_entries.OptionsFlow):
         lowest = min((user_input or defaults).values())
 
         if user_input is not None:
-            coordinator = self.hass.data.get(DOMAIN, {}).get(config.entry_id)
-            if coordinator:
-                coordinator._update_scan_intervals(user_input)
+            if config.state is ConfigEntryState.LOADED:
+                config.runtime_data.set_scan_intervals(scan_intervals(user_input))
 
             # Save and return to menu
             self.hass.config_entries.async_update_entry(

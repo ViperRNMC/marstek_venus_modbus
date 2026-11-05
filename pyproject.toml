@@ -1,0 +1,37 @@
+[project]
+name = "marstek-modbus-hass-tests"
+version = "0"
+description = "Dev/test environment for the Marstek Venus Modbus custom integration."
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.24",
+    # Real Home Assistant plus its custom-component test harness.
+    "pytest-homeassistant-custom-component",
+    # Home Assistant's modbus integration requirements, at the versions the
+    # harness's Home Assistant pins. modbus-connection also ships the mock
+    # backend.
+    "modbus-connection[tmodbus]==4.12.4",
+    "pymodbus==3.13.1",
+    "tmodbus==0.6.2",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py313"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.ruff.lint.isort]
+combine-as-imports = true

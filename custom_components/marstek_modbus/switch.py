@@ -1,183 +1,91 @@
-"""
-Module for creating switch sensor entities for Marstek Venus battery devices.
-switch sensors read and write Modbus registers asynchronously via the coordinator.
-All entities are registered through the coordinator to enable centralized polling.
-"""
+"""Switches for the Marstek Venus Modbus integration."""
 
-import logging
+from __future__ import annotations
 
-from homeassistant.config_entries import ConfigEntry
-from homeassistant.components.switch import SwitchEntity
+from dataclasses import dataclass
+from typing import Any
+
+from homeassistant.components.switch import SwitchEntity, SwitchEntityDescription
+from homeassistant.const import EntityCategory
 from homeassistant.core import HomeAssistant
-from homeassistant.helpers.entity import EntityCategory
-from homeassistant.helpers.entity_platform import AddEntitiesCallback
-from homeassistant.helpers.update_coordinator import CoordinatorEntity
+from homeassistant.helpers.entity_platform import AddConfigEntryEntitiesCallback
 
-from .coordinator import MarstekCoordinator
-from .const import DOMAIN, MANUFACTURER, MODEL
+from .coordinator import MarstekConfigEntry
+from .entity import MarstekEntityDescription, MarstekWritableEntity, descriptions_for
+from .venus import VenusDevice
 
-_LOGGER = logging.getLogger(__name__)
+
+@dataclass(frozen=True, kw_only=True)
+class MarstekSwitchEntityDescription(MarstekEntityDescription, SwitchEntityDescription):
+    """Describe a Marstek switch."""
+
+    command_on: int
+    command_off: int
+
+
+SWITCHES: tuple[MarstekSwitchEntityDescription, ...] = (
+    MarstekSwitchEntityDescription(
+        key="backup_function",
+        component="control",
+        command_on=0,
+        command_off=1,
+    ),
+    MarstekSwitchEntityDescription(
+        key="rs485_control_mode",
+        component="control",
+        command_on=21930,
+        command_off=21947,
+        entity_registry_enabled_default=False,
+    ),
+    *(
+        MarstekSwitchEntityDescription(
+            key=f"schedule_{index}_enabled",
+            component=f"schedule_{index}",
+            field="enabled",
+            entity_category=EntityCategory.CONFIG,
+            command_on=1,
+            command_off=0,
+            icon="mdi:power",
+            entity_registry_enabled_default=False,
+        )
+        for index in range(1, 7)
+    ),
+)
+
+
+def descriptions(device: VenusDevice) -> list[MarstekSwitchEntityDescription]:
+    """Return the switches this device model has."""
+    return descriptions_for(device, SWITCHES)
 
 
 async def async_setup_entry(
     hass: HomeAssistant,
-    entry: ConfigEntry,
-    async_add_entities: AddEntitiesCallback,
+    entry: MarstekConfigEntry,
+    async_add_entities: AddConfigEntryEntitiesCallback,
 ) -> None:
-    """
-    Set up switch sensor entities when the config entry is loaded.
-
-    This function retrieves the coordinator from hass.data,
-    creates switch entities based on SWITCH_DEFINITIONS,
-    and registers them with Home Assistant.
-
-    Args:
-        hass: Home Assistant instance.
-        entry: Configuration entry.
-        async_add_entities: Callback to add entities.
-    """
-    # Retrieve the coordinator instance from hass data and add entities
-    coordinator = hass.data[DOMAIN][entry.entry_id]
-    entities = [MarstekSwitch(coordinator, definition) for definition in coordinator.SWITCH_DEFINITIONS]
-    async_add_entities(entities)
+    """Set up the switches."""
+    coordinator = entry.runtime_data
+    async_add_entities(
+        MarstekSwitch(coordinator, description)
+        for description in descriptions(coordinator.device)
+    )
 
 
-class MarstekSwitch(CoordinatorEntity, SwitchEntity):
-    """
-    Representation of a Modbus switch entity for Marstek Venus.
+class MarstekSwitch(MarstekWritableEntity, SwitchEntity):
+    """A register that holds one of two commands."""
 
-    Sensor state is read and write asynchronously via
-    the coordinator communicating with the Modbus device.
-    """
-
-    def __init__(self, coordinator: MarstekCoordinator, definition: dict):
-        """
-        Initialize the switch entity.
-
-        Args:
-            coordinator: The data update coordinator instance.
-            definition: Dictionary containing sensor configuration.
-        """
-        super().__init__(coordinator)
-
-        # Store the key and definition
-        self._key = definition["key"]
-        self.definition = definition     
-
-        # Assign the entity type to the coordinator mapping
-        self.coordinator._entity_types[self._key] = self.entity_type
-
-        # Set entity attributes from definition
-        self._attr_unique_id = f"{coordinator.config_entry.entry_id}_{self.definition['key']}"
-        self._attr_has_entity_name = True
-        self._attr_translation_key = definition["key"]
-
-        # Internal state variables
-        self._state = None
-        self._register = definition["register"]
-
-        # set category if defined in the definition
-        if "category" in self.definition:
-            self._attr_entity_category = EntityCategory(self.definition.get("category"))
-
-        # Set icon if defined in the button definition
-        if "icon" in self.definition:
-            self._attr_icon = self.definition.get("icon")
-
-        # Optional: disable entity by default if specified in the definition
-        if definition.get("enabled_by_default") is False:
-            self._attr_entity_registry_enabled_default = False
-
-    @property
-    def entity_type(self) -> str:
-        """
-        Return the type of this entity for logging purposes.
-        This allows the coordinator to show more descriptive messages.
-        """
-        return "switch"
-
-    @property
-    def available(self) -> bool:
-        """
-        Return True if the coordinator has successfully fetched data.
-        Used by Home Assistant to determine entity availability.
-        """
-        return self.coordinator.last_update_success
+    entity_description: MarstekSwitchEntityDescription
 
     @property
     def is_on(self) -> bool | None:
-        """
-        Return True if switch sensor is on, False if off, None if unknown.
+        """Return the state."""
+        value = self.field_value
+        return None if value is None else value == self.entity_description.command_on
 
-        Uses the coordinator's shared data dictionary and compares
-        with the command_on value from the definition to handle
-        inverted logic (0 = on, 1 = off).
-        """
-        data = self.coordinator.data
-        if data is None or self._key not in data:
-            return None
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        """Write the on command."""
+        await self.async_write(self.entity_description.command_on)
 
-        current_value = data[self._key]
-        return current_value == self.definition.get("command_on")
-
-    async def async_turn_on(self, **kwargs) -> None:
-        """
-        Turn the switch on via the coordinator.
-        This should trigger writing to the Modbus register.
-        """
-        value = self.definition.get("command_on")
-        if value is None:
-            _LOGGER.error("No command_on value defined for switch %s", self._key)
-            return
-
-        # Optimistically update the coordinator data so HA shows the new state immediately
-        self.coordinator.data[self._key] = value
-        self.async_write_ha_state()
-
-        # Write the value using the coordinator's async_write_value method
-        await self.coordinator.async_write_value(
-            register=self._register,
-            value=value,
-            key=self._key,
-            scale=self.definition.get("scale", 1),
-            unit=self.definition.get("unit"),
-            entity_type=self.entity_type,
-        )
-
-    async def async_turn_off(self, **kwargs) -> None:
-        """
-        Turn the switch off via the coordinator.
-        This should trigger writing to the Modbus register.
-        """
-        value = self.definition.get("command_off")
-        if value is None:
-            _LOGGER.error("No command_off value defined for switch %s", self._key)
-            return
-
-        # Optimistically update the coordinator data so HA shows the new state immediately
-        self.coordinator.data[self._key] = value
-        self.async_write_ha_state()
-
-        # Write the value using the coordinator's async_write_value method
-        await self.coordinator.async_write_value(
-            register=self._register,
-            value=value,
-            key=self._key,
-            scale=self.definition.get("scale", 1),
-            unit=self.definition.get("unit"),
-            entity_type=self.entity_type,
-        )
-
-    @property
-    def device_info(self) -> dict:
-        """
-        Return device information for Home Assistant's device registry.
-        Includes identifiers, name, manufacturer, model, and entry type.
-        """
-        return {
-            "identifiers": {(DOMAIN, self.coordinator.config_entry.entry_id)},
-            "name": self.coordinator.config_entry.title,
-            "manufacturer": MANUFACTURER,
-            "model": MODEL,
-            "entry_type": "service",
-        }
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        """Write the off command."""
+        await self.async_write(self.entity_description.command_off)

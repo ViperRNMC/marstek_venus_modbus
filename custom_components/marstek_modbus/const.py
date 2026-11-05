@@ -1,3 +1,5 @@
+from .venus import VenusA, VenusD, VenusDevice, VenusEV3, VenusEV12
+
 # Integration domain name
 DOMAIN = "marstek_modbus"
 
@@ -7,21 +9,21 @@ MODEL = "Venus"
 
 # Default network configuration for Modbus connection
 DEFAULT_PORT = 502
-DEFAULT_MESSAGE_WAIT_MS = 80  # Default wait time for Modbus messages in milliseconds
 DEFAULT_UNIT_ID = 1  # Default Modbus Unit ID (unit ID)
 
 # General scan intervals (in seconds)
 DEFAULT_SCAN_INTERVALS = {
-    "high": 10,      # fast-changing sensors and former medium-priority sensors
-    "low": 60,       # slower-changing sensors and former very_low-priority sensors
+    "high": 10,  # fast-changing sensors and former medium-priority sensors
+    "low": 60,  # slower-changing sensors and former very_low-priority sensors
+}
+
+# Device classes by the version the user picks in the config flow
+MODELS: dict[str, type[VenusDevice]] = {
+    "E v1/v2": VenusEV12,
+    "E v3": VenusEV3,
+    "D": VenusD,
+    "A": VenusA,
 }
 
 # Supported device versions
-SUPPORTED_VERSIONS = [
-    "E v1/v2", 
-    "E v3",
-    "D",
-    "A"]
-
-# Note: register loading logic (get_registers) was moved to
-# `coordinator.py` to keep `const.py` focused on constants only.
+SUPPORTED_VERSIONS = list(MODELS)
