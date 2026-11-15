@@ -342,6 +342,26 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     if scale is not None:
                         self._scales[dep_key] = scale
 
+    def _calculated_dependency_keys(self) -> set[str]:
+        """Return the keys the calculated sensors depend on.
+
+        These are fetched even when their own entity is disabled, otherwise
+        the calculated sensor never gets a value.
+        """
+        definitions = (
+            self.EFFICIENCY_SENSOR_DEFINITIONS
+            + self.SOLAR_POWER_SENSOR_DEFINITIONS
+            + self.VERSION_SENSOR_DEFINITIONS
+            + self.STORED_ENERGY_SENSOR_DEFINITIONS
+            + self.CYCLE_SENSOR_DEFINITIONS
+        )
+        return {
+            dep_key
+            for defn in definitions
+            for dep_key in defn.get("dependency_keys", {}).values()
+            if dep_key
+        }
+
     def get_connection_diagnostics(self) -> dict:
         """Return diagnostic information about the connection."""
         from homeassistant.util.dt import utcnow
@@ -792,18 +812,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
         entity_registry = er.async_get(self.hass)
 
         # Collect all dependency keys from all definitions
-        all_definitions_for_deps = (
-            self.EFFICIENCY_SENSOR_DEFINITIONS
-            + self.VERSION_SENSOR_DEFINITIONS
-            + self.STORED_ENERGY_SENSOR_DEFINITIONS
-            + self.CYCLE_SENSOR_DEFINITIONS
-        )
-        dependency_keys_set = {
-            dep_key
-            for defn in all_definitions_for_deps
-            for dep_key in defn.get("dependency_keys", {}).values()
-            if dep_key
-        }
+        dependency_keys_set = self._calculated_dependency_keys()
 
         # Debug logging
         for dep_key in dependency_keys_set:

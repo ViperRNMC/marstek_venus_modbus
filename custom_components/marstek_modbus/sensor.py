@@ -310,6 +310,9 @@ class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):
     Handles registration of dependency keys and provides update handling.
     """
 
+    # Missing dependencies are logged as a warning once, not on every update
+    _missing_logged = False
+
     def __init__(self, coordinator: MarstekCoordinator, definition: dict):
         """Initialize the calculated sensor and register dependencies."""
         super().__init__(coordinator)
@@ -417,12 +420,17 @@ class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):
                 dep_values[alias] = float(val) * scale
 
         if missing:
-            _LOGGER.warning(
+            # Warn the first time, then stay at debug level until the values
+            # are back: this runs on every coordinator update.
+            log = _LOGGER.debug if self._missing_logged else _LOGGER.warning
+            log(
                 "%s missing required value(s): %s. Current data: %s. Cannot calculate value.",
                 self._key, ", ".join(missing), {k: data.get(v) for k, v in dependency_keys.items()},
             )
+            self._missing_logged = True
             self._attr_native_value = None
             return
+        self._missing_logged = False
 
         try:
             value = self.calculate_value(dep_values)
