@@ -29,6 +29,12 @@ def get_entity_type(entity) -> str:
     return "entity"
 
 
+# Timeout of one Modbus request on the shared link, and the outer guard of a
+# single read that covers the client's three attempts (3 x (3 s + 0.1 s)).
+REQUEST_TIMEOUT = 3.0
+SINGLE_READ_TIMEOUT = 12.0
+
+
 class MarstekCoordinator(DataUpdateCoordinator):
     """Coordinator managing all Marstek Venus Modbus sensors."""
 
@@ -79,6 +85,12 @@ class MarstekCoordinator(DataUpdateCoordinator):
 
         # Combine all sensor definitions for polling
         self._all_definitions = []
+
+        # Per-request timeout of the shared link. The library default is 10 s,
+        # the same as the outer wait_for around a single read, so the outer
+        # timeout always fired first and the client's retries never ran.
+        if hasattr(self.unit, "require_timeout"):
+            self.unit.require_timeout(REQUEST_TIMEOUT)
 
         # Initialize Modbus client for communication
         self.client = MarstekModbusClient(
@@ -414,6 +426,25 @@ class MarstekCoordinator(DataUpdateCoordinator):
             "stale_after_seconds": self.get_connection_health_threshold_seconds(),
         }
 
+    async def _async_recycle_connection(self, reason: str) -> None:
+        """Drop the shared link so that the next request opens a new one.
+
+        Needed for a device that keeps the TCP socket open but stops
+        answering: the transport only reconnects when the peer closes the
+        socket. Other units on the same connection reconnect on their next
+        request as well.
+        """
+        disconnect = getattr(self.unit, "disconnect", None)
+        if disconnect is None:
+            return
+        _LOGGER.warning("Recycling the Modbus connection to %s:%s (%s)", self.host, self.port, reason)
+        try:
+            await disconnect()
+        except asyncio.CancelledError:
+            raise
+        except Exception as err:  # noqa: BLE001 - the link is dropped regardless
+            _LOGGER.debug("Disconnect while recycling raised %s", err)
+
     async def async_load_registers(self, version: str | None = None):
         """Load register definitions from YAML (off the event loop) and populate coordinator attributes.
 
@@ -476,7 +507,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
             return None
 
         try:
-            # 10 second timeout for individual reads to prevent hanging
+            # Outer guard for a single read: room for the client's attempts
             value = await asyncio.wait_for(
                 self.client.async_read_register(
                     register=sensor["register"],
@@ -484,7 +515,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     count=sensor.get("count"),
                     sensor_key=key,
                 ),
-                timeout=10.0
+                timeout=SINGLE_READ_TIMEOUT,
             )
 
             # Accept primitive values and structured types (dict/list) returned
@@ -1037,9 +1068,7 @@ class MarstekCoordinator(DataUpdateCoordinator):
                     self._consecutive_timeout_cycles = 0
                 
                 if self._consecutive_timeout_cycles >= self._max_consecutive_timeout_cycles:
-                    _LOGGER.info(
-                        "Repeated Modbus timeouts; the shared connection will retry on the next request"
-                    )
+                    await self._async_recycle_connection("repeated timeouts")
                     self._consecutive_timeout_cycles = 0
             elif successful_reads == 0:
                 # We attempted reads but ALL failed - connection issue
@@ -1047,6 +1076,10 @@ class MarstekCoordinator(DataUpdateCoordinator):
                 _LOGGER.warning("All read attempts failed (%d/%d) - consecutive failures: %d/%d",
                               successful_reads, attempted_reads, 
                               self._consecutive_failures, self._max_consecutive_failures)
+                # A device that keeps the socket open but stops answering is
+                # never dropped by the transport: drop the link ourselves, the
+                # next request opens a fresh one.
+                await self._async_recycle_connection("all reads failed")
                 
                 if self._consecutive_failures >= self._max_consecutive_failures:
                     # Too many failures - suspend connection attempts for 1 minute
