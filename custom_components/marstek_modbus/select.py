@@ -68,8 +68,11 @@ async def async_setup_entry(
     )
 
     if entities:
-        # Update_before_add: ensures faster first Status
-        async_add_entities(entities, update_before_add=True)
+        # No update_before_add: it ran a full coordinator refresh inside the
+        # platform setup ("Setup of select platform ... is taking over 10
+        # seconds"). The first refresh right after the platform setup fills
+        # the state just as well.
+        async_add_entities(entities)
 
 
 class MarstekSelect(CoordinatorEntity, SelectEntity):

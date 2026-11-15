@@ -19,7 +19,9 @@
       "invalid_host": "Ungültiger Host oder IP-Adresse",
       "invalid_unit_id": "Ungültige Modbus Unit-ID (muss 1-255 sein)",
       "unit_id_no_response": "Keine Antwort von Unit-ID. Prüfen Sie, ob das Gerät diese Unit-ID verwendet",
-      "cannot_connect": "Verbindung zum Gerät nicht möglich"
+      "cannot_connect": "Verbindung zum Gerät nicht möglich",
+      "invalid_port": "Ungültiger Port (muss 1-65535 sein)",
+      "unknown": "Unerwarteter Fehler"
     },
     "abort": {
       "already_configured": "Dieses Gerät ist bereits konfiguriert"
@@ -59,6 +61,17 @@
           "unit_id": "Unit-ID"
         }
       }
+    },
+    "error": {
+      "permission_denied": "Zugriff verweigert",
+      "connection_refused": "Verbindung abgelehnt",
+      "timed_out": "Zeitüberschreitung der Verbindung",
+      "invalid_host": "Ungültiger Host oder IP-Adresse",
+      "invalid_unit_id": "Ungültige Modbus Unit-ID (muss 1-255 sein)",
+      "unit_id_no_response": "Keine Antwort von Unit-ID. Prüfen Sie, ob das Gerät diese Unit-ID verwendet",
+      "cannot_connect": "Verbindung zum Gerät nicht möglich",
+      "invalid_port": "Ungültiger Port (muss 1-65535 sein)",
+      "unknown": "Unerwarteter Fehler"
     }
   },
   "entity": {
@@ -77,6 +90,9 @@
       },
       "ems_version": {
         "name": "EMS-Version"
+      },
+      "vms_version": {
+        "name": "VMS-Version"
       },
       "firmware_version": {
         "name": "Firmware-Version"
