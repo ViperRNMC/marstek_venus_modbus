@@ -22,7 +22,8 @@
       "cannot_connect": "Verbindung zum Gerät nicht möglich"
     },
     "abort": {
-      "already_configured": "Dieses Gerät ist bereits konfiguriert"
+      "already_configured": "Dieses Gerät ist bereits konfiguriert",
+      "reauth_successful": "Die Geräteversion wurde aktualisiert"
     }
   },
   "options": {

@@ -22,7 +22,8 @@
       "cannot_connect": "Kan geen verbinding maken"
     },
     "abort": {
-      "already_configured": "Dit apparaat is al geconfigureerd"
+      "already_configured": "Dit apparaat is al geconfigureerd",
+      "reauth_successful": "De apparaatversie is bijgewerkt"
     }
   },
   "options": {

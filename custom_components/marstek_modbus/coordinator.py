@@ -143,6 +143,9 @@ class MarstekCoordinator(DataUpdateCoordinator):
             name="MarstekCoordinator",
             update_interval=self.update_interval,
         )
+        # The base class resets data to None; entities write optimistic values
+        # into it, also before the first poll.
+        self.data = {}
          
         _LOGGER.debug("Coordinator initialized with update_interval: %s", self.update_interval)
 

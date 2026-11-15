@@ -92,7 +92,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             # Validate the host by resolving it to an IP address
             try:
-                socket.gethostbyname(host)
+                await self.hass.async_add_executor_job(socket.gethostbyname, host)
             except (socket.gaierror, TypeError):
                 errors["base"] = "invalid_host"
             else:
@@ -163,12 +163,10 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
                 try:
                     new_data = dict(entry.data)
                     new_data[CONF_DEVICE_VERSION] = data.get(CONF_DEVICE_VERSION)
-                    await self.hass.config_entries.async_update_entry(
+                    self.hass.config_entries.async_update_entry(
                         entry, data=new_data
                     )
-                    return self.async_create_entry(
-                        title=entry.title or DOMAIN, data={}
-                    )
+                    return self.async_abort(reason="reauth_successful")
                 except Exception as exc:
                     _LOGGER.error(
                         "Failed to update config entry during reauth: %s", exc

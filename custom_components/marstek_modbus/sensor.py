@@ -244,7 +244,7 @@ class MarstekSensor(CoordinatorEntity, SensorEntity):
                         return t
 
                 # Debug logging for raw schedule data from coordinator
-                _LOGGER.warning(
+                _LOGGER.debug(
                     "Raw schedule data for %s: value=%s attrs=%s",
                     self._key,
                     data.get(self._key),

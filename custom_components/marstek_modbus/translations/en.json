@@ -22,7 +22,8 @@
       "cannot_connect": "Cannot connect to the device"
     },
     "abort": {
-      "already_configured": "This device is already configured"
+      "already_configured": "This device is already configured",
+      "reauth_successful": "The device version was updated"
     }
   },
   "options": {
