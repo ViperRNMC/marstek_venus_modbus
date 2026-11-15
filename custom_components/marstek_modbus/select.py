@@ -143,10 +143,12 @@ class MarstekSelect(CoordinatorEntity, SelectEntity):
     @property
     def available(self) -> bool:
         """
-        Return True if the coordinator has successfully fetched data.
-        Used by Home Assistant to determine entity availability.
+        Return True if the coordinator has successfully fetched data and the
+        Modbus connection is healthy. A failed poll keeps the previous data,
+        so without the second check the entity would go on showing the last
+        value for as long as the device is unreachable.
         """
-        return self.coordinator.last_update_success
+        return self.coordinator.last_update_success and self.coordinator.is_connection_healthy()
 
     @property
     def options(self) -> list[str]:

@@ -93,8 +93,10 @@ class MarstekSensor(CoordinatorEntity, SensorEntity):
         # Consider the sensor available when coordinator has provided a value
         # for this key. This avoids sensors remaining 'unknown' when the
         # coordinator had transient update failures but still supplies data.
+        # Once the connection counts as lost (no successful read within the
+        # health threshold), the kept value is no reading any more.
         data = getattr(self.coordinator, "data", None)
-        return isinstance(data, dict) and self._key in data
+        return isinstance(data, dict) and self._key in data and self.coordinator.is_connection_healthy()
 
     @property
     def native_value(self):
@@ -362,6 +364,16 @@ class MarstekCalculatedSensor(CoordinatorEntity, SensorEntity):
     def get_dependency_keys(self):
         """Return the keys this sensor depends on."""
         return self.definition.get("dependency_keys", {})
+
+    @property
+    def available(self) -> bool:
+        """Return False while the Modbus connection counts as lost.
+
+        A failed poll keeps the previous data, so the value would otherwise
+        be recalculated from stale inputs for as long as the device is
+        unreachable.
+        """
+        return super().available and self.coordinator.is_connection_healthy()
 
     @property
     def entity_type(self) -> str:
