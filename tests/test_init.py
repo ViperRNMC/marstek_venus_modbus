@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from datetime import timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 from freezegun.api import FrozenDateTimeFactory
@@ -10,8 +11,14 @@ from homeassistant.config_entries import ConfigEntryState
 from homeassistant.const import STATE_ON, STATE_UNAVAILABLE
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import entity_registry as er
-from modbus_connection import IllegalDataAddressError, ModbusConnectionError
+from homeassistant.helpers.update_coordinator import UpdateFailed
+from modbus_connection import (
+    IllegalDataAddressError,
+    ModbusConnectionError,
+    ModbusTimeoutError,
+)
 from modbus_connection.mock import MockModbusUnit, WriteEvent
+from modbus_connection.model import UpdateReport
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     async_fire_time_changed,
@@ -152,6 +159,59 @@ async def test_totals_hold_while_the_battery_is_away(
     assert state(hass, entry, "sensor", "battery_power") == STATE_UNAVAILABLE
     assert state(hass, entry, "sensor", "total_charging_energy") == "1200.0"
     assert state(hass, entry, "binary_sensor", "modbus_connection") == "off"
+
+
+async def test_first_read_timeout_recycles_and_retries_once(
+    setup_integration: MockConfigEntry,
+    unit: MockModbusUnit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A timeout before any response gets one fresh-connection retry."""
+    coordinator = setup_integration.runtime_data
+    coordinator._last_polled.clear()
+    disconnect = AsyncMock()
+    poll = AsyncMock(
+        side_effect=[
+            ModbusTimeoutError("response timeout"),
+            UpdateReport(updated={"battery"}),
+        ]
+    )
+    monkeypatch.setattr(unit, "disconnect", disconnect)
+    monkeypatch.setattr(coordinator.device, "async_poll", poll)
+
+    await coordinator._async_update_data()
+
+    disconnect.assert_awaited_once()
+    assert poll.await_count == 2
+    assert coordinator.failed == set()
+
+
+async def test_timeout_recovery_is_bounded_and_cooled_down(
+    setup_integration: MockConfigEntry,
+    unit: MockModbusUnit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed retry is not repeated until the recovery cooldown expires."""
+    coordinator = setup_integration.runtime_data
+    coordinator._last_polled.clear()
+    disconnect = AsyncMock()
+    poll = AsyncMock(
+        side_effect=[
+            ModbusTimeoutError("first timeout"),
+            ModbusTimeoutError("retry timeout"),
+            ModbusTimeoutError("cooldown timeout"),
+        ]
+    )
+    monkeypatch.setattr(unit, "disconnect", disconnect)
+    monkeypatch.setattr(coordinator.device, "async_poll", poll)
+
+    with pytest.raises(UpdateFailed, match="after reconnect"):
+        await coordinator._async_update_data()
+    with pytest.raises(UpdateFailed, match="cooldown timeout"):
+        await coordinator._async_update_data()
+
+    disconnect.assert_awaited_once()
+    assert poll.await_count == 3
 
 
 async def test_total_ignores_a_drop(

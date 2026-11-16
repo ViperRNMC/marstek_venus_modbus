@@ -14,7 +14,7 @@ from homeassistant.core import HassJob, HomeAssistant, callback
 from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.event import async_call_later
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
-from modbus_connection import ModbusError
+from modbus_connection import ModbusError, ModbusTimeoutError
 from modbus_connection.model import UpdateReport
 
 from .const import DEFAULT_SCAN_INTERVALS, DOMAIN
@@ -24,6 +24,7 @@ _LOGGER = logging.getLogger(__name__)
 
 # How long after a write the written sub-system is read back.
 POST_WRITE_REFRESH_SECONDS = 3.5
+TIMEOUT_RECOVERY_COOLDOWN_SECONDS = 60.0
 
 type MarstekConfigEntry = ConfigEntry[MarstekCoordinator]
 
@@ -68,6 +69,7 @@ class MarstekCoordinator(DataUpdateCoordinator[None]):
         self.device = device
         self._groups = {"high": tuple(fast), "low": tuple(slow)}
         self._last_polled: dict[str, float] = {}
+        self._last_timeout_recovery: float | None = None
         self._refresh_cancels: dict[str, Callable[[], None]] = {}
         # Sub-systems whose last read failed.
         self.failed: set[str] = set()
@@ -103,6 +105,25 @@ class MarstekCoordinator(DataUpdateCoordinator[None]):
             return
         try:
             report = await self.device.async_poll(names)
+        except ModbusTimeoutError as err:
+            now = monotonic()
+            if (
+                self._last_timeout_recovery is not None
+                and now - self._last_timeout_recovery
+                < TIMEOUT_RECOVERY_COOLDOWN_SECONDS
+            ):
+                raise UpdateFailed(f"Error talking to the battery: {err}") from err
+            self._last_timeout_recovery = now
+            try:
+                await self.device.modbus_unit.disconnect()
+            except Exception as disconnect_err:
+                _LOGGER.debug("Disconnect after Modbus timeout failed: %s", disconnect_err)
+            try:
+                report = await self.device.async_poll(names)
+            except ModbusError as retry_err:
+                raise UpdateFailed(
+                    f"Error talking to the battery after reconnect: {retry_err}"
+                ) from retry_err
         except ModbusError as err:
             raise UpdateFailed(f"Error talking to the battery: {err}") from err
         if not report.updated:
