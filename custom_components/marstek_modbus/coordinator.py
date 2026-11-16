@@ -30,9 +30,11 @@ def get_entity_type(entity) -> str:
 
 
 # Timeout of one Modbus request on the shared link, and the outer guard of a
-# single read that covers the client's three attempts (3 x (3 s + 0.1 s)).
-REQUEST_TIMEOUT = 3.0
-SINGLE_READ_TIMEOUT = 12.0
+# single read that covers the client's three attempts (3 x (6 s + 0.1 s)).
+# The device sometimes answers after a little more than 3 s; a shorter request
+# timeout discards those late answers.
+REQUEST_TIMEOUT = 6.0
+SINGLE_READ_TIMEOUT = 20.0
 
 
 class MarstekCoordinator(DataUpdateCoordinator):
