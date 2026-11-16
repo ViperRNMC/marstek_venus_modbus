@@ -71,6 +71,7 @@ class MarstekCoordinator(DataUpdateCoordinator[None]):
         self._last_polled: dict[str, float] = {}
         self._last_timeout_recovery: float | None = None
         self._refresh_cancels: dict[str, Callable[[], None]] = {}
+        self._pending_rs485_write: tuple[int, object] | None = None
         # Sub-systems whose last read failed.
         self.failed: set[str] = set()
         self.set_scan_intervals(scan_intervals(entry.options))
@@ -148,6 +149,8 @@ class MarstekCoordinator(DataUpdateCoordinator[None]):
         except ModbusError as err:
             raise HomeAssistantError(f"Error writing {field}: {err}") from err
         if component in self.polled:
+            if component == "control" and field == "rs485_control_mode":
+                self._pending_rs485_write = (value, object())
             self._schedule_component_refresh(component)
 
     @callback
@@ -165,11 +168,25 @@ class MarstekCoordinator(DataUpdateCoordinator[None]):
 
     async def _async_refresh_component(self, component: str, _now: Any) -> None:
         self._refresh_cancels.pop(component, None)
+        pending = self._pending_rs485_write if component == "control" else None
         try:
             report = await self.device.async_poll((component,))
         except ModbusError as err:
             _LOGGER.debug("Reading %s back after a write failed: %s", component, err)
+            if pending is not None and self._pending_rs485_write is pending:
+                self._pending_rs485_write = None
             return
+        if pending is not None and self._pending_rs485_write is pending:
+            self._pending_rs485_write = None
+            actual = self.device.control.rs485_control_mode
+            if component in report.updated and actual is not None and actual != pending[0]:
+                _LOGGER.warning(
+                    "RS485 control mode readback for %s does not match the requested value "
+                    "(requested %s, read %s); the battery may not have applied the write",
+                    self.config_entry.title,
+                    pending[0],
+                    actual,
+                )
         self._record(report)
         self.async_update_listeners()
 
@@ -178,3 +195,4 @@ class MarstekCoordinator(DataUpdateCoordinator[None]):
         for cancel in self._refresh_cancels.values():
             cancel()
         self._refresh_cancels.clear()
+        self._pending_rs485_write = None

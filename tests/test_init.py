@@ -124,6 +124,96 @@ async def test_select_writes_and_holds_the_written_option(
     assert hass.states.get(select_entity).state == "trade_mode"
 
 
+@pytest.mark.parametrize("other_control_write", [False, True])
+async def test_rs485_write_warns_when_readback_differs(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    config_entry: MockConfigEntry,
+    mock_get_unit: None,
+    unit: MockModbusUnit,
+    caplog: pytest.LogCaptureFixture,
+    other_control_write: bool,
+) -> None:
+    """An acknowledged write can still be ignored by the battery."""
+    er.async_get(hass).async_get_or_create(
+        "switch",
+        DOMAIN,
+        f"{config_entry.entry_id}_rs485_control_mode",
+        config_entry=config_entry,
+    )
+    unit.holding[42000] = 21947
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    await hass.services.async_call(
+        "switch",
+        "turn_on",
+        {"entity_id": entity_id(hass, config_entry, "switch", "rs485_control_mode")},
+        blocking=True,
+    )
+    if other_control_write:
+        await config_entry.runtime_data.async_write("control", "backup_function", 1)
+    unit.holding[42000] = 21947
+    freezer.tick(timedelta(seconds=4))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert "RS485 control mode" in caplog.text
+    assert "21930" in caplog.text
+    assert "21947" in caplog.text
+
+
+@pytest.mark.parametrize(
+    "scenario", ["accepted", "read_failed", "read_rejected", "superseded"]
+)
+async def test_rs485_write_does_not_warn_without_a_mismatch(
+    hass: HomeAssistant,
+    freezer: FrozenDateTimeFactory,
+    config_entry: MockConfigEntry,
+    mock_get_unit: None,
+    unit: MockModbusUnit,
+    caplog: pytest.LogCaptureFixture,
+    scenario: str,
+) -> None:
+    """Only a successful readback of a different value signals a mismatch."""
+    er.async_get(hass).async_get_or_create(
+        "switch",
+        DOMAIN,
+        f"{config_entry.entry_id}_rs485_control_mode",
+        config_entry=config_entry,
+    )
+    unit.holding[42000] = 21947
+    assert await hass.config_entries.async_setup(config_entry.entry_id)
+    await hass.async_block_till_done()
+
+    switch_entity = entity_id(hass, config_entry, "switch", "rs485_control_mode")
+    await hass.services.async_call(
+        "switch", "turn_on", {"entity_id": switch_entity}, blocking=True
+    )
+    if scenario == "read_failed":
+        unit.fail_read(42000, ModbusTimeoutError("response timeout"))
+    elif scenario == "read_rejected":
+        unit.fail_read(42000, IllegalDataAddressError())
+    elif scenario == "superseded":
+        await hass.services.async_call(
+            "switch", "turn_off", {"entity_id": switch_entity}, blocking=True
+        )
+
+    freezer.tick(timedelta(seconds=4))
+    async_fire_time_changed(hass)
+    await hass.async_block_till_done()
+
+    assert "RS485 control mode readback" not in caplog.text
+    if scenario == "read_failed":
+        assert "Reading control back after a write failed" in caplog.text
+    elif scenario == "read_rejected":
+        assert "control" in config_entry.runtime_data.failed
+    else:
+        assert state(hass, config_entry, "switch", "rs485_control_mode") == (
+            "off" if scenario == "superseded" else "on"
+        )
+
+
 async def test_failing_sub_system_marks_only_its_entities(
     hass: HomeAssistant,
     freezer: FrozenDateTimeFactory,
@@ -140,6 +230,25 @@ async def test_failing_sub_system_marks_only_its_entities(
 
     assert state(hass, entry, "sensor", "inverter_state") == STATE_UNAVAILABLE
     assert state(hass, entry, "sensor", "battery_power") == "-200"
+
+
+async def test_later_component_timeout_preserves_successful_reads(
+    hass: HomeAssistant,
+    setup_integration: MockConfigEntry,
+    unit: MockModbusUnit,
+) -> None:
+    """A timeout after an answer only makes the failed component unavailable."""
+    coordinator = setup_integration.runtime_data
+    coordinator._last_polled.clear()
+    unit.fail_read(35100, ModbusTimeoutError("response timeout"))
+
+    await coordinator.async_refresh()
+
+    assert coordinator.last_update_success
+    assert "inverter" in coordinator.failed
+    assert "battery" not in coordinator.failed
+    assert state(hass, setup_integration, "sensor", "inverter_state") == STATE_UNAVAILABLE
+    assert state(hass, setup_integration, "sensor", "battery_power") == "-200"
 
 
 async def test_totals_hold_while_the_battery_is_away(
