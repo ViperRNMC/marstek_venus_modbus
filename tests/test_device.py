@@ -127,6 +127,22 @@ async def test_refused_component_does_not_fail_the_rest(
     assert device.battery.battery_power == 100
 
 
+async def test_alarm_status_reads_only_the_exposed_word(unit: MockModbusUnit) -> None:
+    """Alarm and fault entities expose only the first word of each bitmask."""
+    unit.holding[36000] = [0x8001, 0xFFFF]
+    unit.holding[36100] = [0x4002, 0xFFFF, 0xFFFF, 0xFFFF]
+    device = VenusD(unit)
+
+    await device.async_poll(("alarms",))
+
+    assert device.alarms.alarm_status == 0x8001
+    assert device.alarms.fault_status == 0x4002
+    assert {(event.address, event.count) for event in unit.read_events} == {
+        (36000, 1),
+        (36100, 1),
+    }
+
+
 async def test_message_spacing(unit: MockModbusUnit) -> None:
     """The device asks for quiet between requests."""
     VenusEV3(unit)

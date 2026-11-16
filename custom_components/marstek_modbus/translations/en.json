@@ -586,19 +586,7 @@
         }
       },
       "grid_standard": {
-        "name": "Grid Standard",
-        "state": {
-          "Auto": "Auto",
-          "EN50549": "EN50549",
-          "Netherlands": "Netherlands",
-          "Germany": "Germany",
-          "Austria": "Austria",
-          "United Kingdom": "United Kingdom",
-          "Spain": "Spain",
-          "Poland": "Poland",
-          "Italy": "Italy",
-          "China": "China"
-        }
+        "name": "Grid Standard"
       },
       "schedule_1_days": {
         "name": "Schedule 1 Days",
