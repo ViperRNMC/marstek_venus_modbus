@@ -1,10 +1,12 @@
 {
   "domain": "marstek_modbus",
   "name": "Marstek Venus Modbus",
-  "version": "2026.11.1.b1",
-  "config_flow": true,
-  "documentation": "https://github.com/viperrnmc/marstek_venus_modbus",
-  "dependencies": ["modbus"],
+  "categories": ["energy.solar_batteries"],
   "codeowners": ["@ViperRNMC"],
-  "iot_class": "local_polling"
+  "config_flow": true,
+  "dependencies": ["modbus"],
+  "documentation": "https://github.com/viperrnmc/marstek_venus_modbus",
+  "issue_tracker": "https://github.com/ViperRNMC/marstek_venus_modbus/issues",
+  "iot_class": "local_polling",
+  "version": "2026.11.1"
 }
