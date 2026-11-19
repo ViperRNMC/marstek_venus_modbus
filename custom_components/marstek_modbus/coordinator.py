@@ -25,6 +25,7 @@ _LOGGER = logging.getLogger(__name__)
 # How long after a write the written sub-system is read back.
 POST_WRITE_REFRESH_SECONDS = 3.5
 TIMEOUT_RECOVERY_COOLDOWN_SECONDS = 60.0
+PARTIAL_TIMEOUT_RECOVERY_THRESHOLD = 3
 
 type MarstekConfigEntry = ConfigEntry[MarstekCoordinator]
 
@@ -106,6 +107,46 @@ class MarstekCoordinator(DataUpdateCoordinator[None]):
             return
         try:
             report = await self.device.async_poll(names)
+            timed_out = tuple(
+                name
+                for name, error in report.failed.items()
+                if isinstance(error, ModbusTimeoutError)
+            )
+            now = monotonic()
+            if (
+                len(timed_out) >= PARTIAL_TIMEOUT_RECOVERY_THRESHOLD
+                and (
+                    self._last_timeout_recovery is None
+                    or now - self._last_timeout_recovery
+                    >= TIMEOUT_RECOVERY_COOLDOWN_SECONDS
+                )
+            ):
+                self._last_timeout_recovery = now
+                try:
+                    await self.device.modbus_unit.disconnect()
+                except Exception as disconnect_err:
+                    _LOGGER.debug(
+                        "Disconnect after clustered Modbus timeouts failed: %s",
+                        disconnect_err,
+                    )
+                try:
+                    report = await self.device.async_poll(timed_out, report=report)
+                except ModbusError as retry_err:
+                    _LOGGER.debug(
+                        "Retrying timed-out sub-systems after reconnect failed for %s: %s",
+                        self.config_entry.title,
+                        retry_err,
+                    )
+                else:
+                    recovered = sum(name in report.updated for name in timed_out)
+                    _LOGGER.debug(
+                        "Retried %d timed-out sub-systems after reconnect for %s "
+                        "(%d recovered, %d still failed)",
+                        len(timed_out),
+                        self.config_entry.title,
+                        recovered,
+                        len(timed_out) - recovered,
+                    )
         except ModbusTimeoutError as err:
             now = monotonic()
             if (
@@ -125,6 +166,14 @@ class MarstekCoordinator(DataUpdateCoordinator[None]):
                 raise UpdateFailed(
                     f"Error talking to the battery after reconnect: {retry_err}"
                 ) from retry_err
+            _LOGGER.debug(
+                "Modbus timeout recovered after reconnect for %s: %s "
+                "(%d sub-systems updated, %d failed)",
+                self.config_entry.title,
+                err,
+                len(report.updated),
+                len(report.failed),
+            )
         except ModbusError as err:
             raise UpdateFailed(f"Error talking to the battery: {err}") from err
         if not report.updated:

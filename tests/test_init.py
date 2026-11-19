@@ -236,19 +236,138 @@ async def test_later_component_timeout_preserves_successful_reads(
     hass: HomeAssistant,
     setup_integration: MockConfigEntry,
     unit: MockModbusUnit,
+    monkeypatch: pytest.MonkeyPatch,
 ) -> None:
     """A timeout after an answer only makes the failed component unavailable."""
     coordinator = setup_integration.runtime_data
     coordinator._last_polled.clear()
+    disconnect = AsyncMock()
+    monkeypatch.setattr(unit, "disconnect", disconnect)
     unit.fail_read(35100, ModbusTimeoutError("response timeout"))
 
     await coordinator.async_refresh()
 
+    disconnect.assert_not_awaited()
     assert coordinator.last_update_success
     assert "inverter" in coordinator.failed
     assert "battery" not in coordinator.failed
     assert state(hass, setup_integration, "sensor", "inverter_state") == STATE_UNAVAILABLE
     assert state(hass, setup_integration, "sensor", "battery_power") == "-200"
+
+
+async def test_timeout_cluster_reconnects_and_retries_failed_components(
+    setup_integration: MockConfigEntry,
+    unit: MockModbusUnit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A cluster of timeouts refreshes only the failed components once."""
+    coordinator = setup_integration.runtime_data
+    coordinator._last_polled.clear()
+    coordinator._last_timeout_recovery = None
+    first_report = UpdateReport(
+        updated={"battery", "grid"},
+        failed={
+            "identity": ModbusTimeoutError("identity timeout"),
+            "versions": ModbusTimeoutError("versions timeout"),
+            "control": ModbusTimeoutError("control timeout"),
+            "inverter": ModbusTimeoutError("inverter timeout"),
+        },
+    )
+
+    async def poll(names, *, report=None):
+        if report is None:
+            return first_report
+        assert tuple(names) == ("identity", "versions", "control", "inverter")
+        assert report is first_report
+        report.failed.pop("identity", None)
+        report.failed.pop("control", None)
+        report.failed.pop("inverter", None)
+        report.updated.update({"identity", "control", "inverter"})
+        report.failed["versions"] = ModbusTimeoutError(
+            "versions retry timeout"
+        )
+        return report
+
+    async_poll = AsyncMock(side_effect=poll)
+    disconnect = AsyncMock()
+    monkeypatch.setattr(coordinator.device, "async_poll", async_poll)
+    monkeypatch.setattr(unit, "disconnect", disconnect)
+
+    await coordinator._async_update_data()
+
+    disconnect.assert_awaited_once()
+    assert async_poll.await_count == 2
+    assert async_poll.await_args_list[1].args[0] == (
+        "identity",
+        "versions",
+        "control",
+        "inverter",
+    )
+    assert async_poll.await_args_list[1].kwargs["report"] is first_report
+    assert first_report.updated == {"battery", "grid", "identity", "control", "inverter"}
+    assert set(first_report.failed) == {"versions"}
+    assert coordinator.failed == {"versions"}
+
+
+async def test_cluster_retry_connection_error_preserves_partial_report(
+    setup_integration: MockConfigEntry,
+    unit: MockModbusUnit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """A failed retry must not discard subsystem reads that already succeeded."""
+    coordinator = setup_integration.runtime_data
+    coordinator._last_polled.clear()
+    coordinator._last_timeout_recovery = None
+    report = UpdateReport(
+        updated={"battery", "grid"},
+        failed={
+            "identity": ModbusTimeoutError("identity timeout"),
+            "versions": ModbusTimeoutError("versions timeout"),
+            "control": ModbusTimeoutError("control timeout"),
+        },
+    )
+    poll = AsyncMock(side_effect=[report, ModbusConnectionError("reconnect failed")])
+    disconnect = AsyncMock()
+    monkeypatch.setattr(coordinator.device, "async_poll", poll)
+    monkeypatch.setattr(unit, "disconnect", disconnect)
+
+    await coordinator._async_update_data()
+
+    disconnect.assert_awaited_once()
+    assert poll.await_count == 2
+    assert coordinator.failed == {"identity", "versions", "control"}
+
+
+async def test_timeout_cluster_recovery_respects_cooldown(
+    setup_integration: MockConfigEntry,
+    unit: MockModbusUnit,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Repeated timeout clusters do not reconnect on every polling tick."""
+    coordinator = setup_integration.runtime_data
+    coordinator._last_polled.clear()
+    coordinator._last_timeout_recovery = 100.0
+    monkeypatch.setattr(
+        "custom_components.marstek_modbus.coordinator.monotonic", lambda: 100.0
+    )
+    poll = AsyncMock(
+        return_value=UpdateReport(
+            updated={"battery"},
+            failed={
+                "identity": ModbusTimeoutError("identity timeout"),
+                "versions": ModbusTimeoutError("versions timeout"),
+                "control": ModbusTimeoutError("control timeout"),
+            },
+        )
+    )
+    disconnect = AsyncMock()
+    monkeypatch.setattr(coordinator.device, "async_poll", poll)
+    monkeypatch.setattr(unit, "disconnect", disconnect)
+
+    await coordinator._async_update_data()
+
+    poll.assert_awaited_once()
+    disconnect.assert_not_awaited()
 
 
 async def test_totals_hold_while_the_battery_is_away(
@@ -274,6 +393,7 @@ async def test_first_read_timeout_recycles_and_retries_once(
     setup_integration: MockConfigEntry,
     unit: MockModbusUnit,
     monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """A timeout before any response gets one fresh-connection retry."""
     coordinator = setup_integration.runtime_data
@@ -293,6 +413,8 @@ async def test_first_read_timeout_recycles_and_retries_once(
     disconnect.assert_awaited_once()
     assert poll.await_count == 2
     assert coordinator.failed == set()
+    assert "Modbus timeout recovered after reconnect" in caplog.text
+    assert "response timeout" in caplog.text
 
 
 async def test_timeout_recovery_is_bounded_and_cooled_down(
