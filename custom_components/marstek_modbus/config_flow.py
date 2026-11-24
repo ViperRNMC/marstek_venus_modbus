@@ -94,7 +94,7 @@ class MarstekConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
             # Validate the host by resolving it to an IP address
             try:
-                socket.gethostbyname(host)
+                await self.hass.async_add_executor_job(socket.gethostbyname, host)
             except (socket.gaierror, TypeError):
                 errors["base"] = "invalid_host"
             else:
